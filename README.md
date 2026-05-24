@@ -28,13 +28,13 @@ cp -r /tmp/which-llm/plugins/which-llm/skills/which-llm ~/.claude/skills/which-l
 ## Example output
 
 ```text
-$ uv run python query.py recommend --intel-min 50 --max-cost 500 --image --limit 5
+$ uv run python query.py models --intel-min 50 --max-cost 500 --modality text,image --top 5
 
-slug                    name                                     creator  intel  idx-run$  ctx       free  openrouter
-----------------------  ---------------------------------------  -------  -----  --------  --------  ----  ----------------------------
-deepseek-v4-pro         DeepSeek V4 Pro (Reasoning, Max Effort)  DeepSeek 51.5   $267.82   1000000   -     deepseek/deepseek-v4-pro
-grok-4-3                Grok 4.3 (high)                          xAI      53.2   $395.17   1000000   -     x-ai/grok-4.3
-mimo-v2-5-pro           MiMo-V2.5-Pro                            Xiaomi   53.8   $461.59   1000000   -     xiaomi/mimo-v2.5-pro
+slug                  name                                     creator   intel  idx-run$  ctx      free  openrouter
+--------------------  ---------------------------------------  --------  -----  --------  -------  ----  --------------------------
+deepseek-v4-pro       DeepSeek V4 Pro (Reasoning, Max Effort)  DeepSeek  51.5   $267.82   1000000        deepseek/deepseek-v4-pro
+grok-4-3              Grok 4.3 (high)                          xAI       53.2   $395.17   1000000        x-ai/grok-4.3
+mimo-v2-5-pro         MiMo-V2.5-Pro                            Xiaomi    53.8   $461.59   1000000        xiaomi/mimo-v2.5-pro
 ```
 
 `idx-run$` = USD to run AA's full benchmark suite once on the model — a relative inference-cost proxy, *not* a per-call price. For actual API pricing, use `price_1m_input_tokens` / `price_1m_output_tokens`.
@@ -54,18 +54,16 @@ Under the hood the agent runs short `query.py` commands and reasons over the out
 
 ## Commands
 
+Three verbs, one consistent table schema.
+
 | Command | Use |
 |---|---|
-| `query.py status` | Data freshness, model count, OpenRouter enrichment status |
-| `query.py refresh` | Re-scrape AA + cross-reference OR (~10s) |
-| `query.py find <pattern>` | Substring match on name / slug / creator |
-| `query.py info <slug>` | Full per-model info: benchmarks, pricing, OR slugs, modalities |
-| `query.py list [--limit N] [--by-cost] [--max-cost N]` | Top N |
-| `query.py frontier` | Cost-vs-intelligence Pareto frontier |
-| `query.py recommend --intel-min N --max-cost M [...]` | Best fit under constraints |
-| `query.py free` | All `:free` OpenRouter models |
+| `query.py models [<pattern>] [filters]` | Filter / rank / list models. Default: top 20 by intel. |
+| `query.py show <slug>` | Full per-model profile (benchmarks, pricing, OR slugs, modalities). Accepts fuzzy slug if unambiguous. |
+| `query.py data status` | Data freshness, model count, OpenRouter enrichment status |
+| `query.py data refresh` | Re-scrape AA + cross-reference OR (~10s) |
 
-All commands accept modality filters: `--text` (default), `--no-text`, `--image`, `--video`, `--audio`, `--free`. They AND together.
+`models` flags: `--top N`, `--sort intel|cost|ctx`, `--pareto`, `--free`, `--intel-min N`, `--max-cost N`, `--min-cost N`, `--context-min N`, `--modality text,image,audio,video`, `--reasoning`/`--no-reasoning`, `--open-weights`/`--no-open-weights`, `--json`.
 
 `plot_pareto.py` renders the Intelligence-vs-Cost Pareto chart as a PNG for visual exploration.
 

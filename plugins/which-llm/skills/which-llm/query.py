@@ -1,16 +1,16 @@
 """Agent-facing CLI for LLM model selection queries.
 
-Subcommands all produce compact, structured output meant to be consumed by an
-LLM agent without further parsing.
+  uv run python query.py models                                 # top 20 by intel
+  uv run python query.py models claude                          # substring match
+  uv run python query.py models --top 5 --max-cost 500 --modality text,image
+  uv run python query.py models --pareto --max-cost 200         # Pareto frontier
+  uv run python query.py models --free                          # OR-free models
+  uv run python query.py show claude-opus-4-7                   # one model, full info
+  uv run python query.py data status                            # data freshness
+  uv run python query.py data refresh                           # re-scrape AA + OR
 
-  uv run python query.py find claude          # find models by name/slug substring
-  uv run python query.py info claude-opus-4-7 # full info for one model
-  uv run python query.py list --limit 20      # top N by intelligence
-  uv run python query.py frontier             # Pareto frontier (cost vs intel)
-  uv run python query.py recommend --intel-min 50 --max-cost 2000 --image
-  uv run python query.py free                 # OR-free models, sorted by intel
-  uv run python query.py refresh              # re-scrape AA + cross-ref OR
-  uv run python query.py status               # data freshness check
+All `models` queries produce the same table schema (or pass `--json` for
+machine output). `show` emits a multi-line profile by default, or JSON.
 """
 from __future__ import annotations
 
@@ -29,6 +29,21 @@ ENRICHED_CSV = ART / "models_enriched.csv"
 BASE_CSV = ART / "models.csv"
 
 STALE_AFTER_DAYS = 7  # warn (don't refuse) if data older than this
+
+# Canonical output columns. Both the table renderer and `--json` use these.
+OUTPUT_FIELDS = [
+    "slug", "name", "creator_name", "intelligence_index",
+    "intelligence_index_cost_usd", "context_window_tokens",
+    "openrouter_has_free", "openrouter_slug", "openrouter_free_slug",
+]
+
+# Modality vocabulary — what the user types -> the CSV column name.
+MODALITY_TO_COLUMN = {
+    "text": "input_modality_text",
+    "image": "input_modality_image",
+    "video": "input_modality_video",
+    "audio": "input_modality_speech",  # AA calls it 'speech'; we expose 'audio'
+}
 
 
 def _csv_path() -> Path:
@@ -64,37 +79,105 @@ def ensure_data() -> None:
         subprocess.run(["uv", "run", "python", "enrich.py"], cwd=HERE, check=True)
 
 
+# ---------------------------------------------------------------------------
+# Filtering
+# ---------------------------------------------------------------------------
+
+
+def _parse_modalities(spec: str | None) -> set[str]:
+    """'text,image' -> {'text','image'}. 'any' or '' or None -> set() (no filter)."""
+    if not spec or spec.strip().lower() == "any":
+        return set()
+    tokens = {t.strip().lower() for t in spec.split(",") if t.strip()}
+    unknown = tokens - set(MODALITY_TO_COLUMN)
+    if unknown:
+        raise SystemExit(
+            f"unknown modality {sorted(unknown)}; "
+            f"valid: {sorted(MODALITY_TO_COLUMN)} or 'any'"
+        )
+    return tokens
+
+
 def load_rows(
-    require_text: bool = True,
-    require_image: bool = False,
-    require_video: bool = False,
-    require_audio: bool = False,
+    modalities: set[str] | None = None,
     free_only: bool = False,
     include_deprecated: bool = False,
     min_cost: float = 0.0,
     max_cost: float = math.inf,
+    intel_min: float | None = None,
+    context_min: int | None = None,
+    reasoning: bool | None = None,
+    open_weights: bool | None = None,
 ) -> list[dict]:
+    if modalities is None:
+        modalities = {"text"}
     rows = []
     with _csv_path().open(encoding="utf-8") as f:
         for r in csv.DictReader(f):
             if not include_deprecated and _is_true(r.get("deprecated")):
                 continue
-            if require_text and not _is_true(r.get("input_modality_text")):
-                continue
-            if require_image and not _is_true(r.get("input_modality_image")):
-                continue
-            if require_video and not _is_true(r.get("input_modality_video")):
-                continue
-            if require_audio and not _is_true(r.get("input_modality_speech")):
+            if modalities and not all(
+                _is_true(r.get(MODALITY_TO_COLUMN[m])) for m in modalities
+            ):
                 continue
             if free_only and not _is_true(r.get("openrouter_has_free")):
                 continue
             cost = _f(r.get("intelligence_index_cost_usd"))
-            if cost is not None:
-                if cost < min_cost or cost > max_cost:
-                    continue
+            if cost is not None and (cost < min_cost or cost > max_cost):
+                continue
+            if intel_min is not None and (_f(r.get("intelligence_index")) or -1) < intel_min:
+                continue
+            if context_min is not None and (_f(r.get("context_window_tokens")) or 0) < context_min:
+                continue
+            if reasoning is not None and _is_true(r.get("reasoning_model")) != reasoning:
+                continue
+            if open_weights is not None and _is_true(r.get("is_open_weights")) != open_weights:
+                continue
             rows.append(r)
     return rows
+
+
+def apply_pattern(rows: list[dict], pattern: str | None) -> list[dict]:
+    if not pattern:
+        return rows
+    pat = pattern.lower()
+    return [
+        r for r in rows
+        if pat in (r.get("name") or "").lower()
+        or pat in (r.get("slug") or "").lower()
+        or pat in (r.get("creator_name") or "").lower()
+    ]
+
+
+def pareto_frontier(rows: list[dict]) -> list[dict]:
+    """Filter to cost-min / intel-max Pareto-optimal points."""
+    pts = [
+        r for r in rows
+        if _f(r.get("intelligence_index")) is not None
+        and (_f(r.get("intelligence_index_cost_usd")) or 0) > 0
+    ]
+    pts.sort(key=lambda r: (_f(r["intelligence_index_cost_usd"]),
+                            -_f(r["intelligence_index"])))
+    front = []
+    best = -math.inf
+    for r in pts:
+        i = _f(r["intelligence_index"])
+        if i > best:
+            front.append(r)
+            best = i
+    return front
+
+
+SORT_KEYS = {
+    "intel": lambda r: (-( _f(r.get("intelligence_index")) or -math.inf),),
+    "cost":  lambda r: ( _f(r.get("intelligence_index_cost_usd")) or math.inf,),
+    "ctx":   lambda r: (-( _f(r.get("context_window_tokens")) or 0),),
+}
+
+
+# ---------------------------------------------------------------------------
+# Output
+# ---------------------------------------------------------------------------
 
 
 def _fmt_cost(v) -> str:
@@ -109,46 +192,41 @@ def _fmt_intel(v) -> str:
     return f"{f:.1f}" if f is not None else "-"
 
 
-def _fmt_modalities(r: dict) -> str:
-    bits = []
-    if _is_true(r.get("input_modality_text")):
-        bits.append("text")
-    if _is_true(r.get("input_modality_image")):
-        bits.append("image")
-    if _is_true(r.get("input_modality_video")):
-        bits.append("video")
-    if _is_true(r.get("input_modality_speech")):
-        bits.append("audio")
-    return "+".join(bits) or "-"
+def _row_for_output(r: dict) -> dict:
+    return {
+        "slug": r.get("slug") or "",
+        "name": r.get("name") or "",
+        "creator": r.get("creator_name") or "-",
+        "intel": _fmt_intel(r.get("intelligence_index")),
+        "idx-run$": _fmt_cost(r.get("intelligence_index_cost_usd")),
+        "ctx": r.get("context_window_tokens") or "-",
+        "free": "y" if _is_true(r.get("openrouter_has_free")) else "",
+        "openrouter": r.get("openrouter_slug") or "-",
+    }
 
 
-def _print_table(rows: list[dict], cols: list[tuple[str, str, int]]) -> None:
-    """Print rows with given (column_key, header, width) layout.
-
-    Width 0 means auto-size to the widest cell.
-    """
-    # Auto-size columns where width=0.
-    sized: list[tuple[str, str, int]] = []
-    for key, header, width in cols:
-        if width == 0:
-            w = max(len(header), max((len(str(r.get(key) or "")) for r in rows), default=0))
-            sized.append((key, header, w))
-        else:
-            sized.append((key, header, width))
-    header_line = "  ".join(f"{h:<{w}}" for _, h, w in sized)
-    print(header_line)
-    print("  ".join("-" * w for _, _, w in sized))
-    for r in rows:
-        line = "  ".join(f"{str(r.get(k) or '-'):<{w}}" for k, _, w in sized)
-        print(line)
+def _print_table(rows: list[dict]) -> None:
+    cols = list(_row_for_output(rows[0] if rows else {}).keys())
+    formatted = [_row_for_output(r) for r in rows]
+    widths = {
+        c: max(len(c), *(len(str(r[c])) for r in formatted)) if formatted else len(c)
+        for c in cols
+    }
+    print("  ".join(f"{c:<{widths[c]}}" for c in cols))
+    print("  ".join("-" * widths[c] for c in cols))
+    for r in formatted:
+        print("  ".join(f"{str(r[c]):<{widths[c]}}" for c in cols))
 
 
-def _intel_sort_key(r: dict) -> float:
-    return _f(r.get("intelligence_index")) or -1
-
-
-def _cost_sort_key(r: dict) -> float:
-    return _f(r.get("intelligence_index_cost_usd")) or math.inf
+def _emit_models(rows: list[dict], as_json: bool) -> None:
+    if as_json:
+        out = []
+        for r in rows:
+            out.append({k: r.get(k) for k in OUTPUT_FIELDS})
+        json.dump(out, sys.stdout, indent=2, default=str)
+        sys.stdout.write("\n")
+    else:
+        _print_table(rows)
 
 
 # ---------------------------------------------------------------------------
@@ -156,83 +234,64 @@ def _cost_sort_key(r: dict) -> float:
 # ---------------------------------------------------------------------------
 
 
-def cmd_status(args) -> int:
-    p = _csv_path()
-    if not p.exists():
-        print("no data cached. run: uv run python query.py refresh")
-        return 1
-    age = _data_age_days()
-    print(f"data file:   {p}")
-    print(f"data age:    {age:.1f} days")
-    if age and age > STALE_AFTER_DAYS:
-        print(f"WARN: data older than {STALE_AFTER_DAYS} days. "
-              f"Run: uv run python query.py refresh")
-    enriched = "yes" if p == ENRICHED_CSV else "no (run enrich.py)"
-    print(f"openrouter:  {enriched}")
-    rows = load_rows(require_text=False, include_deprecated=True)
-    print(f"model count: {len(rows)}")
-    return 0
-
-
-def cmd_refresh(args) -> int:
-    subprocess.run(["uv", "run", "python", "scrape.py", "--refresh"], cwd=HERE, check=True)
-    subprocess.run(["uv", "run", "python", "enrich.py", "--refresh"], cwd=HERE, check=True)
-    return 0
-
-
-def cmd_find(args) -> int:
-    rows = load_rows(require_text=False)
-    pat = args.pattern.lower()
-    matches = [
-        r for r in rows
-        if pat in (r.get("name") or "").lower()
-        or pat in (r.get("slug") or "").lower()
-        or pat in (r.get("creator_name") or "").lower()
-    ]
-    matches.sort(key=_intel_sort_key, reverse=True)
-    if not matches:
-        print(f"# no matches for '{args.pattern}'")
-        return 1
-    _print_table(
-        [
-            {
-                "slug": r["slug"],
-                "name": r["name"],
-                "creator": r.get("creator_name") or "-",
-                "intel": _fmt_intel(r.get("intelligence_index")),
-                "cost": _fmt_cost(r.get("intelligence_index_cost_usd")),
-            }
-            for r in matches
-        ],
-        [("slug", "slug", 0), ("name", "name", 0), ("creator", "creator", 0),
-         ("intel", "intel", 5), ("cost", "idx-run$", 10)],
+def cmd_models(args) -> int:
+    modalities = _parse_modalities(args.modality)
+    rows = load_rows(
+        modalities=modalities,
+        free_only=args.free,
+        min_cost=args.min_cost,
+        max_cost=args.max_cost if args.max_cost is not None else math.inf,
+        intel_min=args.intel_min,
+        context_min=args.context_min,
+        reasoning=args.reasoning,
+        open_weights=args.open_weights,
     )
-    print(f"\n# {len(matches)} matches")
+    rows = apply_pattern(rows, args.pattern)
+    if args.pareto:
+        rows = pareto_frontier(rows)
+        rows.sort(key=SORT_KEYS["cost"])  # Pareto reads naturally cost-ascending
+    else:
+        rows.sort(key=SORT_KEYS[args.sort])
+    if args.top is not None and args.top > 0:
+        rows = rows[: args.top]
+    if not rows:
+        print("# no models match", file=sys.stderr)
+        return 1
+    _emit_models(rows, args.json)
     return 0
 
 
-def cmd_info(args) -> int:
-    rows = load_rows(require_text=False, include_deprecated=True)
+def cmd_show(args) -> int:
+    rows = load_rows(modalities=set(), include_deprecated=True)
     by_slug = {r["slug"]: r for r in rows}
     r = by_slug.get(args.slug)
     if not r:
-        # try fuzzy by name
         pat = args.slug.lower()
-        candidates = [x for x in rows if pat in (x["slug"] or "").lower() or pat in (x["name"] or "").lower()]
+        candidates = [
+            x for x in rows
+            if pat in (x.get("slug") or "").lower()
+            or pat in (x.get("name") or "").lower()
+        ]
         if len(candidates) == 1:
             r = candidates[0]
         elif candidates:
-            print(f"# multiple matches for '{args.slug}'; specify slug:")
+            print(f"# multiple matches for {args.slug!r}; specify slug:",
+                  file=sys.stderr)
             for c in candidates[:10]:
-                print(f"  {c['slug']:45s}  {c['name']}")
+                print(f"  {c['slug']:45s}  {c['name']}", file=sys.stderr)
             return 1
         else:
-            print(f"# no model matching '{args.slug}'")
+            print(f"# no model matching {args.slug!r}", file=sys.stderr)
             return 1
+
+    if args.json:
+        json.dump(r, sys.stdout, indent=2, default=str)
+        sys.stdout.write("\n")
+        return 0
 
     intel = _f(r["intelligence_index"])
     cost = _f(r["intelligence_index_cost_usd"])
-    per_m = _f(r["intelligence_index_per_m_output_tokens"])
+    per_m = _f(r.get("intelligence_index_per_m_output_tokens"))
     print(f"{r['name']}")
     print(f"  slug:            {r['slug']}")
     print(f"  creator:         {r.get('creator_name') or '-'} ({r.get('creator_slug') or '-'})")
@@ -246,10 +305,11 @@ def cmd_info(args) -> int:
     print(f"  context window:  {r.get('context_window_tokens') or '-'}")
     print(f"  reasoning:       {r.get('reasoning_model')}")
     print(f"  open weights:    {r.get('is_open_weights')}")
-    print(f"  input modality:  {_fmt_modalities(r)}")
+    mods = [m for m, col in MODALITY_TO_COLUMN.items() if _is_true(r.get(col))]
+    print(f"  input modality:  {'+'.join(mods) or '-'}")
     print()
     print(f"  intelligence index:   {_fmt_intel(intel)}")
-    print(f"  cost to run index:    {_fmt_cost(cost)}")
+    print(f"  cost to run index:    {_fmt_cost(cost)}  (idx-run$, not a per-call price)")
     print(f"  per 1M output tokens: {_fmt_cost(per_m)}")
     print()
     print(f"  pricing per 1M tokens:")
@@ -279,142 +339,40 @@ def cmd_info(args) -> int:
         print(f"  OpenRouter:")
         print(f"    paid: {r.get('openrouter_slug') or '(no match found)'}")
         print(f"    free: {r.get('openrouter_free_slug') or '(not available)'}")
+        if _is_true(r.get("openrouter_has_free")):
+            print("          (:free is rate-limited promo, possibly different "
+                  "quant; prototyping only)")
     return 0
 
 
-def cmd_list(args) -> int:
-    rows = load_rows(
-        require_text=args.text, require_image=args.image,
-        require_video=args.video, require_audio=args.audio,
-        free_only=args.free, max_cost=args.max_cost or math.inf,
-    )
-    sort_key = _cost_sort_key if args.by_cost else _intel_sort_key
-    rows.sort(key=sort_key, reverse=not args.by_cost)
-    rows = rows[: args.limit]
-    formatted = [
-        {
-            "slug": r["slug"],
-            "name": r["name"],
-            "creator": r.get("creator_name") or "-",
-            "intel": _fmt_intel(r.get("intelligence_index")),
-            "cost": _fmt_cost(r.get("intelligence_index_cost_usd")),
-            "free": "y" if _is_true(r.get("openrouter_has_free")) else "",
-            "or_slug": r.get("openrouter_slug") or "-",
-        }
-        for r in rows
-    ]
-    _print_table(
-        formatted,
-        [("slug", "slug", 0), ("name", "name", 0), ("creator", "creator", 0),
-         ("intel", "intel", 5), ("cost", "idx-run$", 10), ("free", "free", 4),
-         ("or_slug", "openrouter", 0)],
-    )
-    return 0
-
-
-def cmd_frontier(args) -> int:
-    rows = load_rows(
-        require_text=args.text, require_image=args.image,
-        require_video=args.video, require_audio=args.audio,
-        free_only=args.free, min_cost=args.min_cost,
-        max_cost=args.max_cost or math.inf,
-    )
-    valid = [r for r in rows
-             if _f(r["intelligence_index"]) is not None
-             and _f(r["intelligence_index_cost_usd"]) is not None
-             and _f(r["intelligence_index_cost_usd"]) > 0]
-    sorted_rows = sorted(valid, key=lambda r: (_cost_sort_key(r), -_intel_sort_key(r)))
-    front: list[dict] = []
-    best = -math.inf
-    for r in sorted_rows:
-        i = _f(r["intelligence_index"])
-        if i > best:
-            front.append(r)
-            best = i
-    formatted = [
-        {
-            "slug": r["slug"],
-            "name": r["name"],
-            "creator": r.get("creator_name") or "-",
-            "intel": _fmt_intel(r["intelligence_index"]),
-            "cost": _fmt_cost(r["intelligence_index_cost_usd"]),
-            "free": "y" if _is_true(r.get("openrouter_has_free")) else "",
-            "or_slug": r.get("openrouter_slug") or "-",
-        }
-        for r in front
-    ]
-    print(f"# Pareto frontier (cheapest -> most expensive), {len(front)} models")
-    _print_table(
-        formatted,
-        [("slug", "slug", 0), ("name", "name", 0), ("creator", "creator", 0),
-         ("intel", "intel", 5), ("cost", "idx-run$", 10), ("free", "free", 4),
-         ("or_slug", "openrouter", 0)],
-    )
-    return 0
-
-
-def cmd_recommend(args) -> int:
-    rows = load_rows(
-        require_text=args.text, require_image=args.image,
-        require_video=args.video, require_audio=args.audio,
-        free_only=args.free, max_cost=args.max_cost or math.inf,
-    )
-    if args.intel_min is not None:
-        rows = [r for r in rows if (_f(r["intelligence_index"]) or 0) >= args.intel_min]
-    if args.context_min is not None:
-        rows = [r for r in rows if (_f(r.get("context_window_tokens")) or 0) >= args.context_min]
-    if args.reasoning is not None:
-        rows = [r for r in rows if _is_true(r.get("reasoning_model")) == args.reasoning]
-    if args.open_weights:
-        rows = [r for r in rows if _is_true(r.get("is_open_weights"))]
-    # Recommend by cheapest cost-to-run-index, breaking ties by higher intel.
-    rows.sort(key=lambda r: (_cost_sort_key(r), -_intel_sort_key(r)))
-    rows = rows[: args.limit]
-    if not rows:
-        print("# no models match constraints")
-        return 1
-    formatted = [
-        {
-            "slug": r["slug"],
-            "name": r["name"],
-            "creator": r.get("creator_name") or "-",
-            "intel": _fmt_intel(r.get("intelligence_index")),
-            "cost": _fmt_cost(r.get("intelligence_index_cost_usd")),
-            "ctx": r.get("context_window_tokens") or "-",
-            "free": "y" if _is_true(r.get("openrouter_has_free")) else "",
-            "or_slug": r.get("openrouter_slug") or "-",
-        }
-        for r in rows
-    ]
-    _print_table(
-        formatted,
-        [("slug", "slug", 0), ("name", "name", 0), ("creator", "creator", 0),
-         ("intel", "intel", 5), ("cost", "idx-run$", 10), ("ctx", "ctx", 8),
-         ("free", "free", 4), ("or_slug", "openrouter", 0)],
-    )
-    return 0
-
-
-def cmd_free(args) -> int:
-    rows = load_rows(require_text=args.text, free_only=True)
-    rows.sort(key=_intel_sort_key, reverse=True)
-    formatted = [
-        {
-            "or_slug": r.get("openrouter_free_slug") or "-",
-            "intel": _fmt_intel(r["intelligence_index"]),
-            "cost": _fmt_cost(r["intelligence_index_cost_usd"]),
-            "name": r["name"],
-            "creator": r.get("creator_name") or "-",
-        }
-        for r in rows
-    ]
-    _print_table(
-        formatted,
-        [("or_slug", "openrouter slug", 0), ("intel", "intel", 5),
-         ("cost", "idx-run$", 10), ("name", "name", 0), ("creator", "creator", 0)],
-    )
-    print(f"\n# {len(rows)} free models on OpenRouter")
-    return 0
+def cmd_data(args) -> int:
+    if args.action == "status":
+        p = _csv_path()
+        if not p.exists():
+            print("no data cached. run: uv run python query.py data refresh",
+                  file=sys.stderr)
+            return 1
+        age = _data_age_days() or 0
+        print(f"data file:   {p}")
+        print(f"data age:    {age:.1f} days")
+        if age > STALE_AFTER_DAYS:
+            print(
+                f"WARN: data older than {STALE_AFTER_DAYS} days. "
+                f"Run: uv run python query.py data refresh",
+                file=sys.stderr,
+            )
+        enriched = "yes" if p == ENRICHED_CSV else "no (run enrich.py)"
+        print(f"openrouter:  {enriched}")
+        rows = load_rows(modalities=set(), include_deprecated=True)
+        print(f"model count: {len(rows)}")
+        return 0
+    if args.action == "refresh":
+        subprocess.run(["uv", "run", "python", "scrape.py", "--refresh"],
+                       cwd=HERE, check=True)
+        subprocess.run(["uv", "run", "python", "enrich.py", "--refresh"],
+                       cwd=HERE, check=True)
+        return 0
+    return 2
 
 
 # ---------------------------------------------------------------------------
@@ -422,70 +380,63 @@ def cmd_free(args) -> int:
 # ---------------------------------------------------------------------------
 
 
-def _add_modality_args(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--text", action=argparse.BooleanOptionalAction, default=True,
-                   help="Require text input (default: on)")
-    p.add_argument("--image", action="store_true", help="Require image input")
-    p.add_argument("--video", action="store_true", help="Require video input")
-    p.add_argument("--audio", action="store_true", help="Require audio input")
+def _add_filter_args(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--modality", default="text",
+                   help="CSV of required input modalities (text,image,video,audio). "
+                        "Default 'text'. Use 'any' or empty string to disable.")
     p.add_argument("--free", action="store_true",
-                   help="Only models with a :free OpenRouter variant")
+                   help="Only include models with a :free OpenRouter variant.")
+    p.add_argument("--intel-min", type=float, default=None,
+                   help="Minimum intelligence_index.")
+    p.add_argument("--max-cost", type=float, default=None,
+                   help="Maximum idx-run$ (cost to run AA's index, USD).")
+    p.add_argument("--min-cost", type=float, default=0.0,
+                   help="Minimum idx-run$ (USD).")
+    p.add_argument("--context-min", type=int, default=None,
+                   help="Minimum context window in tokens.")
+    p.add_argument("--reasoning", action=argparse.BooleanOptionalAction,
+                   default=None,
+                   help="Filter to reasoning (or --no-reasoning) models. "
+                        "Default: no filter.")
+    p.add_argument("--open-weights", action=argparse.BooleanOptionalAction,
+                   default=None,
+                   help="Filter to open-weights (or --no-open-weights) models. "
+                        "Default: no filter.")
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Query LLM model intelligence / cost / OR data.")
+    ap = argparse.ArgumentParser(
+        description="Query current LLM intelligence/cost/capabilities data.",
+    )
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    sp = sub.add_parser("status", help="Show data freshness and counts.")
-    sp.set_defaults(func=cmd_status)
+    sp = sub.add_parser("models", help="Query / filter / rank models.")
+    sp.add_argument("pattern", nargs="?",
+                    help="Optional substring; matched against name/slug/creator.")
+    sp.add_argument("--top", type=int, default=20,
+                    help="Max rows to return (default 20). 0 = unlimited.")
+    sp.add_argument("--sort", choices=list(SORT_KEYS), default="intel",
+                    help="Primary sort key (default intel-desc).")
+    sp.add_argument("--pareto", action="store_true",
+                    help="Filter to cost-vs-intel Pareto frontier; ignores --sort.")
+    sp.add_argument("--json", action="store_true",
+                    help="Emit JSON array instead of a table.")
+    _add_filter_args(sp)
+    sp.set_defaults(func=cmd_models)
 
-    sp = sub.add_parser("refresh", help="Re-scrape AA and re-cross-reference OR.")
-    sp.set_defaults(func=cmd_refresh)
+    sp = sub.add_parser("show", help="Full per-model profile (benchmarks, "
+                                     "pricing, OR slugs, modalities).")
+    sp.add_argument("slug", help="Exact slug, or unambiguous name substring.")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_show)
 
-    sp = sub.add_parser("find", help="Find models by name/slug/creator substring.")
-    sp.add_argument("pattern")
-    sp.set_defaults(func=cmd_find)
-
-    sp = sub.add_parser("info", help="Full info for one model (slug or fuzzy name).")
-    sp.add_argument("slug")
-    sp.set_defaults(func=cmd_info)
-
-    sp = sub.add_parser("list", help="Top-N models, sorted by intelligence or cost.")
-    sp.add_argument("--limit", type=int, default=20)
-    sp.add_argument("--by-cost", action="store_true",
-                    help="Sort cheapest-first instead of smartest-first.")
-    sp.add_argument("--max-cost", type=float, default=None)
-    _add_modality_args(sp)
-    sp.set_defaults(func=cmd_list)
-
-    sp = sub.add_parser("frontier", help="Intelligence vs. cost Pareto frontier.")
-    sp.add_argument("--min-cost", type=float, default=0.0)
-    sp.add_argument("--max-cost", type=float, default=None)
-    _add_modality_args(sp)
-    sp.set_defaults(func=cmd_frontier)
-
-    sp = sub.add_parser("recommend", help="Find best model under constraints.")
-    sp.add_argument("--intel-min", type=float, default=None,
-                    help="Minimum intelligence_index.")
-    sp.add_argument("--max-cost", type=float, default=None,
-                    help="Maximum cost to run intelligence index (USD).")
-    sp.add_argument("--context-min", type=int, default=None,
-                    help="Minimum context window in tokens.")
-    sp.add_argument("--reasoning", type=lambda x: x.lower() == "true",
-                    default=None, metavar="true|false",
-                    help="Filter reasoning vs non-reasoning models.")
-    sp.add_argument("--open-weights", action="store_true",
-                    help="Restrict to open-weights models.")
-    sp.add_argument("--limit", type=int, default=10)
-    _add_modality_args(sp)
-    sp.set_defaults(func=cmd_recommend)
-
-    sp = sub.add_parser("free", help="List models available free on OpenRouter.")
-    sp.add_argument("--text", action=argparse.BooleanOptionalAction, default=True)
-    sp.set_defaults(func=cmd_free)
+    sp = sub.add_parser("data", help="Data management (status, refresh).")
+    sp.add_argument("action", choices=["status", "refresh"])
+    sp.set_defaults(func=cmd_data)
 
     args = ap.parse_args()
-    if args.cmd != "refresh":
+    # `data refresh` is the only path that's allowed to run without cached data.
+    if not (args.cmd == "data" and args.action == "refresh"):
         ensure_data()
     return args.func(args) or 0
 

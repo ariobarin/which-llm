@@ -5,43 +5,39 @@ description: Look up current LLM intelligence, cost-to-run, benchmark scores, ca
 
 # which-llm
 
-Up-to-date data on ~520 LLMs scraped from artificialanalysis.ai and cross-referenced with the OpenRouter catalog. Trains-time knowledge of model lineups goes stale fast. Use this skill instead of guessing.
-
-## When to invoke
-
-Trigger on any of:
-
-- "Which model should I use for X?" / "What's the cheapest model with intelligence > N?"
-- "Is there a free version of model X?" / "What's the OpenRouter slug for X?"
-- "Compare model A vs B" / "Find me a vision model under $Y"
-- Picking a model when writing or modifying code that calls an LLM API
-- Recommending a model the user could swap in for cost or capability reasons
+Up-to-date data on ~520 LLMs scraped from artificialanalysis.ai and cross-referenced with the OpenRouter catalog. Trained-in model knowledge goes stale fast. Use this skill instead of guessing.
 
 ## Commands
 
-Run from this skill's directory. Always use `uv run python query.py <cmd>`.
+Three verbs. Run from this skill's directory.
 
-| Command | What it does |
+| Command | Use |
 |---|---|
-| `status` | Show data freshness, model count, whether OR enrichment ran. |
-| `refresh` | Re-scrape AA + re-cross-reference OR. Run if `status` reports age > 7 days. |
-| `find <pattern>` | Substring match on name / slug / creator. Returns matches sorted by intelligence. |
-| `info <slug>` | Full info for one model: benchmarks, pricing, OR slugs, modalities. Accepts fuzzy slug if unambiguous. |
-| `list [--limit N] [--by-cost] [--max-cost N]` | Top N models, default sorted by intelligence. |
-| `frontier [--max-cost N] [--min-cost N]` | Intelligence-vs-cost Pareto frontier. |
-| `recommend --intel-min N --max-cost M [--reasoning true] [--open-weights] [--context-min N]` | Best fit under constraints. |
-| `free` | All OR-free models, sorted by intelligence. |
+| `uv run python query.py models [<pattern>] [filters]` | Filter / rank / list models. Default: top 20 by intelligence. |
+| `uv run python query.py show <slug>` | Full profile for one model. Accepts fuzzy slug when unambiguous. |
+| `uv run python query.py data status` | Data freshness + model count. |
+| `uv run python query.py data refresh` | Re-scrape AA + re-cross-reference OR (~10s). |
 
-### Modality filters (all commands)
+### `models` flags
 
-- `--text` (default ON) / `--no-text`
-- `--image`, `--video`, `--audio` (opt-in; AND'd with text)
-- `--free` (only models with `:free` OpenRouter variant)
+| Flag | Meaning |
+|---|---|
+| `--top N` | Max rows (default 20; `0` = unlimited). |
+| `--sort intel\|cost\|ctx` | Primary sort key (default: intel descending). |
+| `--pareto` | Filter to cost-vs-intel Pareto frontier; ignores `--sort`. |
+| `--free` | Only models with a `:free` OpenRouter variant. |
+| `--intel-min N` | Minimum intelligence_index. |
+| `--max-cost N` / `--min-cost N` | Idx-run$ bounds (USD). |
+| `--context-min N` | Minimum context window in tokens. |
+| `--modality text,image,...` | Required input modalities (CSV). Default `text`. `any` to disable. |
+| `--reasoning` / `--no-reasoning` | Filter on reasoning capability. |
+| `--open-weights` / `--no-open-weights` | Filter on open-weights status. |
+| `--json` | Emit JSON instead of a table. |
 
 ## Key fields and their units
 
 - `intelligence_index`: composite 0-100 score across AA's benchmark suite (GPQA, HLE, MMLU-Pro, LiveCodeBench, MATH-500, AIME, SciCode, tau2, HumanEval, ...).
-- `intelligence_index_cost_usd`: USD to run AA's full benchmark suite on this model. Use this as a **relative** inference-cost signal — it's not a per-API-call price.
+- `intelligence_index_cost_usd` (table header `idx-run$`): USD to run AA's full benchmark suite once on this model. **Relative inference-cost proxy, not a per-call price.**
 - `price_1m_input_tokens` / `price_1m_output_tokens`: USD per million tokens. **Use these for actual API cost calculations.**
 - `openrouter_slug`: paid OR endpoint, e.g. `anthropic/claude-opus-4.7`. Goes straight into the OR API.
 - `openrouter_free_slug`: `:free` OR endpoint when available, e.g. `deepseek/deepseek-v4-flash:free`. **Caveat:** `:free` is a rate-limited promotional/community listing (often via Chutes or similar), not a tier of the same model. Different quantization, daily caps, no SLA. Recommend for prototyping only — flag this to the user when surfacing it.
@@ -54,20 +50,23 @@ The full enriched dataset lives in `artifacts/models_enriched.csv` (60+ columns)
 ## Examples
 
 ```text
-# What's the strongest model under $200 with image input?
-uv run python query.py recommend --intel-min 0 --max-cost 200 --image --limit 5
+# Strongest model under $200 with image input:
+uv run python query.py models --intel-min 0 --max-cost 200 --modality text,image --top 5
 
-# Show the free-tier landscape:
-uv run python query.py free
-
-# Look up a specific model:
-uv run python query.py info claude-opus-4-7
+# All free OpenRouter models, cheapest first:
+uv run python query.py models --free --sort cost --top 0
 
 # Cheapest model with intelligence above 50 that supports reasoning:
-uv run python query.py recommend --intel-min 50 --reasoning true
+uv run python query.py models --intel-min 50 --reasoning --sort cost --top 5
 
-# Compare options around the GPT-5 family:
-uv run python query.py find gpt-5
+# Pareto frontier under $750:
+uv run python query.py models --pareto --max-cost 750
+
+# Look up a specific model:
+uv run python query.py show claude-opus-4-7
+
+# Compare GPT-5 variants (substring match):
+uv run python query.py models gpt-5 --top 10
 ```
 
 ## When NOT to use
@@ -78,11 +77,11 @@ uv run python query.py find gpt-5
 
 ## Refresh policy
 
-Run `uv run python query.py refresh` if `status` reports age > 7 days, or before any pricing-sensitive recommendation. A refresh takes ~10 seconds (single HTTP GET to AA + one to OR + parse).
+Data is auto-refreshed daily by a GitHub Action; the snapshot shipped with the skill is rarely > 24h stale. Run `uv run python query.py data status` to check, and `data refresh` if needed. A manual refresh takes ~10s.
 
 ## Visual exploration (optional)
 
-`plot_pareto.py` renders the Intelligence-vs-Cost Pareto chart to `artifacts/pareto.png`. Same modality / free / cost flags as `query.py`. Useful when the user wants a visual, otherwise the CLI output is more agent-friendly.
+`plot_pareto.py` renders the Intelligence-vs-Cost Pareto chart to `artifacts/pareto.png`. Same modality / free / cost flags. Useful when the user wants a visual; otherwise the CLI output is more agent-friendly.
 
 ```text
 uv run python plot_pareto.py --max-cost 750 --near 15
