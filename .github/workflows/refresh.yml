@@ -10,7 +10,7 @@ on:
 
 defaults:
   run:
-    working-directory: plugins/which-llm
+    working-directory: plugins/which-llm/skills/which-llm
 
 jobs:
   refresh:
@@ -42,11 +42,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [[ -n "$(git status --porcelain plugins/which-llm/artifacts/)" ]]; then
-            git add plugins/which-llm/artifacts/models.csv \
-                    plugins/which-llm/artifacts/models.json \
-                    plugins/which-llm/artifacts/models_enriched.csv \
-                    plugins/which-llm/artifacts/openrouter.json
+          if [[ -n "$(git status --porcelain plugins/which-llm/skills/which-llm/artifacts/)" ]]; then
+            git add plugins/which-llm/skills/which-llm/artifacts/models.csv \
+                    plugins/which-llm/skills/which-llm/artifacts/models.json \
+                    plugins/which-llm/skills/which-llm/artifacts/models_enriched.csv \
+                    plugins/which-llm/skills/which-llm/artifacts/openrouter.json
             git commit -m "chore: weekly data refresh"
             git push
           else

@@ -25,9 +25,7 @@ That's it. Auto-updates when this repo gets a new release.
 
 ```bash
 git clone https://github.com/ariobarin/which-llm /tmp/which-llm
-cp -r /tmp/which-llm/plugins/which-llm/. ~/.claude/skills/which-llm/
-mv ~/.claude/skills/which-llm/skills/which-llm/SKILL.md ~/.claude/skills/which-llm/SKILL.md
-rmdir ~/.claude/skills/which-llm/skills/which-llm ~/.claude/skills/which-llm/skills
+cp -r /tmp/which-llm/plugins/which-llm/skills/which-llm ~/.claude/skills/which-llm
 ```
 
 Requirements: Python 3.10+ and [`uv`](https://docs.astral.sh/uv/). The skill
