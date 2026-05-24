@@ -28,6 +28,7 @@ ART = Path(__file__).parent / "artifacts"
 AA_CSV = ART / "models.csv"
 OR_JSON = ART / "openrouter.json"
 OUT_CSV = ART / "models_enriched.csv"
+UNMATCHED_TXT = ART / "unmatched.txt"
 
 OR_URL = "https://openrouter.ai/api/v1/models"
 UA = "Mozilla/5.0 (compatible; aa-scrape/1.0)"
@@ -222,17 +223,23 @@ def main() -> int:
         w.writerows(enriched)
     print(f"  wrote {OUT_CSV}")
 
+    # Persist unmatched slugs to a tracked artifact so match-rate regressions
+    # show up in `git diff` instead of vanishing into log noise.
+    unmatched_sorted = sorted(unmatched)
+    UNMATCHED_TXT.write_text(
+        f"# Unmatched non-deprecated AA models ({len(unmatched_sorted)} total)\n"
+        f"# Run: uv run python enrich.py  (regenerates this file)\n"
+        + "\n".join(unmatched_sorted) + "\n",
+        encoding="utf-8",
+    )
+
     print(f"\nMatched {matched}/{len(aa_rows)} AA models to OpenRouter "
           f"({100*matched/len(aa_rows):.1f}%)")
     print(f"  ...of which {free_matched} have a :free OR variant")
-    print(f"  Unmatched (non-deprecated): {len(unmatched)}")
+    print(f"  Unmatched (non-deprecated): {len(unmatched)}  -> {UNMATCHED_TXT.name}")
     print("\nSample matches:")
     for aa, paid, free in sample_matches:
         print(f"  {aa:45s} -> paid={paid or '-'}  free={free or '-'}")
-    if unmatched:
-        print(f"\nFirst 20 unmatched (non-deprecated):")
-        for u in unmatched[:20]:
-            print(f"  {u}")
     return 0
 
 

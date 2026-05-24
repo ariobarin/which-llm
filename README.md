@@ -5,9 +5,27 @@
 [![Last refresh](https://img.shields.io/github/last-commit/ariobarin/which-llm?label=last%20refresh)](https://github.com/ariobarin/which-llm/commits/main)
 [![GitHub stars](https://img.shields.io/github/stars/ariobarin/which-llm?style=flat&logo=github)](https://github.com/ariobarin/which-llm/stargazers)
 
-> **A Claude Code skill that gives your agent current LLM intelligence, cost, capability, and OpenRouter slug data for 520+ models — refreshed daily.**
+LLM lineups churn every few weeks; your agent's training data doesn't. Ask "which model should I use for X" and this skill answers from a current scrape of [Artificial Analysis](https://artificialanalysis.ai/models), cross-referenced with the [OpenRouter](https://openrouter.ai) catalog (including which slugs have a `:free` tier). 520+ models, refreshed daily.
 
-LLM lineups churn every few weeks; your agent's training data doesn't. Ask "which model should I use for X" and this skill answers from a current scrape of [Artificial Analysis](https://artificialanalysis.ai/models), cross-referenced with the [OpenRouter](https://openrouter.ai) catalog (including which slugs have a `:free` tier).
+## Install
+
+```text
+/plugin marketplace add ariobarin/which-llm
+/plugin install which-llm@which-llm
+```
+
+Auto-updates when this repo ships a new version. Requires Python 3.10+ and [`uv`](https://docs.astral.sh/uv/).
+
+<details>
+<summary>Direct install without the plugin system</summary>
+
+```bash
+git clone https://github.com/ariobarin/which-llm /tmp/which-llm
+cp -r /tmp/which-llm/plugins/which-llm/skills/which-llm ~/.claude/skills/which-llm
+```
+</details>
+
+## Example output
 
 ```text
 $ uv run python query.py recommend --intel-min 50 --max-cost 500 --image --limit 5
@@ -19,27 +37,7 @@ grok-4-3                Grok 4.3 (high)                          xAI      53.2  
 mimo-v2-5-pro           MiMo-V2.5-Pro                            Xiaomi   53.8   $461.59   1000000   -     xiaomi/mimo-v2.5-pro
 ```
 
-> `idx-run$` is the USD to run AA's full benchmark suite once on the model. It's a relative inference-cost proxy, **not** a per-call price. For actual API pricing, use `price_1m_input_tokens` and `price_1m_output_tokens`.
-
-## Install
-
-### Via Claude Code plugin marketplace (recommended)
-
-```text
-/plugin marketplace add ariobarin/which-llm
-/plugin install which-llm@which-llm
-```
-
-Auto-updates whenever this repo ships a new version.
-
-### Direct (no plugin system)
-
-```bash
-git clone https://github.com/ariobarin/which-llm /tmp/which-llm
-cp -r /tmp/which-llm/plugins/which-llm/skills/which-llm ~/.claude/skills/which-llm
-```
-
-Requirements: Python 3.10+ and [`uv`](https://docs.astral.sh/uv/). The shipped data snapshot is auto-refreshed daily by GitHub Actions — you generally don't need to refresh manually.
+`idx-run$` = USD to run AA's full benchmark suite once on the model — a relative inference-cost proxy, *not* a per-call price. For actual API pricing, use `price_1m_input_tokens` / `price_1m_output_tokens`.
 
 ## What your agent will do with it
 

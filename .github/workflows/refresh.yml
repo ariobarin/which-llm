@@ -46,7 +46,8 @@ jobs:
             git add plugins/which-llm/skills/which-llm/artifacts/models.csv \
                     plugins/which-llm/skills/which-llm/artifacts/models.json \
                     plugins/which-llm/skills/which-llm/artifacts/models_enriched.csv \
-                    plugins/which-llm/skills/which-llm/artifacts/openrouter.json
+                    plugins/which-llm/skills/which-llm/artifacts/openrouter.json \
+                    plugins/which-llm/skills/which-llm/artifacts/unmatched.txt
             git commit -m "chore: daily data refresh"
             git push
           else

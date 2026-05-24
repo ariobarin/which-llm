@@ -256,6 +256,25 @@ def main() -> int:
     models = find_default_data(stream)
     print(f"Parsed {len(models)} models from defaultData")
 
+    # Catastrophic-drop guard: if we already have a known-good snapshot and the
+    # new parse comes back with <80% of that count, refuse to overwrite. Almost
+    # always means AA changed page structure and we're parsing garbage.
+    if JSON_PATH.exists():
+        try:
+            prev = json.loads(JSON_PATH.read_text(encoding="utf-8"))
+            if isinstance(prev, list) and len(prev) > 0:
+                ratio = len(models) / len(prev)
+                if ratio < 0.8:
+                    print(
+                        f"ABORT: parsed {len(models)} models, previous snapshot "
+                        f"had {len(prev)} ({ratio:.0%}). Refusing to overwrite. "
+                        f"Investigate before re-running.",
+                        file=sys.stderr,
+                    )
+                    return 2
+        except (json.JSONDecodeError, OSError):
+            pass  # corrupt or missing previous snapshot — proceed
+
     ART.mkdir(parents=True, exist_ok=True)
     JSON_PATH.write_text(json.dumps(models, indent=2), encoding="utf-8")
     print(f"  wrote {JSON_PATH} ({JSON_PATH.stat().st_size:,} bytes)")
