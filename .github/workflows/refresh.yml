@@ -1,7 +1,8 @@
 name: Daily data refresh
 
 # Re-scrape Artificial Analysis + OpenRouter daily so the snapshot shipped
-# in the repo stays current. Also triggerable manually.
+# in the repo stays current. Also triggerable manually. Actions pinned to
+# commit SHAs to close the floating-tag supply-chain vector.
 
 on:
   schedule:
@@ -12,16 +13,20 @@ defaults:
   run:
     working-directory: plugins/which-llm/skills/which-llm
 
+permissions:
+  contents: write
+  issues: write  # for the failure-issue-opener step
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
+      # actions/checkout@v4 (resolved 2026-05-23)
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
+      # astral-sh/setup-uv@v3 (resolved 2026-05-23)
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39
         with:
           enable-cache: true
 
@@ -52,4 +57,35 @@ jobs:
             git push
           else
             echo "No artifact changes; nothing to commit."
+          fi
+
+      - name: Open issue if any earlier step failed
+        if: failure()
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BODY=$(cat <<EOF
+          The daily refresh workflow failed.
+
+          Run: $RUN_URL
+
+          Likely causes:
+          - Artificial Analysis changed the page structure (scrape.py parser broke)
+          - Catastrophic-drop guard tripped (>20% fewer models parsed than the prior snapshot)
+          - Transient network failure on AA or OpenRouter (re-running may succeed)
+          - GH Actions runner / uv / Python tooling issue
+
+          Investigate the failed step's logs in the run above.
+          EOF
+          )
+          # De-dupe: don't open a new issue if there's already one open for refresh failures.
+          EXISTING=$(gh issue list --state open --search "Daily refresh failed in:title" --json number --jq '.[0].number' || echo "")
+          if [[ -z "$EXISTING" ]]; then
+            gh issue create \
+              --title "Daily refresh failed $(date -u +%Y-%m-%d)" \
+              --body "$BODY"
+          else
+            gh issue comment "$EXISTING" --body "Another failure: $RUN_URL"
           fi
