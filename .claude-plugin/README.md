@@ -4,8 +4,8 @@ This directory declares the repo as a Claude Code **plugin marketplace** so
 users can install which-llm with:
 
 ```text
-/plugin marketplace add Doomsy1/which-llm
-/plugin install which-llm@Doomsy1
+/plugin marketplace add ariobarin/which-llm
+/plugin install which-llm@ariobarin
 ```
 
 ## Maintenance

@@ -1,7 +1,7 @@
 {
   "name": "which-llm",
   "owner": {
-    "name": "Doomsy1"
+    "name": "ariobarin"
   },
   "plugins": [
     {
@@ -9,7 +9,7 @@
       "source": ".",
       "version": "0.1.0",
       "description": "Look up current LLM intelligence, cost, capabilities, and OpenRouter slugs (incl. free tier) from Artificial Analysis.",
-      "homepage": "https://github.com/Doomsy1/which-llm",
+      "homepage": "https://github.com/ariobarin/which-llm",
       "keywords": ["llm", "model-selection", "openrouter", "artificial-analysis", "pricing"]
     }
   ]

@@ -16,10 +16,10 @@ Drop it next to your other Claude Code skills:
 
 ```bash
 # Globally, for every project:
-git clone https://github.com/Doomsy1/which-llm ~/.claude/skills/which-llm
+git clone https://github.com/ariobarin/which-llm ~/.claude/skills/which-llm
 
 # Or just for one project:
-git clone https://github.com/Doomsy1/which-llm <project>/.claude/skills/which-llm
+git clone https://github.com/ariobarin/which-llm <project>/.claude/skills/which-llm
 ```
 
 Requirements: Python 3.10+ and [`uv`](https://docs.astral.sh/uv/). The skill
