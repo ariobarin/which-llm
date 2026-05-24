@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "which-llm",
-      "source": ".",
+      "source": "./plugins/which-llm",
       "version": "0.1.0",
       "description": "Look up current LLM intelligence, cost, capabilities, and OpenRouter slugs (incl. free tier) from Artificial Analysis.",
       "homepage": "https://github.com/ariobarin/which-llm",

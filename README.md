@@ -12,18 +12,26 @@ landscape rather than last year's.
 
 ## Install
 
-Drop it next to your other Claude Code skills:
+### Via Claude Code plugin marketplace (recommended)
+
+```text
+/plugin marketplace add ariobarin/which-llm
+/plugin install which-llm@which-llm
+```
+
+That's it. Auto-updates when this repo gets a new release.
+
+### Direct (no plugin system)
 
 ```bash
-# Globally, for every project:
-git clone https://github.com/ariobarin/which-llm ~/.claude/skills/which-llm
-
-# Or just for one project:
-git clone https://github.com/ariobarin/which-llm <project>/.claude/skills/which-llm
+git clone https://github.com/ariobarin/which-llm /tmp/which-llm
+cp -r /tmp/which-llm/plugins/which-llm/. ~/.claude/skills/which-llm/
+mv ~/.claude/skills/which-llm/skills/which-llm/SKILL.md ~/.claude/skills/which-llm/SKILL.md
+rmdir ~/.claude/skills/which-llm/skills/which-llm ~/.claude/skills/which-llm/skills
 ```
 
 Requirements: Python 3.10+ and [`uv`](https://docs.astral.sh/uv/). The skill
-ships a recent data snapshot so you can use it immediately; run
+ships a recent data snapshot so it works immediately; run
 `uv run py query.py refresh` from the skill directory to update.
 
 ## Demo
