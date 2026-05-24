@@ -1,14 +1,25 @@
 # which-llm
 
-A Claude Code skill that gives your agent up-to-date data on ~520 LLMs:
-intelligence scores, cost-to-run, benchmark breakdowns, capabilities, and
-OpenRouter slugs (including which ones have a `:free` tier).
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Daily refresh](https://img.shields.io/github/actions/workflow/status/ariobarin/which-llm/refresh.yml?label=daily%20refresh)](https://github.com/ariobarin/which-llm/actions/workflows/refresh.yml)
+[![Last refresh](https://img.shields.io/github/last-commit/ariobarin/which-llm?label=last%20refresh)](https://github.com/ariobarin/which-llm/commits/main)
+[![GitHub stars](https://img.shields.io/github/stars/ariobarin/which-llm?style=social)](https://github.com/ariobarin/which-llm/stargazers)
 
-Trained-in model knowledge goes stale within months. This skill scrapes
-[artificialanalysis.ai](https://artificialanalysis.ai/models) on demand and
-cross-references it with the OpenRouter catalog, so when you ask Claude
-"which model should I use for X" you get an answer based on this week's
-landscape rather than last year's.
+> **A Claude Code skill that gives your agent current LLM intelligence, cost, capability, and OpenRouter slug data for 520+ models — refreshed daily.**
+
+LLM lineups churn every few weeks; your agent's training data doesn't. Ask "which model should I use for X" and this skill answers from a current scrape of [Artificial Analysis](https://artificialanalysis.ai/models), cross-referenced with the [OpenRouter](https://openrouter.ai) catalog (including which slugs have a `:free` tier).
+
+```text
+$ uv run py query.py recommend --intel-min 50 --max-cost 500 --image --limit 5
+
+slug                    name                                     creator  intel  idx-run$  ctx       free  openrouter
+----------------------  ---------------------------------------  -------  -----  --------  --------  ----  ----------------------------
+deepseek-v4-pro         DeepSeek V4 Pro (Reasoning, Max Effort)  DeepSeek 51.5   $267.82   1000000   -     deepseek/deepseek-v4-pro
+grok-4-3                Grok 4.3 (high)                          xAI      53.2   $395.17   1000000   -     x-ai/grok-4.3
+mimo-v2-5-pro           MiMo-V2.5-Pro                            Xiaomi   53.8   $461.59   1000000   -     xiaomi/mimo-v2.5-pro
+```
+
+> `idx-run$` is the USD to run AA's full benchmark suite once on the model. It's a relative inference-cost proxy, **not** a per-call price. For actual API pricing, use `price_1m_input_tokens` and `price_1m_output_tokens`.
 
 ## Install
 
@@ -19,7 +30,7 @@ landscape rather than last year's.
 /plugin install which-llm@which-llm
 ```
 
-That's it. Auto-updates when this repo gets a new release.
+Auto-updates whenever this repo ships a new version.
 
 ### Direct (no plugin system)
 
@@ -28,83 +39,63 @@ git clone https://github.com/ariobarin/which-llm /tmp/which-llm
 cp -r /tmp/which-llm/plugins/which-llm/skills/which-llm ~/.claude/skills/which-llm
 ```
 
-Requirements: Python 3.10+ and [`uv`](https://docs.astral.sh/uv/). The skill
-ships a recent data snapshot so it works immediately; run
-`uv run py query.py refresh` from the skill directory to update.
+Requirements: Python 3.10+ and [`uv`](https://docs.astral.sh/uv/). The shipped data snapshot is auto-refreshed daily by GitHub Actions — you generally don't need to refresh manually.
 
-## Demo
+## What your agent will do with it
 
-Ask Claude any of these and the skill should activate:
+Trigger phrases that activate the skill:
 
 > *"I need a vision model under $500 with reasoning. What are my options?"*
->
 > *"Is there a free version of DeepSeek V4 Flash on OpenRouter?"*
->
-> *"What's the cheapest model with an intelligence index above 50?"*
->
-> *"Compare GPT-5.5, Claude Opus 4.7, and Gemini 3.1 Pro on cost vs intelligence."*
+> *"Cheapest model with intelligence > 50?"*
+> *"Compare GPT-5.5, Claude Opus 4.7, and Gemini 3.1 Pro."*
 
-Under the hood it runs short `query.py` commands. For example:
-
-```
-$ uv run py query.py recommend --intel-min 50 --max-cost 1000 --image --limit 5
-
-slug                    name                    creator  intel  cost     ctx       free  openrouter
-----------------------  ----------------------  -------  -----  -------  --------  ----  -----------------------------
-grok-4-3                Grok 4.3 (high)         xAI      53.2   $395.17  1000000   -     x-ai/grok-4.3
-gpt-5-5-low             GPT-5.5 (low)           OpenAI   50.8   $500.67   922000   -     openai/gpt-5.5
-gemini-3-1-pro-preview  Gemini 3.1 Pro Preview  Google   57.2   $892.28  1000000   -     google/gemini-3.1-pro-preview
-kimi-k2-6               Kimi K2.6               Kimi     53.9   $947.87   256000   -     moonshotai/kimi-k2.6
-gpt-5-5-medium          GPT-5.5 (medium)        OpenAI   56.7  $1,199.   922000   -     openai/gpt-5.5
-```
+Under the hood the agent runs short `query.py` commands and reasons over the output.
 
 ## Commands
 
 | Command | Use |
 |---|---|
-| `query.py status` | Data freshness, model count, OR enrichment status |
-| `query.py refresh` | Re-scrape AA + re-cross-reference OR (~10s) |
+| `query.py status` | Data freshness, model count, OpenRouter enrichment status |
+| `query.py refresh` | Re-scrape AA + cross-reference OR (~10s) |
 | `query.py find <pattern>` | Substring match on name / slug / creator |
-| `query.py info <slug>` | Full info for one model |
+| `query.py info <slug>` | Full per-model info: benchmarks, pricing, OR slugs, modalities |
 | `query.py list [--limit N] [--by-cost] [--max-cost N]` | Top N |
 | `query.py frontier` | Cost-vs-intelligence Pareto frontier |
-| `query.py recommend --intel-min N --max-cost M [...]` | Best fit |
-| `query.py free` | All `:free` OR models |
+| `query.py recommend --intel-min N --max-cost M [...]` | Best fit under constraints |
+| `query.py free` | All `:free` OpenRouter models |
 
-All commands accept modality filters: `--text` (default), `--no-text`,
-`--image`, `--video`, `--audio`, `--free`. They AND together.
+All commands accept modality filters: `--text` (default), `--no-text`, `--image`, `--video`, `--audio`, `--free`. They AND together.
 
-For visual exploration there's also `plot_pareto.py` which renders the
-Intelligence-vs-Cost Pareto chart.
+`plot_pareto.py` renders the Intelligence-vs-Cost Pareto chart as a PNG for visual exploration.
 
-## What gets cached
+## How it works
+
+1. `scrape.py` fetches `artificialanalysis.ai/models` (an 8 MB HTML page) and parses the Next.js RSC payload, extracting every model object with its full schema — 60+ fields including individual benchmarks, pricing tiers, modality flags, context window, reasoning capability.
+2. `enrich.py` fetches the OpenRouter catalog and matches each AA model against it by name, with token-multiset fallback for word-order differences. Current match rate ~51% — the rest are mostly models OpenRouter doesn't carry.
+3. `query.py` reads the merged CSV and answers structured questions.
+4. A daily GitHub Action re-runs steps 1-2 and commits any changes, so the shipped snapshot is rarely more than 24h stale.
+
+No API keys, no auth, no rate-limited services — just public pages.
+
+## Data files
 
 | File | Contents |
 |---|---|
-| `artifacts/models.csv` | 60-column flat per-model rows |
-| `artifacts/models.json` | Full original AA fields (every benchmark, every modality flag) |
-| `artifacts/models_enriched.csv` | Same as `models.csv` plus OpenRouter slugs / free flag |
+| `artifacts/models_enriched.csv` | The full merged dataset (60+ columns per row) |
+| `artifacts/models.json` | Original AA fields, preserved exactly |
 | `artifacts/openrouter.json` | Raw OpenRouter catalog |
-
-## Refresh policy
-
-The skill ships a recent snapshot. Run `query.py refresh` weekly, or before
-any pricing-sensitive decision. `query.py status` warns when data is older
-than 7 days.
 
 ## When NOT to use
 
-- Benchmarks Artificial Analysis doesn't track (domain-specific evals).
-- Models too new for AA to have indexed yet (<1 week post-release sometimes).
-- For an authoritative per-API-call price on a non-OR provider — verify
-  directly with that provider.
+- Benchmarks AA doesn't track (domain-specific evals).
+- Models too new for AA to have indexed (<1 week post-release sometimes).
+- For an authoritative per-API-call price on a non-OR provider — verify directly with that provider.
 
 ## License
 
-MIT. See `LICENSE`.
+MIT. See [`LICENSE`](LICENSE).
 
 ## Credits
 
-Data from [Artificial Analysis](https://artificialanalysis.ai) and
-[OpenRouter](https://openrouter.ai). This skill scrapes both public pages /
-APIs and does not require credentials.
+Data from [Artificial Analysis](https://artificialanalysis.ai) and [OpenRouter](https://openrouter.ai). Scrapes only public pages, no credentials required.

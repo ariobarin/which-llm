@@ -1,11 +1,11 @@
-name: Weekly data refresh
+name: Daily data refresh
 
-# Re-scrape Artificial Analysis + OpenRouter once a week so the snapshot
-# shipped in the repo never goes stale. Also triggerable manually.
+# Re-scrape Artificial Analysis + OpenRouter daily so the snapshot shipped
+# in the repo stays current. Also triggerable manually.
 
 on:
   schedule:
-    - cron: "0 12 * * 1"  # Mondays at 12:00 UTC
+    - cron: "0 12 * * *"  # Every day at 12:00 UTC
   workflow_dispatch:
 
 defaults:
@@ -47,7 +47,7 @@ jobs:
                     plugins/which-llm/skills/which-llm/artifacts/models.json \
                     plugins/which-llm/skills/which-llm/artifacts/models_enriched.csv \
                     plugins/which-llm/skills/which-llm/artifacts/openrouter.json
-            git commit -m "chore: weekly data refresh"
+            git commit -m "chore: daily data refresh"
             git push
           else
             echo "No artifact changes; nothing to commit."
