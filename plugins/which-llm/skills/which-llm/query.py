@@ -205,7 +205,7 @@ def cmd_find(args) -> int:
             for r in matches
         ],
         [("slug", "slug", 0), ("name", "name", 0), ("creator", "creator", 0),
-         ("intel", "intel", 5), ("cost", "cost", 10)],
+         ("intel", "intel", 5), ("cost", "idx-run$", 10)],
     )
     print(f"\n# {len(matches)} matches")
     return 0
@@ -306,7 +306,7 @@ def cmd_list(args) -> int:
     _print_table(
         formatted,
         [("slug", "slug", 0), ("name", "name", 0), ("creator", "creator", 0),
-         ("intel", "intel", 5), ("cost", "cost", 10), ("free", "free", 4),
+         ("intel", "intel", 5), ("cost", "idx-run$", 10), ("free", "free", 4),
          ("or_slug", "openrouter", 0)],
     )
     return 0
@@ -347,7 +347,7 @@ def cmd_frontier(args) -> int:
     _print_table(
         formatted,
         [("slug", "slug", 0), ("name", "name", 0), ("creator", "creator", 0),
-         ("intel", "intel", 5), ("cost", "cost", 10), ("free", "free", 4),
+         ("intel", "intel", 5), ("cost", "idx-run$", 10), ("free", "free", 4),
          ("or_slug", "openrouter", 0)],
     )
     return 0
@@ -389,7 +389,7 @@ def cmd_recommend(args) -> int:
     _print_table(
         formatted,
         [("slug", "slug", 0), ("name", "name", 0), ("creator", "creator", 0),
-         ("intel", "intel", 5), ("cost", "cost", 10), ("ctx", "ctx", 8),
+         ("intel", "intel", 5), ("cost", "idx-run$", 10), ("ctx", "ctx", 8),
          ("free", "free", 4), ("or_slug", "openrouter", 0)],
     )
     return 0
@@ -411,7 +411,7 @@ def cmd_free(args) -> int:
     _print_table(
         formatted,
         [("or_slug", "openrouter slug", 0), ("intel", "intel", 5),
-         ("cost", "cost", 10), ("name", "name", 0), ("creator", "creator", 0)],
+         ("cost", "idx-run$", 10), ("name", "name", 0), ("creator", "creator", 0)],
     )
     print(f"\n# {len(rows)} free models on OpenRouter")
     return 0
