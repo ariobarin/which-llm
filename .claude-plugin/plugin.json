@@ -1,0 +1,5 @@
+{
+  "name": "which-llm",
+  "description": "Look up current LLM intelligence, cost, capabilities, and OpenRouter slugs (including :free tier) from Artificial Analysis.",
+  "version": "0.1.0"
+}

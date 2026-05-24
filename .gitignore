@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Regenerable artifacts. The CSV/JSON snapshots are tracked so the skill
+# works the moment someone clones it; the 8MB scraped HTML and the plot
+# output are not — they rebuild trivially.
+artifacts/models.html
+artifacts/pareto.png
+artifacts/pareto_free.png
