@@ -19,7 +19,7 @@ Trigger on any of:
 
 ## Commands
 
-Run from this skill's directory. Always use `uv run py query.py <cmd>`.
+Run from this skill's directory. Always use `uv run python query.py <cmd>`.
 
 | Command | What it does |
 |---|---|
@@ -55,19 +55,19 @@ The full enriched dataset lives in `artifacts/models_enriched.csv` (60+ columns)
 
 ```text
 # What's the strongest model under $200 with image input?
-uv run py query.py recommend --intel-min 0 --max-cost 200 --image --limit 5
+uv run python query.py recommend --intel-min 0 --max-cost 200 --image --limit 5
 
 # Show the free-tier landscape:
-uv run py query.py free
+uv run python query.py free
 
 # Look up a specific model:
-uv run py query.py info claude-opus-4-7
+uv run python query.py info claude-opus-4-7
 
 # Cheapest model with intelligence above 50 that supports reasoning:
-uv run py query.py recommend --intel-min 50 --reasoning true
+uv run python query.py recommend --intel-min 50 --reasoning true
 
 # Compare options around the GPT-5 family:
-uv run py query.py find gpt-5
+uv run python query.py find gpt-5
 ```
 
 ## When NOT to use
@@ -78,13 +78,13 @@ uv run py query.py find gpt-5
 
 ## Refresh policy
 
-Run `uv run py query.py refresh` if `status` reports age > 7 days, or before any pricing-sensitive recommendation. A refresh takes ~10 seconds (single HTTP GET to AA + one to OR + parse).
+Run `uv run python query.py refresh` if `status` reports age > 7 days, or before any pricing-sensitive recommendation. A refresh takes ~10 seconds (single HTTP GET to AA + one to OR + parse).
 
 ## Visual exploration (optional)
 
 `plot_pareto.py` renders the Intelligence-vs-Cost Pareto chart to `artifacts/pareto.png`. Same modality / free / cost flags as `query.py`. Useful when the user wants a visual, otherwise the CLI output is more agent-friendly.
 
 ```text
-uv run py plot_pareto.py --max-cost 750 --near 15
-uv run py plot_pareto.py --free-only --max-cost 100000
+uv run python plot_pareto.py --max-cost 750 --near 15
+uv run python plot_pareto.py --free-only --max-cost 100000
 ```

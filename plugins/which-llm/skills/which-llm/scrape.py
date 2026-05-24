@@ -8,8 +8,8 @@ payload, locates the full model array (the `defaultData` prop), and dumps:
   artifacts/models.csv           flat per-model rows for quick analysis
 
 Run:
-  uv run py scrape.py            use cached HTML if present
-  uv run py scrape.py --refresh  re-download HTML
+  uv run python scrape.py            use cached HTML if present
+  uv run python scrape.py --refresh  re-download HTML
 """
 from __future__ import annotations
 

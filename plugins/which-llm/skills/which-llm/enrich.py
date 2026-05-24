@@ -11,8 +11,8 @@ columns:
 Matching is best-effort via name normalization. Mismatches are printed at
 the end so the schema drift can be tracked over time.
 
-  uv run py enrich.py
-  uv run py enrich.py --refresh   re-fetches openrouter.json
+  uv run python enrich.py
+  uv run python enrich.py --refresh   re-fetches openrouter.json
 """
 from __future__ import annotations
 

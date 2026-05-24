@@ -32,10 +32,10 @@ jobs:
         run: uv sync --frozen
 
       - name: Refresh AA scrape
-        run: uv run py scrape.py --refresh
+        run: uv run python scrape.py --refresh
 
       - name: Refresh OpenRouter enrichment
-        run: uv run py enrich.py --refresh
+        run: uv run python enrich.py --refresh
 
       - name: Commit + push if data changed
         working-directory: ${{ github.workspace }}

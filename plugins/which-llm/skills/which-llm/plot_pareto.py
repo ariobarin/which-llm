@@ -1,7 +1,7 @@
 """Plot the Intelligence vs. Cost Pareto frontier from scraped AA data.
 
-  uv run py plot_pareto.py
-  uv run py plot_pareto.py --max-cost 750 --near 3 --out artifacts/pareto.png
+  uv run python plot_pareto.py
+  uv run python plot_pareto.py --max-cost 750 --near 3 --out artifacts/pareto.png
 
 Conventions match the AA chart: y = Intelligence Index (linear),
 x = cost to run the Intelligence Index in USD (log base 2). Models with

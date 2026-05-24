@@ -3,14 +3,14 @@
 Subcommands all produce compact, structured output meant to be consumed by an
 LLM agent without further parsing.
 
-  uv run py query.py find claude          # find models by name/slug substring
-  uv run py query.py info claude-opus-4-7 # full info for one model
-  uv run py query.py list --limit 20      # top N by intelligence
-  uv run py query.py frontier             # Pareto frontier (cost vs intel)
-  uv run py query.py recommend --intel-min 50 --max-cost 2000 --image
-  uv run py query.py free                 # OR-free models, sorted by intel
-  uv run py query.py refresh              # re-scrape AA + cross-ref OR
-  uv run py query.py status               # data freshness check
+  uv run python query.py find claude          # find models by name/slug substring
+  uv run python query.py info claude-opus-4-7 # full info for one model
+  uv run python query.py list --limit 20      # top N by intelligence
+  uv run python query.py frontier             # Pareto frontier (cost vs intel)
+  uv run python query.py recommend --intel-min 50 --max-cost 2000 --image
+  uv run python query.py free                 # OR-free models, sorted by intel
+  uv run python query.py refresh              # re-scrape AA + cross-ref OR
+  uv run python query.py status               # data freshness check
 """
 from __future__ import annotations
 
@@ -60,8 +60,8 @@ def ensure_data() -> None:
     if not (ENRICHED_CSV.exists() or BASE_CSV.exists()):
         print("# No cached data found, fetching from Artificial Analysis...",
               file=sys.stderr)
-        subprocess.run(["uv", "run", "py", "scrape.py"], cwd=HERE, check=True)
-        subprocess.run(["uv", "run", "py", "enrich.py"], cwd=HERE, check=True)
+        subprocess.run(["uv", "run", "python", "scrape.py"], cwd=HERE, check=True)
+        subprocess.run(["uv", "run", "python", "enrich.py"], cwd=HERE, check=True)
 
 
 def load_rows(
@@ -159,14 +159,14 @@ def _cost_sort_key(r: dict) -> float:
 def cmd_status(args) -> int:
     p = _csv_path()
     if not p.exists():
-        print("no data cached. run: uv run py query.py refresh")
+        print("no data cached. run: uv run python query.py refresh")
         return 1
     age = _data_age_days()
     print(f"data file:   {p}")
     print(f"data age:    {age:.1f} days")
     if age and age > STALE_AFTER_DAYS:
         print(f"WARN: data older than {STALE_AFTER_DAYS} days. "
-              f"Run: uv run py query.py refresh")
+              f"Run: uv run python query.py refresh")
     enriched = "yes" if p == ENRICHED_CSV else "no (run enrich.py)"
     print(f"openrouter:  {enriched}")
     rows = load_rows(require_text=False, include_deprecated=True)
@@ -175,8 +175,8 @@ def cmd_status(args) -> int:
 
 
 def cmd_refresh(args) -> int:
-    subprocess.run(["uv", "run", "py", "scrape.py", "--refresh"], cwd=HERE, check=True)
-    subprocess.run(["uv", "run", "py", "enrich.py", "--refresh"], cwd=HERE, check=True)
+    subprocess.run(["uv", "run", "python", "scrape.py", "--refresh"], cwd=HERE, check=True)
+    subprocess.run(["uv", "run", "python", "enrich.py", "--refresh"], cwd=HERE, check=True)
     return 0
 
 

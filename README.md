@@ -3,14 +3,14 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Daily refresh](https://img.shields.io/github/actions/workflow/status/ariobarin/which-llm/refresh.yml?label=daily%20refresh)](https://github.com/ariobarin/which-llm/actions/workflows/refresh.yml)
 [![Last refresh](https://img.shields.io/github/last-commit/ariobarin/which-llm?label=last%20refresh)](https://github.com/ariobarin/which-llm/commits/main)
-[![GitHub stars](https://img.shields.io/github/stars/ariobarin/which-llm?style=social)](https://github.com/ariobarin/which-llm/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/ariobarin/which-llm?style=flat&logo=github)](https://github.com/ariobarin/which-llm/stargazers)
 
 > **A Claude Code skill that gives your agent current LLM intelligence, cost, capability, and OpenRouter slug data for 520+ models — refreshed daily.**
 
 LLM lineups churn every few weeks; your agent's training data doesn't. Ask "which model should I use for X" and this skill answers from a current scrape of [Artificial Analysis](https://artificialanalysis.ai/models), cross-referenced with the [OpenRouter](https://openrouter.ai) catalog (including which slugs have a `:free` tier).
 
 ```text
-$ uv run py query.py recommend --intel-min 50 --max-cost 500 --image --limit 5
+$ uv run python query.py recommend --intel-min 50 --max-cost 500 --image --limit 5
 
 slug                    name                                     creator  intel  idx-run$  ctx       free  openrouter
 ----------------------  ---------------------------------------  -------  -----  --------  --------  ----  ----------------------------
