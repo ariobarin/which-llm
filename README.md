@@ -39,6 +39,8 @@ mimo-v2-5-pro           MiMo-V2.5-Pro                            Xiaomi   53.8  
 
 `idx-run$` = USD to run AA's full benchmark suite once on the model — a relative inference-cost proxy, *not* a per-call price. For actual API pricing, use `price_1m_input_tokens` / `price_1m_output_tokens`.
 
+> ⚠ **About `:free` OpenRouter slugs:** These aren't "the free version of the model" — they're community / promotional endpoints (often via Chutes or similar) with aggressive rate limits, daily caps, and sometimes different quantization than the paid listing. Great for prototyping; don't wire them into production without testing throughput against your real load.
+
 ## What your agent will do with it
 
 Trigger phrases that activate the skill:

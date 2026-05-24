@@ -44,7 +44,7 @@ Run from this skill's directory. Always use `uv run python query.py <cmd>`.
 - `intelligence_index_cost_usd`: USD to run AA's full benchmark suite on this model. Use this as a **relative** inference-cost signal — it's not a per-API-call price.
 - `price_1m_input_tokens` / `price_1m_output_tokens`: USD per million tokens. **Use these for actual API cost calculations.**
 - `openrouter_slug`: paid OR endpoint, e.g. `anthropic/claude-opus-4.7`. Goes straight into the OR API.
-- `openrouter_free_slug`: free OR endpoint when available, e.g. `deepseek/deepseek-v4-flash:free`.
+- `openrouter_free_slug`: `:free` OR endpoint when available, e.g. `deepseek/deepseek-v4-flash:free`. **Caveat:** `:free` is a rate-limited promotional/community listing (often via Chutes or similar), not a tier of the same model. Different quantization, daily caps, no SLA. Recommend for prototyping only — flag this to the user when surfacing it.
 - `context_window_tokens`: usable context length.
 - `reasoning_model` (bool): whether the model has an explicit reasoning / thinking mode.
 - `input_modality_text` / `image` / `video` / `speech`: capability flags.

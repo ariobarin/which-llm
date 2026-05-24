@@ -21,6 +21,8 @@ import sys
 from pathlib import Path
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 URL = "https://artificialanalysis.ai/models"
 UA = (
@@ -33,13 +35,32 @@ HTML_PATH = ART / "models.html"
 JSON_PATH = ART / "models.json"
 CSV_PATH = ART / "models.csv"
 
+# Minimum sanity bounds on a parse. If we come back below these the page
+# structure changed or AA is half-broken — refuse to overwrite the snapshot.
+MIN_MODELS = 400
+REQUIRED_KEYS = ("name", "slug", "intelligence_index", "model_creator_id")
+
+
+def _session() -> requests.Session:
+    """requests.Session with retries on transient upstream errors."""
+    s = requests.Session()
+    retry = Retry(
+        total=3,
+        backoff_factor=2,           # 0s, 2s, 4s
+        status_forcelist=(502, 503, 504, 520, 521, 522, 524),
+        allowed_methods=("GET",),
+        raise_on_status=False,
+    )
+    s.mount("https://", HTTPAdapter(max_retries=retry))
+    return s
+
 
 def fetch_html(refresh: bool) -> str:
     if HTML_PATH.exists() and not refresh:
         return HTML_PATH.read_text(encoding="utf-8")
     ART.mkdir(parents=True, exist_ok=True)
     print(f"GET {URL}")
-    r = requests.get(URL, headers={"User-Agent": UA}, timeout=60)
+    r = _session().get(URL, headers={"User-Agent": UA}, timeout=60)
     r.raise_for_status()
     HTML_PATH.write_text(r.text, encoding="utf-8")
     print(f"  saved {len(r.text):,} chars -> {HTML_PATH}")
@@ -61,17 +82,45 @@ def extract_rsc_stream(html: str) -> str:
     return "".join(parts)
 
 
+# Anchored: the model-list `defaultData` lives inside a component whose props
+# include both `selectModelsByDefault` and `addToSelectedModels`. Requiring
+# them adjacent kills any chance of latching onto an unrelated `defaultData`
+# array AA might add elsewhere on the page later.
+_DEFAULT_DATA_RE = re.compile(
+    r'"addToSelectedModels":\s*"\$undefined"\s*,\s*"defaultData":\['
+)
+
+
 def find_default_data(stream: str) -> list[dict]:
-    """Locate '"defaultData":[' in the RSC stream and JSON-parse the array."""
-    needle = '"defaultData":['
-    idx = stream.find(needle)
-    if idx < 0:
-        raise RuntimeError("defaultData marker not found in RSC stream")
-    start = idx + len(needle) - 1  # position of '['
+    """Locate the model-list array in the RSC stream and JSON-parse it.
+
+    Anchored to a multi-key signature so an unrelated `defaultData` prop
+    can't shadow us. Validates the parsed array's shape before returning.
+    """
+    m = _DEFAULT_DATA_RE.search(stream)
+    if m is None:
+        raise RuntimeError(
+            "Anchored defaultData marker not found — AA page structure changed?"
+        )
+    start = m.end() - 1  # position of '['
     decoder = json.JSONDecoder()
     arr, _end = decoder.raw_decode(stream, start)
     if not isinstance(arr, list):
         raise RuntimeError(f"defaultData is not a list (got {type(arr).__name__})")
+
+    # Schema gate: refuse to ship if the items don't look like model rows.
+    if len(arr) < MIN_MODELS:
+        raise RuntimeError(
+            f"Parsed only {len(arr)} models (expected >= {MIN_MODELS}). "
+            f"Either AA shrank the catalog or we latched onto the wrong array."
+        )
+    first = arr[0] if arr else {}
+    missing = [k for k in REQUIRED_KEYS if k not in first]
+    if missing:
+        raise RuntimeError(
+            f"Parsed array's first item is missing expected keys {missing}. "
+            f"We probably latched onto the wrong `defaultData`."
+        )
     return arr
 
 

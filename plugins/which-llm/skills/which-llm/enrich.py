@@ -23,6 +23,8 @@ import re
 from pathlib import Path
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 ART = Path(__file__).parent / "artifacts"
 AA_CSV = ART / "models.csv"
@@ -57,17 +59,34 @@ NAME_NOISE = re.compile(
 )
 
 
+def _session() -> requests.Session:
+    """requests.Session with retries on transient upstream errors."""
+    s = requests.Session()
+    retry = Retry(
+        total=3,
+        backoff_factor=2,
+        status_forcelist=(502, 503, 504, 520, 521, 522, 524),
+        allowed_methods=("GET",),
+        raise_on_status=False,
+    )
+    s.mount("https://", HTTPAdapter(max_retries=retry))
+    return s
+
+
 def fetch_openrouter(refresh: bool) -> list[dict]:
     if OR_JSON.exists() and not refresh:
         data = json.loads(OR_JSON.read_text(encoding="utf-8"))
     else:
         print(f"GET {OR_URL}")
-        r = requests.get(OR_URL, headers={"User-Agent": UA}, timeout=60)
+        r = _session().get(OR_URL, headers={"User-Agent": UA}, timeout=60)
         r.raise_for_status()
         data = r.json()
         OR_JSON.write_text(json.dumps(data, indent=2), encoding="utf-8")
         print(f"  saved {OR_JSON} ({len(json.dumps(data)):,} bytes)")
-    return data["data"] if isinstance(data, dict) else data
+    models = data["data"] if isinstance(data, dict) else data
+    # Sort by id for deterministic indexing order. Without this, a model with
+    # multiple OR variants can flap between runs and pollute the diff.
+    return sorted(models, key=lambda m: m.get("id") or "")
 
 
 def _norm(s: str) -> str:
