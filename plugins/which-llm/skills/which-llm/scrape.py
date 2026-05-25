@@ -91,7 +91,7 @@ _DEFAULT_DATA_RE = re.compile(
 )
 
 
-def find_default_data(stream: str) -> list[dict]:
+def find_default_data(stream: str, min_models: int = MIN_MODELS) -> list[dict]:
     """Locate the model-list array in the RSC stream and JSON-parse it.
 
     Anchored to a multi-key signature so an unrelated `defaultData` prop
@@ -109,7 +109,7 @@ def find_default_data(stream: str) -> list[dict]:
         raise RuntimeError(f"defaultData is not a list (got {type(arr).__name__})")
 
     # Schema gate: refuse to ship if the items don't look like model rows.
-    if len(arr) < MIN_MODELS:
+    if len(arr) < min_models:
         raise RuntimeError(
             f"Parsed only {len(arr)} models (expected >= {MIN_MODELS}). "
             f"Either AA shrank the catalog or we latched onto the wrong array."

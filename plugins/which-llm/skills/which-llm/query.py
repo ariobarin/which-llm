@@ -218,11 +218,31 @@ def _print_table(rows: list[dict]) -> None:
         print("  ".join(f"{str(r[c]):<{widths[c]}}" for c in cols))
 
 
+_JSON_ROUND = {
+    "intelligence_index": 1,
+    "intelligence_index_cost_usd": 2,
+}
+
+
+def _typed(k: str, v: str | None):
+    """Parse CSV string to native type for JSON output, rounding where appropriate."""
+    if v is None or v == "":
+        return None
+    if k in _JSON_ROUND:
+        f = _f(v)
+        return round(f, _JSON_ROUND[k]) if f is not None else None
+    if k == "context_window_tokens":
+        return int(float(v)) if v else None
+    if k in ("openrouter_has_free",):
+        return v.strip().lower() == "true"
+    return v
+
+
 def _emit_models(rows: list[dict], as_json: bool) -> None:
     if as_json:
         out = []
         for r in rows:
-            out.append({k: r.get(k) for k in OUTPUT_FIELDS})
+            out.append({k: _typed(k, r.get(k)) for k in OUTPUT_FIELDS})
         json.dump(out, sys.stdout, indent=2, default=str)
         sys.stdout.write("\n")
     else:

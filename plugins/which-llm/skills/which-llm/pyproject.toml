@@ -10,3 +10,8 @@ dependencies = [
     "matplotlib>=3.10.9",
     "requests>=2.34.2",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]

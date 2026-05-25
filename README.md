@@ -5,7 +5,7 @@
 [![Last refresh](https://img.shields.io/github/last-commit/ariobarin/which-llm?label=last%20refresh)](https://github.com/ariobarin/which-llm/commits/main)
 [![GitHub stars](https://img.shields.io/github/stars/ariobarin/which-llm?style=flat&logo=github)](https://github.com/ariobarin/which-llm/stargazers)
 
-LLM lineups churn every few weeks; your agent's training data doesn't. Ask "which model should I use for X" and this skill answers from a current scrape of [Artificial Analysis](https://artificialanalysis.ai/models), cross-referenced with the [OpenRouter](https://openrouter.ai) catalog (including which slugs have a `:free` tier). 520+ models, refreshed daily.
+A Claude Code skill that resolves "which model should I use?" to a real, current answer. Joins the [Artificial Analysis](https://artificialanalysis.ai/models) leaderboard (520+ models, intelligence/cost/benchmarks) with the [OpenRouter](https://openrouter.ai) catalog (slug availability, `:free` tier reality) into a single queryable dataset your agent can reason over. Refreshed daily.
 
 ## Install
 
