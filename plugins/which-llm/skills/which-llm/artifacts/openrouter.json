@@ -895,7 +895,7 @@
       "name": "Poolside: Laguna M.1 (free)",
       "created": 1777388504,
       "description": "Laguna M.1 is the flagship coding agent model from [Poolside](https://poolside.ai), optimized for complex software engineering tasks. Designed for agentic coding workflows, it supports tool calling and reasoning, with a 128K...",
-      "context_length": 131072,
+      "context_length": 262144,
       "architecture": {
         "modality": "text->text",
         "input_modalities": [
@@ -912,8 +912,8 @@
         "completion": "0"
       },
       "top_provider": {
-        "context_length": 131072,
-        "max_completion_tokens": 8192,
+        "context_length": 262144,
+        "max_completion_tokens": 32768,
         "is_moderated": false
       },
       "per_request_limits": null,
@@ -1632,11 +1632,12 @@
       },
       "pricing": {
         "prompt": "0.0000003",
-        "completion": "0.0000032"
+        "completion": "0.000002",
+        "input_cache_read": "0.00000015"
       },
       "top_provider": {
         "context_length": 262144,
-        "max_completion_tokens": 262144,
+        "max_completion_tokens": 65536,
         "is_moderated": false
       },
       "per_request_limits": null,
@@ -14226,7 +14227,7 @@
       },
       "supported_voices": null,
       "knowledge_cutoff": "2025-03-31",
-      "expiration_date": null,
+      "expiration_date": "2026-06-05",
       "links": {
         "details": "/api/v1/models/qwen/qwen3-30b-a3b-04-28/endpoints"
       }
@@ -18757,7 +18758,7 @@
       "default_parameters": {},
       "supported_voices": null,
       "knowledge_cutoff": "2023-12-31",
-      "expiration_date": null,
+      "expiration_date": "2026-06-05",
       "links": {
         "details": "/api/v1/models/sao10k/l3-euryale-70b/endpoints"
       }
@@ -18807,7 +18808,7 @@
       "default_parameters": {},
       "supported_voices": null,
       "knowledge_cutoff": "2023-12-31",
-      "expiration_date": null,
+      "expiration_date": "2026-06-05",
       "links": {
         "details": "/api/v1/models/nousresearch/hermes-2-pro-llama-3-8b/endpoints"
       }
