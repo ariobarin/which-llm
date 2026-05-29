@@ -1,4 +1,4 @@
-# Unmatched non-deprecated AA models (116 total)
+# Unmatched non-deprecated AA models (117 total)
 # Run: uv run python enrich.py  (regenerates this file)
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
@@ -23,6 +23,7 @@ gemma-4-e2b                                    Gemma 4 E2B (Reasoning)
 gemma-4-e2b-non-reasoning                      Gemma 4 E2B (Non-reasoning)
 gemma-4-e4b                                    Gemma 4 E4B (Reasoning)
 gemma-4-e4b-non-reasoning                      Gemma 4 E4B (Non-reasoning)
+gpt-5-5-instant-05-26                          GPT-5.5 Instant (May 2026)
 granite-4-0-350m                               Granite 4.0 350M
 granite-4-0-h-350m                             Granite 4.0 H 350M
 granite-4-0-h-nano-1b                          Granite 4.0 H 1B
