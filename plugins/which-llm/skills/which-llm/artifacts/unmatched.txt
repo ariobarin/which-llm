@@ -1,4 +1,4 @@
-# Unmatched non-deprecated AA models (119 total)
+# Unmatched non-deprecated AA models (118 total)
 # Run: uv run python enrich.py  (regenerates this file)
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
@@ -114,7 +114,6 @@ sarvam-30b                                     Sarvam 30B (high)
 solar-open-100b-reasoning                      Solar Open 100B (Reasoning)
 solar-pro-2                                    Solar Pro 2 (Non-reasoning)
 solar-pro-2-reasoning                          Solar Pro 2 (Reasoning)
-solar-pro-3                                    Solar Pro 3
 step-3-vl-10b                                  Step3 VL 10B
 tiny-aya-global                                Tiny Aya Global
 tri-21b-think-preview                          Tri-21B-think Preview
