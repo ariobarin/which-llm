@@ -3,6 +3,34 @@
 All notable changes to which-llm will be documented in this file. Versioning
 loosely follows [SemVer](https://semver.org/).
 
+## [0.3.0] - 2026-06-01
+
+Layered data sourcing + attribution. The dataset is now built from three
+sources merged by `build.py`, and the project credits its sources explicitly.
+
+### Added
+- `fetch_api.py` — pulls Artificial Analysis's official free API
+  (`/api/v2/data/llms/models`) using `AA_API_KEY`. Authoritative
+  benchmarks/pricing keyed by stable UUIDs.
+- `build.py` — orchestrates scrape (primary) + AA API (cross-check/fallback)
+  + OpenRouter (availability) into `models_enriched.csv`, with an
+  `intelligence_index` drift cross-check between scrape and API.
+- `WHICH_LLM_SOURCE=merged|scrape|api` env switch. `merged` (default)
+  degrades to an API-built base if the scrape parser breaks, so the dataset
+  is never empty. `api` builds from the sanctioned API only (no scraping).
+- `enrich.py` now also extracts OpenRouter `context_length`,
+  `input_modalities`, and a reasoning signal (gap-fill / cross-check).
+- `query.py` emits the required Artificial Analysis attribution (to stderr,
+  so stdout/`--json` stay clean) and links each model's AA page in `show`.
+- README "Data, attribution & usage" section: source credit, the
+  code-vs-data license split, and a takedown/comply contact.
+
+### Changed
+- Daily refresh workflow runs `build.py --refresh` with an `AA_API_KEY` repo
+  secret and commits `models_api.json` alongside the other artifacts.
+- `idx-run$` (cost to run AA's Intelligence Index) reframed as the headline
+  "intelligence per dollar" metric throughout the docs.
+
 ## [0.2.0] - 2026-05-23
 
 **Breaking CLI redesign** (pre-release, no users depending on old surface yet).
