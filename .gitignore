@@ -9,6 +9,10 @@ wheels/
 # Virtual environments
 .venv
 
+# Secrets
+.env
+.env.*
+
 # Regenerable artifacts. CSV/JSON snapshots are tracked so the skill works
 # the instant someone clones it; the 8MB scraped HTML and plot output are
 # not — they rebuild trivially.
