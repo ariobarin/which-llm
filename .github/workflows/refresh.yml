@@ -1,8 +1,9 @@
 name: Daily data refresh
 
-# Re-scrape Artificial Analysis + OpenRouter daily so the snapshot shipped
-# in the repo stays current. Also triggerable manually. Actions pinned to
-# commit SHAs to close the floating-tag supply-chain vector.
+# Rebuild the shipped dataset daily: scrape Artificial Analysis (primary) +
+# cross-check against the AA API + enrich with OpenRouter. Also triggerable
+# manually. Actions pinned to commit SHAs to close the floating-tag
+# supply-chain vector. Requires the AA_API_KEY repo secret for the API layer.
 
 on:
   schedule:
@@ -36,11 +37,14 @@ jobs:
       - name: Sync dependencies
         run: uv sync --frozen
 
-      - name: Refresh AA scrape
-        run: uv run python scrape.py --refresh
-
-      - name: Refresh OpenRouter enrichment
-        run: uv run python enrich.py --refresh
+      # build.py runs the full pipeline: scrape (primary) + AA API
+      # (cross-check/fallback) + OpenRouter enrichment. AA_API_KEY comes from a
+      # repo secret; if absent or the API errors, merged mode still ships the
+      # scrape. If the scrape parser breaks, it degrades to an API-built base.
+      - name: Build dataset (scrape + AA API + OpenRouter)
+        env:
+          AA_API_KEY: ${{ secrets.AA_API_KEY }}
+        run: uv run python build.py --refresh
 
       - name: Commit + push if data changed
         working-directory: ${{ github.workspace }}
@@ -50,6 +54,7 @@ jobs:
           if [[ -n "$(git status --porcelain plugins/which-llm/skills/which-llm/artifacts/)" ]]; then
             git add plugins/which-llm/skills/which-llm/artifacts/models.csv \
                     plugins/which-llm/skills/which-llm/artifacts/models.json \
+                    plugins/which-llm/skills/which-llm/artifacts/models_api.json \
                     plugins/which-llm/skills/which-llm/artifacts/models_enriched.csv \
                     plugins/which-llm/skills/which-llm/artifacts/openrouter.json \
                     plugins/which-llm/skills/which-llm/artifacts/unmatched.txt
