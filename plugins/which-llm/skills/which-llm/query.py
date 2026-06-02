@@ -71,12 +71,10 @@ def _data_age_days() -> float | None:
 
 
 def ensure_data() -> None:
-    """If no CSV exists, run scrape.py + enrich.py."""
+    """If no CSV exists, build the dataset from all sources (build.py)."""
     if not (ENRICHED_CSV.exists() or BASE_CSV.exists()):
-        print("# No cached data found, fetching from Artificial Analysis...",
-              file=sys.stderr)
-        subprocess.run(["uv", "run", "python", "scrape.py"], cwd=HERE, check=True)
-        subprocess.run(["uv", "run", "python", "enrich.py"], cwd=HERE, check=True)
+        print("# No cached data found, building dataset...", file=sys.stderr)
+        subprocess.run(["uv", "run", "python", "build.py"], cwd=HERE, check=True)
 
 
 # ---------------------------------------------------------------------------
@@ -387,9 +385,7 @@ def cmd_data(args) -> int:
         print(f"model count: {len(rows)}")
         return 0
     if args.action == "refresh":
-        subprocess.run(["uv", "run", "python", "scrape.py", "--refresh"],
-                       cwd=HERE, check=True)
-        subprocess.run(["uv", "run", "python", "enrich.py", "--refresh"],
+        subprocess.run(["uv", "run", "python", "build.py", "--refresh"],
                        cwd=HERE, check=True)
         return 0
     return 2
