@@ -4,9 +4,12 @@ Reads `artifacts/models.csv` (from scrape.py) and `artifacts/openrouter.json`
 (fetched on demand). Writes `artifacts/models_enriched.csv` with three new
 columns:
 
-  openrouter_slug          primary paid OR slug we matched (e.g. anthropic/claude-opus-4.7)
-  openrouter_free_slug     :free OR slug, if one exists for the same model
-  openrouter_has_free      true / false
+  openrouter_slug                 primary paid OR slug we matched (e.g. anthropic/claude-opus-4.7)
+  openrouter_free_slug            :free OR slug, if one exists for the same model
+  openrouter_has_free             true / false
+  openrouter_context_length       OR-reported context window (cross-check / gap-fill)
+  openrouter_input_modalities     OR input modalities, CSV (e.g. text,image,file)
+  openrouter_supports_reasoning   true if OR exposes a reasoning parameter
 
 Matching is best-effort via name normalization. Mismatches are printed at
 the end so the schema drift can be tracked over time.
@@ -87,6 +90,29 @@ def fetch_openrouter(refresh: bool) -> list[dict]:
     # Sort by id for deterministic indexing order. Without this, a model with
     # multiple OR variants can flap between runs and pollute the diff.
     return sorted(models, key=lambda m: m.get("id") or "")
+
+
+OR_EXTRA_FIELDS = [
+    "openrouter_context_length",
+    "openrouter_input_modalities",
+    "openrouter_supports_reasoning",
+]
+
+
+def _or_extra(m: dict | None) -> dict:
+    """Pull context / modality / reasoning signal from a matched OR model."""
+    if not m:
+        return {k: "" for k in OR_EXTRA_FIELDS}
+    arch = m.get("architecture") or {}
+    mods = arch.get("input_modalities") or []
+    params = m.get("supported_parameters") or []
+    return {
+        "openrouter_context_length": m.get("context_length") or "",
+        "openrouter_input_modalities": ",".join(mods),
+        "openrouter_supports_reasoning":
+            "true" if ("reasoning" in params or "include_reasoning" in params)
+            else "false",
+    }
 
 
 def _norm(s: str) -> str:
@@ -208,6 +234,7 @@ def main() -> int:
         hits = match_aa_to_or(r, exact_idx, loose_idx)
         paid_slug = ""
         free_slug = ""
+        paid_model = None
         for h in hits:
             full = h.get("id") or ""
             if full.endswith(":free"):
@@ -215,6 +242,10 @@ def main() -> int:
                     free_slug = full
             elif not paid_slug:
                 paid_slug = full
+                paid_model = h
+        # Prefer the paid listing for the cross-check fields; fall back to the
+        # first hit (e.g. a model that's :free-only on OpenRouter).
+        primary = paid_model or (hits[0] if hits else None)
         if paid_slug or free_slug:
             matched += 1
             if free_slug:
@@ -230,12 +261,13 @@ def main() -> int:
             "openrouter_slug": paid_slug,
             "openrouter_free_slug": free_slug,
             "openrouter_has_free": "true" if free_slug else "false",
+            **_or_extra(primary),
         })
 
     # Write the enriched CSV.
     fieldnames = list(aa_rows[0].keys()) + [
         "openrouter_slug", "openrouter_free_slug", "openrouter_has_free",
-    ]
+    ] + OR_EXTRA_FIELDS
     with OUT_CSV.open("w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
