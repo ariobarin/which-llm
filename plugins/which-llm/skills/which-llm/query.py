@@ -30,6 +30,14 @@ BASE_CSV = ART / "models.csv"
 
 STALE_AFTER_DAYS = 7  # warn (don't refuse) if data older than this
 
+# Required attribution for the Artificial Analysis API, and good practice for
+# OpenRouter. Printed to stderr so it never pollutes stdout / --json output.
+ATTRIBUTION = (
+    "data: Artificial Analysis (https://artificialanalysis.ai) "
+    "+ OpenRouter (https://openrouter.ai)"
+)
+AA_MODEL_URL = "https://artificialanalysis.ai/models/{slug}"
+
 # Canonical output columns. Both the table renderer and `--json` use these.
 OUTPUT_FIELDS = [
     "slug", "name", "creator_name", "intelligence_index",
@@ -276,6 +284,7 @@ def cmd_models(args) -> int:
         print("# no models match", file=sys.stderr)
         return 1
     _emit_models(rows, args.json)
+    print(ATTRIBUTION, file=sys.stderr)
     return 0
 
 
@@ -305,6 +314,7 @@ def cmd_show(args) -> int:
     if args.json:
         json.dump(r, sys.stdout, indent=2, default=str)
         sys.stdout.write("\n")
+        print(ATTRIBUTION, file=sys.stderr)
         return 0
 
     intel = _f(r["intelligence_index"])
@@ -312,6 +322,7 @@ def cmd_show(args) -> int:
     per_m = _f(r.get("intelligence_index_per_m_output_tokens"))
     print(f"{r['name']}")
     print(f"  slug:            {r['slug']}")
+    print(f"  on AA:           {AA_MODEL_URL.format(slug=r['slug'])}")
     print(f"  creator:         {r.get('creator_name') or '-'} ({r.get('creator_slug') or '-'})")
     print(f"  family:          {r.get('model_family_slug') or '-'}")
     print(f"  release:         {r.get('release_date') or '-'}")
@@ -360,6 +371,7 @@ def cmd_show(args) -> int:
         if _is_true(r.get("openrouter_has_free")):
             print("          (:free is rate-limited promo, possibly different "
                   "quant; prototyping only)")
+    print(ATTRIBUTION, file=sys.stderr)
     return 0
 
 
