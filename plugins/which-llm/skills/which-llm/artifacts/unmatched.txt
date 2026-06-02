@@ -1,4 +1,4 @@
-# Unmatched non-deprecated AA models (118 total)
+# Unmatched non-deprecated AA models (119 total)
 # Run: uv run python enrich.py  (regenerates this file)
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
@@ -9,6 +9,7 @@ deephermes-3-mistral-24b-preview               DeepHermes 3 - Mistral 24B Previe
 devstral-2                                     Devstral 2
 devstral-small-2                               Devstral Small 2
 doubao-seed-code                               Doubao Seed Code
+ernie-4-5-300b-a47b                            ERNIE 4.5 300B A47B
 ernie-5-0-thinking-preview                     ERNIE 5.0 Thinking Preview
 exaone-4-0-1-2b                                Exaone 4.0 1.2B (Non-reasoning)
 exaone-4-0-1-2b-reasoning                      Exaone 4.0 1.2B (Reasoning)

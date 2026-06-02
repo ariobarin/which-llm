@@ -567,9 +567,9 @@
         "instruct_type": null
       },
       "pricing": {
-        "prompt": "0.0000003",
-        "completion": "0.0000025",
-        "input_cache_read": "0.00000006"
+        "prompt": "0.000000075",
+        "completion": "0.000000625",
+        "input_cache_read": "0.000000015"
       },
       "top_provider": {
         "context_length": 262144,
@@ -2200,13 +2200,13 @@
         "instruct_type": null
       },
       "pricing": {
-        "prompt": "0.000000066",
-        "completion": "0.00000026",
-        "input_cache_read": "0.000000029"
+        "prompt": "0.000000063",
+        "completion": "0.00000021",
+        "input_cache_read": "0.000000021"
       },
       "top_provider": {
         "context_length": 262144,
-        "max_completion_tokens": 262144,
+        "max_completion_tokens": null,
         "is_moderated": false
       },
       "per_request_limits": null,
@@ -12746,55 +12746,6 @@
       "expiration_date": null,
       "links": {
         "details": "/api/v1/models/baidu/ernie-4.5-vl-424b-a47b/endpoints"
-      }
-    },
-    {
-      "id": "baidu/ernie-4.5-300b-a47b",
-      "canonical_slug": "baidu/ernie-4.5-300b-a47b",
-      "hugging_face_id": "baidu/ERNIE-4.5-300B-A47B-PT",
-      "name": "Baidu: ERNIE 4.5 300B A47B ",
-      "created": 1751300139,
-      "description": "ERNIE-4.5-300B-A47B is a 300B parameter Mixture-of-Experts (MoE) language model developed by Baidu as part of the ERNIE 4.5 series. It activates 47B parameters per token and supports text generation in...",
-      "context_length": 131072,
-      "architecture": {
-        "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
-        "tokenizer": "Other",
-        "instruct_type": null
-      },
-      "pricing": {
-        "prompt": "0.00000028",
-        "completion": "0.0000011"
-      },
-      "top_provider": {
-        "context_length": 123000,
-        "max_completion_tokens": 12000,
-        "is_moderated": false
-      },
-      "per_request_limits": null,
-      "supported_parameters": [
-        "frequency_penalty",
-        "max_tokens",
-        "presence_penalty",
-        "repetition_penalty",
-        "response_format",
-        "seed",
-        "stop",
-        "temperature",
-        "top_k",
-        "top_p"
-      ],
-      "default_parameters": {},
-      "supported_voices": null,
-      "knowledge_cutoff": "2025-03-31",
-      "expiration_date": null,
-      "links": {
-        "details": "/api/v1/models/baidu/ernie-4.5-300b-a47b/endpoints"
       }
     },
     {
