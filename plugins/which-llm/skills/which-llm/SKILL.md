@@ -5,7 +5,9 @@ description: Look up current LLM intelligence, cost-to-run, benchmark scores, ca
 
 # which-llm
 
-Up-to-date data on ~520 LLMs scraped from artificialanalysis.ai and cross-referenced with the OpenRouter catalog. Trained-in model knowledge goes stale fast. Use this skill instead of guessing.
+Up-to-date data on ~520 LLMs from Artificial Analysis (scraped, cross-checked against their official API) and cross-referenced with the OpenRouter catalog. Trained-in model knowledge goes stale fast. Use this skill instead of guessing.
+
+When you surface this data to a user, credit **Artificial Analysis** (https://artificialanalysis.ai) — attribution is required for the underlying data.
 
 ## Commands
 
@@ -37,7 +39,7 @@ Three verbs. Run from this skill's directory.
 ## Key fields and their units
 
 - `intelligence_index`: composite 0-100 score across AA's benchmark suite (GPQA, HLE, MMLU-Pro, LiveCodeBench, MATH-500, AIME, SciCode, tau2, HumanEval, ...). **Caveat:** a single composite hides which capabilities drive the score. A model at 51.5 might beat one at 50.8 purely on math benchmarks while being worse at tool-calling. For narrow use cases, check the individual benchmarks via `show <slug>` rather than relying on the composite alone.
-- `intelligence_index_cost_usd` (table header `idx-run$`): USD to run AA's full benchmark suite once on this model. **Relative inference-cost proxy, not a per-call price.**
+- `intelligence_index_cost_usd` (table header `idx-run$`): **the headline cost metric.** USD it took AA to run their full Intelligence Index suite once on this model. It captures how many tokens a model burns to reach its score, so it's the truest "intelligence per dollar" signal — a cheap-per-token but verbose reasoning model ranks as expensive here, correctly. Sort by it (`--sort cost`) for cost-efficient intelligence. **Not a per-call price** — use `price_1m_*` for that. Present only in `scrape`/`merged` source modes (the API doesn't expose it).
 - `price_1m_input_tokens` / `price_1m_output_tokens`: USD per million tokens. **Use these for actual API cost calculations.**
 - `openrouter_slug`: paid OR endpoint, e.g. `anthropic/claude-opus-4.7`. Goes straight into the OR API.
 - `openrouter_free_slug`: `:free` OR endpoint when available, e.g. `deepseek/deepseek-v4-flash:free`. **Caveat:** `:free` is a rate-limited promotional/community listing (often via Chutes or similar), not a tier of the same model. Different quantization, daily caps, no SLA. Recommend for prototyping only — flag this to the user when surfacing it.
@@ -78,6 +80,8 @@ uv run python query.py models gpt-5 --top 10
 ## Refresh policy
 
 Data is auto-refreshed daily by a GitHub Action; the snapshot shipped with the skill is rarely > 24h stale. Run `uv run python query.py data status` to check, and `data refresh` if needed. A manual refresh takes ~10s.
+
+`data refresh` runs `build.py`, which merges the AA scrape (primary) + AA API (cross-check/fallback) + OpenRouter. Set `WHICH_LLM_SOURCE=api` to build from AA's official API only (no scraping; loses `idx-run$`, context, modality, open-weights). The API layer uses a free `AA_API_KEY` (env or `.env`); without one, the default `merged` mode still ships the scrape.
 
 ## Visual exploration (optional)
 
