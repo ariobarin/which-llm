@@ -1,4 +1,4 @@
-# Unmatched non-deprecated AA models (119 total)
+# Unmatched non-deprecated AA models (120 total)
 # Run: uv run python enrich.py  (regenerates this file)
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
@@ -68,6 +68,7 @@ mimo-v2-0206                                   MiMo-V2-Flash (Feb 2026)
 mimo-v2-omni                                   MiMo-V2-Omni
 mimo-v2-omni-0327                              MiMo-V2-Omni-0327
 minicpm-v4-6-1-3b                              MiniCPM-V 4.6 1.3B
+minicpm5-1b                                    MiniCPM5-1B (Reasoning)
 minicpm5-1b-non-reasoning                      MiniCPM5-1B (Non-reasoning)
 ministral-3-14b                                Ministral 3 14B
 ministral-3-3b                                 Ministral 3 3B
