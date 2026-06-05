@@ -23,12 +23,13 @@ Three verbs. Run from this skill's directory.
 | Flag | Meaning |
 |---|---|
 | `--top N` | Max rows (default 20; `0` = unlimited). |
-| `--sort intel\|cost\|ctx` | Primary sort key (default: intel descending). |
+| `--sort intel\|cost\|ctx\|speed` | Primary sort key (default: intel descending). `speed` = end-to-end latency ascending. |
 | `--pareto` | Filter to cost-vs-intel Pareto frontier; ignores `--sort`. |
 | `--free` | Only models with a `:free` OpenRouter variant. |
 | `--intel-min N` | Minimum intelligence_index. |
 | `--max-cost N` / `--min-cost N` | Idx-run$ bounds (USD). |
 | `--context-min N` | Minimum context window in tokens. |
+| `--max-latency N` | Max end-to-end response latency in seconds (drops models AA hasn't speed-tested). |
 | `--modality text,image,...` | Required input modalities (CSV). Default `text`. `any` to disable. |
 | `--reasoning` / `--no-reasoning` | Filter on reasoning capability. |
 | `--open-weights` / `--no-open-weights` | Filter on open-weights status. |
@@ -42,6 +43,7 @@ Three verbs. Run from this skill's directory.
 - `openrouter_slug`: paid OR endpoint, e.g. `anthropic/claude-opus-4.7`. Goes straight into the OR API.
 - `openrouter_free_slug`: `:free` OR endpoint when available, e.g. `deepseek/deepseek-v4-flash:free`. **Caveat:** `:free` is a rate-limited promotional/community listing (often via Chutes or similar), not a tier of the same model. Different quantization, daily caps, no SLA. Recommend for prototyping only — flag this to the user when surfacing it.
 - `context_window_tokens`: usable context length.
+- `ttft_seconds` / `e2e_response_seconds`: AA's measured time-to-first-answer-token and full end-to-end response latency, in seconds, on a standardized run. **Lower = faster.** **Caveats:** for reasoning models both include thinking time, so they read slower; the value is one fixed-length run, not a per-call guarantee; `null`/`-` means AA hasn't speed-tested that model (not "instant"). For throughput-bound agent loops, `e2e_response_seconds` is the headline; for streaming UIs, `ttft_seconds` matters more.
 - `reasoning_model` (bool): whether the model has an explicit reasoning / thinking mode.
 - `input_modality_text` / `image` / `video` / `speech`: capability flags.
 
@@ -58,6 +60,12 @@ uv run python query.py models --free --sort cost --top 0
 
 # Cheapest model with intelligence above 50 that supports reasoning:
 uv run python query.py models --intel-min 50 --reasoning --sort cost --top 5
+
+# Fastest non-reasoning models, by measured end-to-end latency:
+uv run python query.py models --no-reasoning --sort speed --top 10
+
+# Capable models that respond in under 6s end-to-end:
+uv run python query.py models --no-reasoning --intel-min 30 --max-latency 6 --sort intel
 
 # Pareto frontier under $750:
 uv run python query.py models --pareto --max-cost 750

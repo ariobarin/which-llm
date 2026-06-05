@@ -197,6 +197,10 @@ CSV_FIELDS = [
     "parameters_billions",
     "active_parameters_billions",
     "size_class",
+    # Measured response latency, seconds (AA's standardized run). Lower = faster.
+    # For reasoning models both include thinking time, so they read slower.
+    "ttft_seconds",
+    "e2e_response_seconds",
 ]
 
 
@@ -216,11 +220,28 @@ def _f(m: dict, key: str):
     return _clean(m.get(key))
 
 
+def _pos(v):
+    """Latency sentinel: AA reports an all-zero metrics dict for models it
+    hasn't benchmarked for speed. A real run always has input_time > 0, so a
+    non-positive total_time means 'not measured' — return None, not 0."""
+    v = _clean(v)
+    try:
+        return v if v is not None and float(v) > 0 else None
+    except (TypeError, ValueError):
+        return None
+
+
 def flatten(m: dict) -> dict:
     creators = m.get("model_creators") or {}
     cost = _clean(m.get("intelligence_index_cost")) or {}
     if not isinstance(cost, dict):
         cost = {}
+    ttft = _clean(m.get("time_to_first_answer_token_metrics")) or {}
+    if not isinstance(ttft, dict):
+        ttft = {}
+    e2e = _clean(m.get("end_to_end_response_time_metrics")) or {}
+    if not isinstance(e2e, dict):
+        e2e = {}
     # The "_3_1" blended ratio isn't directly exposed; price_1m_blended_7_2_1
     # is the closest standard ratio AA publishes. Keep the raw fields they expose.
     return {
@@ -292,6 +313,9 @@ def flatten(m: dict) -> dict:
         "parameters_billions": _f(m, "parameters"),
         "active_parameters_billions": _f(m, "activeParams"),
         "size_class": _f(m, "size_class"),
+
+        "ttft_seconds": _pos(ttft.get("total_time")),
+        "e2e_response_seconds": _pos(e2e.get("total_time")),
     }
 
 
