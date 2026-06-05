@@ -108,16 +108,23 @@ def load_rows(
     intel_min: float | None = None,
     context_min: int | None = None,
     max_latency: float | None = None,
+    creators: list[str] | None = None,
     reasoning: bool | None = None,
     open_weights: bool | None = None,
 ) -> list[dict]:
     if modalities is None:
         modalities = {"text"}
+    needles = [c.lower() for c in (creators or []) if c.strip()]
     rows = []
     with _csv_path().open(encoding="utf-8") as f:
         for r in csv.DictReader(f):
             if not include_deprecated and _is_true(r.get("deprecated")):
                 continue
+            if needles:
+                hay = ((r.get("creator_name") or "") + "\x00"
+                       + (r.get("creator_slug") or "")).lower()
+                if not any(n in hay for n in needles):
+                    continue
             if modalities and not all(
                 _is_true(r.get(MODALITY_TO_COLUMN[m])) for m in modalities
             ):
@@ -270,7 +277,27 @@ def _emit_models(rows: list[dict], as_json: bool) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _split_csv(spec: str | None) -> list[str]:
+    return [t.strip() for t in (spec or "").split(",") if t.strip()]
+
+
+def _list_creators() -> int:
+    """Print every creator and its model count so --creator needles can be
+    picked from real data instead of guessed. AA carries no country field, so
+    geography is left to the caller rather than baked into the tool."""
+    counts: dict[str, int] = {}
+    for r in load_rows(modalities=set()):
+        name = r.get("creator_name") or "-"
+        counts[name] = counts.get(name, 0) + 1
+    width = max((len(n) for n in counts), default=7)
+    for name in sorted(counts, key=lambda n: (-counts[n], n.lower())):
+        print(f"{name:<{width}}  {counts[name]}")
+    return 0
+
+
 def cmd_models(args) -> int:
+    if args.list_creators:
+        return _list_creators()
     modalities = _parse_modalities(args.modality)
     rows = load_rows(
         modalities=modalities,
@@ -280,6 +307,7 @@ def cmd_models(args) -> int:
         intel_min=args.intel_min,
         context_min=args.context_min,
         max_latency=args.max_latency,
+        creators=_split_csv(args.creator),
         reasoning=args.reasoning,
         open_weights=args.open_weights,
     )
@@ -435,6 +463,11 @@ def _add_filter_args(p: argparse.ArgumentParser) -> None:
                    help="Minimum idx-run$ (USD).")
     p.add_argument("--context-min", type=int, default=None,
                    help="Minimum context window in tokens.")
+    p.add_argument("--creator", default=None,
+                   help="CSV of creator substrings, matched case-insensitively "
+                        "against creator name/slug (OR within the list). "
+                        "e.g. --creator alibaba,deepseek. Run --list-creators "
+                        "to see available names.")
     p.add_argument("--max-latency", type=float, default=None,
                    help="Maximum end-to-end response latency in seconds "
                         "(AA's measured run). Drops models with no measurement.")
@@ -465,6 +498,9 @@ def main() -> int:
                     help="Filter to cost-vs-intel Pareto frontier; ignores --sort.")
     sp.add_argument("--json", action="store_true",
                     help="Emit JSON array instead of a table.")
+    sp.add_argument("--list-creators", action="store_true",
+                    help="List every creator and its model count, then exit. "
+                         "Use to discover --creator needles.")
     _add_filter_args(sp)
     sp.set_defaults(func=cmd_models)
 

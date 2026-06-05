@@ -13,6 +13,9 @@ loosely follows [SemVer](https://semver.org/).
   filter. An `e2e_s` column now appears in the `models` table.
 - Unmeasured latency is normalized to null (AA emits an all-zero metrics
   dict for un-speed-tested models) so they don't masquerade as "fastest".
+- `--creator a,b` filter (CSV substrings, case-insensitive, matched against
+  creator name/slug) and `--list-creators` to discover the roster. AA has no
+  country field, so geography is filtered by naming labs rather than baked in.
 
 ## [0.2.0] - 2026-05-23
 

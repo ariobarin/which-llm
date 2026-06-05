@@ -29,6 +29,8 @@ Three verbs. Run from this skill's directory.
 | `--intel-min N` | Minimum intelligence_index. |
 | `--max-cost N` / `--min-cost N` | Idx-run$ bounds (USD). |
 | `--context-min N` | Minimum context window in tokens. |
+| `--creator a,b` | Keep only these creators (CSV substrings, case-insensitive, OR within). `--list-creators` shows available names. |
+| `--list-creators` | List every creator and its model count, then exit. |
 | `--max-latency N` | Max end-to-end response latency in seconds (drops models AA hasn't speed-tested). |
 | `--modality text,image,...` | Required input modalities (CSV). Default `text`. `any` to disable. |
 | `--reasoning` / `--no-reasoning` | Filter on reasoning capability. |
@@ -46,6 +48,8 @@ Three verbs. Run from this skill's directory.
 - `ttft_seconds` / `e2e_response_seconds`: AA's measured time-to-first-answer-token and full end-to-end response latency, in seconds, on a standardized run. **Lower = faster.** **Caveats:** for reasoning models both include thinking time, so they read slower; the value is one fixed-length run, not a per-call guarantee; `null`/`-` means AA hasn't speed-tested that model (not "instant"). For throughput-bound agent loops, `e2e_response_seconds` is the headline; for streaming UIs, `ttft_seconds` matters more.
 - `reasoning_model` (bool): whether the model has an explicit reasoning / thinking mode.
 - `input_modality_text` / `image` / `video` / `speech`: capability flags.
+
+- `creator_name` / `creator_slug`: the lab that made the model. AA carries **no country/region field**, so filter geography by naming the labs (`--creator`), not by country.
 
 The full enriched dataset lives in `artifacts/models_enriched.csv` (60+ columns) and `artifacts/models.json` (every original AA field). Read directly if `query.py` lacks a needed filter.
 
@@ -66,6 +70,15 @@ uv run python query.py models --no-reasoning --sort speed --top 10
 
 # Capable models that respond in under 6s end-to-end:
 uv run python query.py models --no-reasoning --intel-min 30 --max-latency 6 --sort intel
+
+# Discover creator names, then filter to specific labs:
+uv run python query.py models --list-creators
+uv run python query.py models --creator deepseek,alibaba --no-reasoning --sort speed
+
+# Fast non-reasoning models from Chinese labs (AA has no country field, so name
+# the creators explicitly; --list-creators shows the current roster):
+uv run python query.py models --no-reasoning --sort speed \
+  --creator alibaba,deepseek,moonshot,zhipu,z-ai,minimax,tencent,stepfun,baidu,xiaomi,01-ai,inclusion,bytedance
 
 # Pareto frontier under $750:
 uv run python query.py models --pareto --max-cost 750
