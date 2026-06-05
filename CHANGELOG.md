@@ -24,6 +24,10 @@ loosely follows [SemVer](https://semver.org/).
 - SKILL.md gains a "Presenting results" section: surface both cost columns
   whenever cost matters, present axes neutrally without steering to a single
   pick, and attach caveats as footnotes rather than verdicts.
+- `plot_pareto.py` gains `--axis cost|speed` (intelligence vs idx-run$ or vs
+  end-to-end latency, the "smart and fast" frontier), plus `--creator` and
+  `--reasoning/--no-reasoning` filters and `--min/--max-latency` bounds. The
+  cost axis is unchanged by default.
 
 ## [0.2.0] - 2026-05-23
 

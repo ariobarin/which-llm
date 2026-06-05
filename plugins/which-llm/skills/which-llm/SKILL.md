@@ -111,9 +111,15 @@ Data is auto-refreshed daily by a GitHub Action; the snapshot shipped with the s
 
 ## Visual exploration (optional)
 
-`plot_pareto.py` renders the Intelligence-vs-Cost Pareto chart to `artifacts/pareto.png`. Same modality / free / cost flags. Useful when the user wants a visual; otherwise the CLI output is more agent-friendly.
+`plot_pareto.py` renders an Intelligence-vs-X Pareto chart to `artifacts/pareto.png`. `--axis cost` (default) plots intelligence vs idx-run$; `--axis speed` plots intelligence vs measured end-to-end latency (the "smart and fast" frontier). Supports the same modality / `--free-only` flags plus `--reasoning/--no-reasoning` and `--creator a,b`. Useful when the user wants a visual; otherwise the CLI output is more agent-friendly.
 
 ```text
 uv run python plot_pareto.py --max-cost 750 --near 15
 uv run python plot_pareto.py --free-only --max-cost 100000
+
+# Smart-and-fast frontier for non-reasoning models:
+uv run python plot_pareto.py --axis speed --no-reasoning --max-latency 30
+
+# Same, scoped to specific labs:
+uv run python plot_pareto.py --axis speed --no-reasoning --creator alibaba,deepseek
 ```

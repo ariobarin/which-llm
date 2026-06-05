@@ -1,11 +1,17 @@
-"""Plot the Intelligence vs. Cost Pareto frontier from scraped AA data.
+"""Plot an Intelligence-vs-X Pareto frontier from scraped AA data.
 
   uv run python plot_pareto.py
   uv run python plot_pareto.py --max-cost 750 --near 3 --out artifacts/pareto.png
+  uv run python plot_pareto.py --axis speed --no-reasoning --max-latency 30
+  uv run python plot_pareto.py --creator alibaba,deepseek --axis speed
 
-Conventions match the AA chart: y = Intelligence Index (linear),
-x = cost to run the Intelligence Index in USD (log base 2). Models with
-no published cost or intelligence are silently dropped.
+y = Intelligence Index (linear). x is chosen with --axis:
+  cost   (default) = cost to run the Intelligence Index in USD  (mirrors AA's chart)
+  speed            = measured end-to-end response latency in seconds
+
+Both axes are log base 2 and "good" is left (cheaper / faster), so the
+frontier is the same maximize-intel / minimize-x step function either way.
+Rows with no value on the chosen axis (or no intelligence) are dropped.
 """
 from __future__ import annotations
 
@@ -67,23 +73,43 @@ def _is_true(v) -> bool:
     return (v or "").strip().lower() == "true"
 
 
+# Per-axis config: the CSV column to read for x, plus how to label/format it.
+AXES = {
+    "cost": {
+        "column": "intelligence_index_cost_usd",
+        "label": "Cost to Run Intelligence Index (USD, log base 2)",
+        "unit": "$",
+    },
+    "speed": {
+        "column": "e2e_response_seconds",
+        "label": "End-to-end response latency (seconds, log base 2)",
+        "unit": "s",
+    },
+}
+
+
 def load_rows(
-    min_cost: float,
-    max_cost: float,
+    axis: str,
+    min_x: float,
+    max_x: float,
     require_text: bool,
     require_image: bool,
     require_video: bool,
     require_audio: bool,
     free_only: bool,
+    creators: list[str] | None = None,
+    reasoning: bool | None = None,
 ) -> list[dict]:
+    x_col = AXES[axis]["column"]
+    needles = [c.lower() for c in (creators or []) if c.strip()]
     rows = []
     with CSV_PATH.open(encoding="utf-8") as f:
         for r in csv.DictReader(f):
             intel = _float(r["intelligence_index"])
-            cost = _float(r["intelligence_index_cost_usd"])
-            if intel is None or cost is None or cost <= 0:
+            x = _float(r.get(x_col))
+            if intel is None or x is None or x <= 0:
                 continue
-            if cost < min_cost or cost > max_cost:
+            if x < min_x or x > max_x:
                 continue
             if _is_true(r.get("deprecated")):
                 continue
@@ -97,17 +123,24 @@ def load_rows(
                 continue
             if free_only and not _is_true(r.get("openrouter_has_free")):
                 continue
-            rows.append({**r, "_intel": intel, "_cost": cost})
+            if reasoning is not None and _is_true(r.get("reasoning_model")) != reasoning:
+                continue
+            if needles:
+                hay = ((r.get("creator_name") or "") + "\x00"
+                       + (r.get("creator_slug") or "")).lower()
+                if not any(n in hay for n in needles):
+                    continue
+            rows.append({**r, "_intel": intel, "_x": x})
     return rows
 
 
 def pareto_front(rows: list[dict]) -> list[dict]:
-    """Return rows on the cost-min / intelligence-max Pareto frontier.
+    """Return rows on the x-min / intelligence-max Pareto frontier.
 
-    Sort by cost ascending (tiebreak: intelligence descending), then walk left
+    Sort by x ascending (tiebreak: intelligence descending), then walk left
     to right keeping only points that strictly raise the running max intel.
     """
-    sorted_rows = sorted(rows, key=lambda r: (r["_cost"], -r["_intel"]))
+    sorted_rows = sorted(rows, key=lambda r: (r["_x"], -r["_intel"]))
     front: list[dict] = []
     best_intel = -math.inf
     for r in sorted_rows:
@@ -122,8 +155,8 @@ def near_front(rows: list[dict], front: list[dict], gap_pct: float) -> list[dict
 
     The window is a fixed number of index points (gap_pct%% * y-range), so the
     bottom-left and top-right of the chart get the same vertical tolerance. The
-    frontier is a non-decreasing step function over cost; at cost c the frontier
-    value is the intelligence of the largest-cost frontier point with cost <= c.
+    frontier is a non-decreasing step function over x; at value c the frontier
+    intel is that of the largest-x frontier point with x <= c.
     """
     if not rows:
         return []
@@ -133,16 +166,16 @@ def near_front(rows: list[dict], front: list[dict], gap_pct: float) -> list[dict
         return []
     gap_points = y_range * gap_pct / 100.0
 
-    front_sorted = sorted(front, key=lambda r: r["_cost"])
+    front_sorted = sorted(front, key=lambda r: r["_x"])
     front_set = {r["slug"] for r in front}
     near: list[dict] = []
     for r in rows:
         if r["slug"] in front_set:
             continue
-        # Frontier intel at this cost = last frontier point with cost <= r._cost.
+        # Frontier intel at this x = last frontier point with x <= r._x.
         f_intel = -math.inf
         for fr in front_sorted:
-            if fr["_cost"] <= r["_cost"]:
+            if fr["_x"] <= r["_x"]:
                 f_intel = fr["_intel"]
             else:
                 break
@@ -170,10 +203,23 @@ def shorten(name: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--axis", choices=list(AXES), default="cost",
+                    help="X axis: 'cost' (idx-run$, default) or 'speed' "
+                         "(end-to-end latency in seconds). Both: lower is better.")
     ap.add_argument("--max-cost", type=float, default=750.0,
-                    help="Drop models with cost above this (USD).")
+                    help="On --axis cost: drop models with cost above this (USD).")
     ap.add_argument("--min-cost", type=float, default=0.0,
-                    help="Drop models with cost below this (USD).")
+                    help="On --axis cost: drop models with cost below this (USD).")
+    ap.add_argument("--max-latency", type=float, default=None,
+                    help="On --axis speed: drop models slower than this (seconds).")
+    ap.add_argument("--min-latency", type=float, default=0.0,
+                    help="On --axis speed: drop models faster than this (seconds).")
+    ap.add_argument("--creator", default=None,
+                    help="CSV of creator substrings (case-insensitive, OR within), "
+                         "matched against creator name/slug. e.g. alibaba,deepseek.")
+    ap.add_argument("--reasoning", action=argparse.BooleanOptionalAction, default=None,
+                    help="Keep only reasoning (or --no-reasoning) models. "
+                         "Default: no filter.")
     ap.add_argument("--near", type=float, default=15.0,
                     help="Near-frontier threshold as %% of the y-axis intelligence "
                          "range. E.g. 15 means a uniform window of 15%% of the "
@@ -190,38 +236,58 @@ def main() -> int:
     ap.add_argument("--out", default="artifacts/pareto.png", help="Output PNG path.")
     args = ap.parse_args()
 
-    rows = load_rows(args.min_cost, args.max_cost,
-                     args.text, args.image, args.video, args.audio, args.free_only)
+    unit = AXES[args.axis]["unit"]
+    if args.axis == "cost":
+        min_x, max_x = args.min_cost, args.max_cost
+    else:
+        min_x = args.min_latency
+        max_x = args.max_latency if args.max_latency is not None else math.inf
+    creators = [t.strip() for t in (args.creator or "").split(",") if t.strip()]
+
+    rows = load_rows(args.axis, min_x, max_x,
+                     args.text, args.image, args.video, args.audio, args.free_only,
+                     creators=creators, reasoning=args.reasoning)
+    if not rows:
+        print("# no models match the filters", flush=True)
+        return 1
     front = pareto_front(rows)
     near = near_front(rows, front, args.near)
     front_set = {r["slug"] for r in front}
     near_set = {r["slug"] for r in near}
     others = [r for r in rows if r["slug"] not in front_set and r["slug"] not in near_set]
 
+    def fmt_x(v: float) -> str:
+        return f"${v:.2f}" if unit == "$" else f"{v:.1f}s"
+
     intel_values = [r["_intel"] for r in rows]
     y_range = max(intel_values) - min(intel_values) if intel_values else 0
     window_pts = y_range * args.near / 100.0
-    modality_bits = [
+    filter_bits = [
+        f"axis={args.axis}",
         f"text={'on' if args.text else 'off'}",
         f"image={'on' if args.image else 'off'}",
         f"video={'on' if args.video else 'off'}",
         f"audio={'on' if args.audio else 'off'}",
+        f"reasoning={'any' if args.reasoning is None else args.reasoning}",
+        f"creator={','.join(creators) if creators else 'any'}",
     ]
-    print(f"Modality filters: {', '.join(modality_bits)}")
-    print(f"{len(rows)} models in ${args.min_cost:.0f} <= cost <= ${args.max_cost:.0f}")
+    print(f"Filters: {', '.join(filter_bits)}")
+    print(f"{len(rows)} models in {fmt_x(min_x)} <= {args.axis} <= "
+          f"{fmt_x(max_x) if max_x != math.inf else 'inf'}")
     print(f"  y-range: {min(intel_values):.1f} -> {max(intel_values):.1f}  "
           f"(near window = {args.near:g}% = {window_pts:.2f} index pts)")
     print(f"  Pareto frontier: {len(front)} models")
     print(f"  Near-frontier: {len(near)} models")
     print(f"  Other (off-frontier): {len(others)} models")
 
-    print("\n--- Pareto frontier (cheapest -> most expensive) ---")
-    for r in sorted(front, key=lambda r: r["_cost"]):
-        print(f"  ${r['_cost']:8.2f}  {r['_intel']:6.2f}  {r['name']}  [{r['creator_name']}]")
+    best = "cheapest -> most expensive" if args.axis == "cost" else "fastest -> slowest"
+    print(f"\n--- Pareto frontier ({best}) ---")
+    for r in sorted(front, key=lambda r: r["_x"]):
+        print(f"  {fmt_x(r['_x']):>9}  {r['_intel']:6.2f}  {r['name']}  [{r['creator_name']}]")
 
     print("\n--- Near-frontier ---")
-    for r in sorted(near, key=lambda r: r["_cost"]):
-        print(f"  ${r['_cost']:8.2f}  {r['_intel']:6.2f}  {r['name']}  [{r['creator_name']}]")
+    for r in sorted(near, key=lambda r: r["_x"]):
+        print(f"  {fmt_x(r['_x']):>9}  {r['_intel']:6.2f}  {r['name']}  [{r['creator_name']}]")
 
     # --- Plot ---
     fig, ax = plt.subplots(figsize=(20, 14))
@@ -229,26 +295,26 @@ def main() -> int:
     # Off-frontier in light gray.
     if others:
         ax.scatter(
-            [r["_cost"] for r in others],
+            [r["_x"] for r in others],
             [r["_intel"] for r in others],
             s=14, color="#D1D5DB", alpha=0.55, zorder=1, label="Off-frontier",
         )
 
     # Near-frontier: hollow circles colored by creator.
     for r in near:
-        ax.scatter(r["_cost"], r["_intel"], s=70,
+        ax.scatter(r["_x"], r["_intel"], s=70,
                    facecolors="none", edgecolors=color_for(r["creator_name"]),
                    linewidths=1.6, zorder=3)
 
     # Frontier dots: filled.
     for r in front:
-        ax.scatter(r["_cost"], r["_intel"], s=95,
+        ax.scatter(r["_x"], r["_intel"], s=95,
                    color=color_for(r["creator_name"]), edgecolors="white",
                    linewidths=0.9, zorder=4)
 
     # Frontier step line.
-    front_sorted = sorted(front, key=lambda r: r["_cost"])
-    fx = [r["_cost"] for r in front_sorted]
+    front_sorted = sorted(front, key=lambda r: r["_x"])
+    fx = [r["_x"] for r in front_sorted]
     fy = [r["_intel"] for r in front_sorted]
     ax.step(fx, fy, where="post", color="#16A34A", linewidth=2, alpha=0.7,
             zorder=2, label=f"Pareto frontier ({len(front)} models)")
@@ -256,17 +322,17 @@ def main() -> int:
     # Axes set BEFORE labels so adjust_text can use real display coords.
     # log2 X, linear Y. Tick at base-2 powers from min to max.
     ax.set_xscale("log", base=2)
-    min_cost = min(r["_cost"] for r in rows)
-    max_cost = max(r["_cost"] for r in rows)
-    lo_exp = math.floor(math.log2(min_cost))
-    hi_exp = math.ceil(math.log2(max_cost))
+    min_x_seen = min(r["_x"] for r in rows)
+    max_x_seen = max(r["_x"] for r in rows)
+    lo_exp = math.floor(math.log2(min_x_seen))
+    hi_exp = math.ceil(math.log2(max_x_seen))
     ticks = [2 ** e for e in range(lo_exp, hi_exp + 1)]
     ax.xaxis.set_major_locator(FixedLocator(ticks))
     # Y padding for label headroom; X padding so right-edge labels fit.
     y_min = min(r["_intel"] for r in rows)
     y_max = max(r["_intel"] for r in rows)
     ax.set_ylim(y_min - 2, y_max + 5)
-    ax.set_xlim(min_cost / 1.5, max_cost * 1.6)
+    ax.set_xlim(min_x_seen / 1.5, max_x_seen * 1.6)
 
     # Labels (only for frontier + near).
     texts = []
@@ -274,7 +340,7 @@ def main() -> int:
         bold = r["slug"] in front_set
         free_mark = "* " if _is_true(r.get("openrouter_has_free")) else ""
         txt = ax.text(
-            r["_cost"], r["_intel"], free_mark + shorten(r["name"]),
+            r["_x"], r["_intel"], free_mark + shorten(r["name"]),
             fontsize=9 if bold else 7,
             fontweight="bold" if bold else "normal",
             color=color_for(r["creator_name"]),
@@ -289,22 +355,24 @@ def main() -> int:
         lim=400,  # more iterations for the dense top-right cluster
         arrowprops=dict(arrowstyle="-", color="#9CA3AF", lw=0.5, alpha=0.7),
     )
-    def fmt_usd(x, _pos):
-        if x >= 1000:
-            return f"${x/1000:.1f}k".replace(".0k", "k")
-        return f"${x:.0f}"
-    ax.xaxis.set_major_formatter(FuncFormatter(fmt_usd))
+    def fmt_tick(x, _pos):
+        if unit == "$":
+            if x >= 1000:
+                return f"${x/1000:.1f}k".replace(".0k", "k")
+            return f"${x:.0f}"
+        return f"{x:g}s"
+    ax.xaxis.set_major_formatter(FuncFormatter(fmt_tick))
 
-    ax.set_xlabel("Cost to Run Intelligence Index (USD, log base 2)", fontsize=11)
+    ax.set_xlabel(AXES[args.axis]["label"], fontsize=11)
     ax.set_ylabel("Artificial Analysis Intelligence Index", fontsize=11)
-    cost_range = (
-        f"<= ${args.max_cost:.0f}"
-        if args.min_cost <= 0
-        else f"${args.min_cost:.0f}-${args.max_cost:.0f}"
-    )
+    if min_x <= 0 or (args.axis == "speed" and args.min_latency <= 0):
+        x_range = f"<= {fmt_x(max_x)}" if max_x != math.inf else "all"
+    else:
+        x_range = f"{fmt_x(min_x)}-{fmt_x(max_x)}"
+    axis_label = "Cost" if args.axis == "cost" else "Speed"
     ax.set_title(
-        f"Intelligence vs. Cost Pareto Frontier  "
-        f"(cost {cost_range}, near = within {args.near:g}% of y-range "
+        f"Intelligence vs. {axis_label} Pareto Frontier  "
+        f"({args.axis} {x_range}, near = within {args.near:g}% of y-range "
         f"= {window_pts:.1f} idx pts)",
         fontsize=13,
     )
