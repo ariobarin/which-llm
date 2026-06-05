@@ -33,7 +33,9 @@ STALE_AFTER_DAYS = 7  # warn (don't refuse) if data older than this
 # Canonical output columns. Both the table renderer and `--json` use these.
 OUTPUT_FIELDS = [
     "slug", "name", "creator_name", "intelligence_index",
-    "intelligence_index_cost_usd", "context_window_tokens",
+    "intelligence_index_cost_usd",
+    "price_1m_input_tokens", "price_1m_output_tokens",
+    "context_window_tokens",
     "ttft_seconds", "e2e_response_seconds",
     "openrouter_has_free", "openrouter_slug", "openrouter_free_slug",
 ]
@@ -242,6 +244,8 @@ def _print_table(rows: list[dict]) -> None:
 _JSON_ROUND = {
     "intelligence_index": 1,
     "intelligence_index_cost_usd": 2,
+    "price_1m_input_tokens": 3,
+    "price_1m_output_tokens": 3,
     "ttft_seconds": 1,
     "e2e_response_seconds": 1,
 }

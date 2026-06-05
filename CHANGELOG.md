@@ -16,6 +16,14 @@ loosely follows [SemVer](https://semver.org/).
 - `--creator a,b` filter (CSV substrings, case-insensitive, matched against
   creator name/slug) and `--list-creators` to discover the roster. AA has no
   country field, so geography is filtered by naming labs rather than baked in.
+- `--json` now carries both cost axes (`price_1m_input_tokens` /
+  `price_1m_output_tokens` alongside `intelligence_index_cost_usd`) so a
+  single query shows per-token price and run-cost together.
+
+### Changed
+- SKILL.md gains a "Presenting results" section: surface both cost columns
+  whenever cost matters, present axes neutrally without steering to a single
+  pick, and attach caveats as footnotes rather than verdicts.
 
 ## [0.2.0] - 2026-05-23
 

@@ -90,6 +90,15 @@ uv run python query.py show claude-opus-4-7
 uv run python query.py models gpt-5 --top 10
 ```
 
+## Presenting results
+
+Report the data, let the user choose. The tool surfaces tradeoffs; it does not pick winners.
+
+- **Show both cost columns whenever cost is in play.** Per-token price (`price_1m_input_tokens` / `price_1m_output_tokens`) is the real API bill; `idx-run$` (`intelligence_index_cost_usd`) captures how many tokens a model spends to do the same work (verbosity). They can disagree sharply — a model with a low per-token price can still have a high `idx-run$`. Dropping either hides a real axis, so include both rather than collapsing to one.
+- **Stay neutral.** Present intelligence, cost, speed, context, and modality side by side and let the numbers stand. Do not editorialize toward a single "best" or "default" pick, rank by a hidden weighting, or omit a column because it complicates the story. If the user asked to optimize one axis, sort by it and say so plainly; otherwise show the spread.
+- **Attach the caveat, not a verdict.** When a number has a footnote (`idx-run$` is a relative proxy not a per-call price; latency is one fixed run and includes reasoning time for thinking models; `:free` is a rate-limited promo listing; the composite `intelligence_index` hides per-benchmark detail), state it neutrally next to the figure instead of using it to argue for or against a model.
+- **Make a recommendation only when asked**, and when you do, show the comparison table first and label it as your read of their stated priorities, not a property of the data.
+
 ## When NOT to use
 
 - Benchmarks AA doesn't track (domain evals, custom evals). Use the model's own published numbers.
