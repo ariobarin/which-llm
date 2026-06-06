@@ -174,12 +174,17 @@ def pareto_frontier(rows: list[dict]) -> list[dict]:
     return front
 
 
+def _speed_key(r):
+    """End-to-end latency ascending (faster first); unmeasured sorts last."""
+    lat = _f(r.get("e2e_response_seconds"))
+    return (lat if lat is not None else math.inf,)
+
+
 SORT_KEYS = {
     "intel": lambda r: (-( _f(r.get("intelligence_index")) or -math.inf),),
     "cost":  lambda r: ( _f(r.get("intelligence_index_cost_usd")) or math.inf,),
     "ctx":   lambda r: (-( _f(r.get("context_window_tokens")) or 0),),
-    # End-to-end latency ascending (faster first); unmeasured sorts last.
-    "speed": lambda r: ( _f(r.get("e2e_response_seconds")) if _f(r.get("e2e_response_seconds")) is not None else math.inf,),
+    "speed": _speed_key,
 }
 
 
