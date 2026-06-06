@@ -104,6 +104,38 @@ def test_flatten_extracts_core_fields():
     assert flat["gpqa"] == 0.91
 
 
+def test_flatten_extracts_latency_metrics():
+    m = {
+        "name": "Fast Model",
+        "slug": "fast",
+        "time_to_first_answer_token_metrics": {"total_time": 0.9},
+        "end_to_end_response_time_metrics": {"total_time": 4.6, "answer_time": 3.4},
+    }
+    flat = scrape.flatten(m)
+    assert flat["ttft_seconds"] == 0.9
+    assert flat["e2e_response_seconds"] == 4.6
+
+
+def test_flatten_treats_zero_latency_as_unmeasured():
+    # AA emits an all-zero metrics dict for models it hasn't speed-tested;
+    # total_time == 0 must become None so it doesn't sort as 'fastest'.
+    m = {
+        "name": "Untimed Model",
+        "slug": "untimed",
+        "time_to_first_answer_token_metrics": {"total_time": 0},
+        "end_to_end_response_time_metrics": {"total_time": 0},
+    }
+    flat = scrape.flatten(m)
+    assert flat["ttft_seconds"] is None
+    assert flat["e2e_response_seconds"] is None
+
+
+def test_flatten_missing_latency_is_none():
+    flat = scrape.flatten({"name": "No Metrics", "slug": "none"})
+    assert flat["ttft_seconds"] is None
+    assert flat["e2e_response_seconds"] is None
+
+
 def test_flatten_coerces_rsc_sentinels():
     m = {
         "name": "Sparse Model",

@@ -3,6 +3,17 @@
 All notable changes to which-llm will be documented in this file. Versioning
 loosely follows [SemVer](https://semver.org/).
 
+## [0.3.0] - 2026-06-05
+
+### Added
+- Response-speed data: `ttft_seconds` (time to first answer token) and
+  `e2e_response_seconds` (end-to-end latency) flattened from AA's metrics
+  into the CSV, `show`, and `--json`.
+- `--sort speed` (end-to-end latency, fastest first) and `--max-latency N`
+  filter. An `e2e_s` column now appears in the `models` table.
+- Unmeasured latency is normalized to null (AA emits an all-zero metrics
+  dict for un-speed-tested models) so they don't masquerade as "fastest".
+
 ## [0.2.0] - 2026-05-23
 
 **Breaking CLI redesign** (pre-release, no users depending on old surface yet).

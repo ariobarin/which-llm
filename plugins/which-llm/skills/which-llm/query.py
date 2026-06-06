@@ -34,6 +34,7 @@ STALE_AFTER_DAYS = 7  # warn (don't refuse) if data older than this
 OUTPUT_FIELDS = [
     "slug", "name", "creator_name", "intelligence_index",
     "intelligence_index_cost_usd", "context_window_tokens",
+    "ttft_seconds", "e2e_response_seconds",
     "openrouter_has_free", "openrouter_slug", "openrouter_free_slug",
 ]
 
@@ -106,6 +107,7 @@ def load_rows(
     max_cost: float = math.inf,
     intel_min: float | None = None,
     context_min: int | None = None,
+    max_latency: float | None = None,
     reasoning: bool | None = None,
     open_weights: bool | None = None,
 ) -> list[dict]:
@@ -129,6 +131,10 @@ def load_rows(
                 continue
             if context_min is not None and (_f(r.get("context_window_tokens")) or 0) < context_min:
                 continue
+            if max_latency is not None:
+                lat = _f(r.get("e2e_response_seconds"))
+                if lat is None or lat > max_latency:  # unmeasured can't be confirmed fast
+                    continue
             if reasoning is not None and _is_true(r.get("reasoning_model")) != reasoning:
                 continue
             if open_weights is not None and _is_true(r.get("is_open_weights")) != open_weights:
@@ -168,10 +174,17 @@ def pareto_frontier(rows: list[dict]) -> list[dict]:
     return front
 
 
+def _speed_key(r):
+    """End-to-end latency ascending (faster first); unmeasured sorts last."""
+    lat = _f(r.get("e2e_response_seconds"))
+    return (lat if lat is not None else math.inf,)
+
+
 SORT_KEYS = {
     "intel": lambda r: (-( _f(r.get("intelligence_index")) or -math.inf),),
     "cost":  lambda r: ( _f(r.get("intelligence_index_cost_usd")) or math.inf,),
     "ctx":   lambda r: (-( _f(r.get("context_window_tokens")) or 0),),
+    "speed": _speed_key,
 }
 
 
@@ -192,6 +205,11 @@ def _fmt_intel(v) -> str:
     return f"{f:.1f}" if f is not None else "-"
 
 
+def _fmt_secs(v) -> str:
+    f = _f(v)
+    return f"{f:.1f}" if f is not None else "-"
+
+
 def _row_for_output(r: dict) -> dict:
     return {
         "slug": r.get("slug") or "",
@@ -200,6 +218,7 @@ def _row_for_output(r: dict) -> dict:
         "intel": _fmt_intel(r.get("intelligence_index")),
         "idx-run$": _fmt_cost(r.get("intelligence_index_cost_usd")),
         "ctx": r.get("context_window_tokens") or "-",
+        "e2e_s": _fmt_secs(r.get("e2e_response_seconds")),
         "free": "y" if _is_true(r.get("openrouter_has_free")) else "",
         "openrouter": r.get("openrouter_slug") or "-",
     }
@@ -221,6 +240,8 @@ def _print_table(rows: list[dict]) -> None:
 _JSON_ROUND = {
     "intelligence_index": 1,
     "intelligence_index_cost_usd": 2,
+    "ttft_seconds": 1,
+    "e2e_response_seconds": 1,
 }
 
 
@@ -263,6 +284,7 @@ def cmd_models(args) -> int:
         max_cost=args.max_cost if args.max_cost is not None else math.inf,
         intel_min=args.intel_min,
         context_min=args.context_min,
+        max_latency=args.max_latency,
         reasoning=args.reasoning,
         open_weights=args.open_weights,
     )
@@ -331,6 +353,10 @@ def cmd_show(args) -> int:
     print(f"  intelligence index:   {_fmt_intel(intel)}")
     print(f"  cost to run index:    {_fmt_cost(cost)}  (idx-run$, not a per-call price)")
     print(f"  per 1M output tokens: {_fmt_cost(per_m)}")
+    ttft = _f(r.get("ttft_seconds"))
+    e2e = _f(r.get("e2e_response_seconds"))
+    print(f"  response latency:     ttft {_fmt_secs(ttft)}s / end-to-end "
+          f"{_fmt_secs(e2e)}s  (AA run; reasoning models include think time)")
     print()
     print(f"  pricing per 1M tokens:")
     print(f"    input:   {_fmt_cost(r.get('price_1m_input_tokens'))}")
@@ -414,6 +440,9 @@ def _add_filter_args(p: argparse.ArgumentParser) -> None:
                    help="Minimum idx-run$ (USD).")
     p.add_argument("--context-min", type=int, default=None,
                    help="Minimum context window in tokens.")
+    p.add_argument("--max-latency", type=float, default=None,
+                   help="Maximum end-to-end response latency in seconds "
+                        "(AA's measured run). Drops models with no measurement.")
     p.add_argument("--reasoning", action=argparse.BooleanOptionalAction,
                    default=None,
                    help="Filter to reasoning (or --no-reasoning) models. "
