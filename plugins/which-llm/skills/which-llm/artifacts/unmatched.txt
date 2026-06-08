@@ -1,4 +1,4 @@
-# Unmatched non-deprecated AA models (120 total)
+# Unmatched non-deprecated AA models (121 total)
 # Run: uv run python enrich.py  (regenerates this file)
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
@@ -20,6 +20,7 @@ exaone-4-5-33b-non-reasoning                   EXAONE 4.5 33B (Non-reasoning)
 falcon-h1r-7b                                  Falcon-H1R-7B
 gemini-3-deep-think                            Gemini 3 Deep Think
 gemma-3-270m                                   Gemma 3 270M
+gemma-4-12b                                    Gemma 4 12B (Reasoning)
 gemma-4-e2b                                    Gemma 4 E2B (Reasoning)
 gemma-4-e2b-non-reasoning                      Gemma 4 E2B (Non-reasoning)
 gemma-4-e4b                                    Gemma 4 E4B (Reasoning)
