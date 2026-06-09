@@ -1,4 +1,4 @@
-# Unmatched non-deprecated AA models (121 total)
+# Unmatched non-deprecated AA models (122 total)
 # Run: uv run python enrich.py  (regenerates this file)
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
@@ -51,6 +51,7 @@ k2-v2-medium                                   K2-V2 (medium)
 kat-coder-pro-v1                               KAT-Coder-Pro V1
 kimi-linear-48b-a3b-instruct                   Kimi Linear 48B A3B Instruct
 lfm2-2-6b                                      LFM2 2.6B
+lfm2-5-8b-a1b                                  LFM2.5-8B-A1B
 lfm2-5-vl-1-6b                                 LFM2.5-VL-1.6B
 lfm2-8b-a1b                                    LFM2 8B A1B
 ling-mini-2-0                                  Ling-mini-2.0
