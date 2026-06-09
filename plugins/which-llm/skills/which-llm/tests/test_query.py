@@ -47,3 +47,19 @@ def test_resolve_model_can_prefer_strongest_openrouter_endpoint():
     )
     assert match["slug"] == "model-high"
     assert candidates == []
+
+
+def test_typed_returns_index_tokens_as_int():
+    assert query._typed("indexTokensTotal", "123456789") == 123456789
+
+
+def test_row_output_includes_index_token_count():
+    row = {
+        "slug": "model",
+        "name": "Model",
+        "creator_name": "Creator",
+        "intelligence_index": "50",
+        "intelligence_index_cost_usd": "100",
+        "indexTokensTotal": "123456789",
+    }
+    assert query._row_for_output(row)["idx-tok"] == "123.5M"

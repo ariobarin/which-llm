@@ -85,6 +85,7 @@ def test_flatten_extracts_core_fields():
         "intelligence_index_is_estimated": False,
         "estimated_intelligence_index": None,
         "intelligence_index_per_m_output_tokens": 0.5,
+        "indexTokensTotal": 123456789,
         "reasoning_model": True,
         "context_window_tokens": 200000,
         "parameters": 175,
@@ -100,6 +101,7 @@ def test_flatten_extracts_core_fields():
     assert flat["creator_name"] == "Anthropic"
     assert flat["intelligence_index"] == 55.123456
     assert flat["intelligence_index_cost_usd"] == 1234.5
+    assert flat["indexTokensTotal"] == 123456789
     assert flat["reasoning_model"] is True
     assert flat["gpqa"] == 0.91
 

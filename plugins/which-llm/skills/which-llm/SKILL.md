@@ -12,7 +12,7 @@ Up-to-date data on ~520 LLMs scraped from artificialanalysis.ai and cross-refere
 1. Run commands from this skill directory. Use plain `python`. Do not assume `uv` is installed.
 2. Start with `python query.py data status` when freshness matters.
 3. Use `python query.py models ...` for shortlists, `python query.py compare ...` for named model comparisons, `python query.py slug ...` for OpenRouter lookups, and `python query.py show <slug>` before recommending one model.
-4. In the answer, separate `idx-run$` from real API pricing. `idx-run$` is a benchmark-run cost proxy. `in$/1m` and `out$/1m` are the per-token API prices.
+4. In the answer, separate benchmark-run proxies from real API pricing. `idx-run$` is benchmark-run cost, `idx-tok` is benchmark-run token usage, and `in$/1m` / `out$/1m` are per-token API prices.
 5. If the user asks for an OpenRouter model, prefer `openrouter_slug` for production. Mention `openrouter_free_slug` only as a prototype option because `:free` endpoints have rate limits and can differ from the paid listing.
 
 ## Commands
@@ -35,11 +35,12 @@ Compatibility aliases: `find`, `list`, `recommend`, `frontier`, and `free` map t
 | Flag | Meaning |
 |---|---|
 | `--top N` | Max rows (default 20; `0` = unlimited). |
-| `--sort intel\|cost\|ctx\|speed` | Primary sort key (default: intel descending). `speed` = end-to-end latency ascending. |
+| `--sort intel\|cost\|ctx\|speed\|tokens` | Primary sort key (default: intel descending). `speed` = end-to-end latency ascending. `tokens` = benchmark tokens ascending. |
 | `--pareto` | Filter to cost-vs-intel Pareto frontier; ignores `--sort`. |
 | `--free` | Only models with a `:free` OpenRouter variant. |
 | `--intel-min N` | Minimum intelligence_index. |
 | `--max-cost N` / `--min-cost N` | Idx-run$ bounds (USD). |
+| `--max-index-tokens N` / `--min-index-tokens N` | Total tokens consumed by AA's full benchmark run. |
 | `--context-min N` | Minimum context window in tokens. |
 | `--max-latency N` | Max end-to-end response latency in seconds (drops models AA has not speed-tested). |
 | `--modality text,image,...` | Required input modalities (CSV). Default `text`. `any` to disable. |
@@ -52,6 +53,7 @@ Compatibility aliases: `find`, `list`, `recommend`, `frontier`, and `free` map t
 | User intent | Command |
 |---|---|
 | Cheapest strong reasoning models | `python query.py models --intel-min 50 --reasoning --sort cost --top 8` |
+| Token-efficient strong models | `python query.py models --intel-min 50 --sort tokens --top 8` |
 | Strong vision models under a budget | `python query.py models --modality text,image --max-cost 500 --sort intel --top 8` |
 | Fast agent-loop candidates | `python query.py models --no-reasoning --max-latency 6 --sort intel --top 8` |
 | Cheap long-context models | `python query.py models --context-min 256000 --sort cost --top 8` |
@@ -66,6 +68,7 @@ Compatibility aliases: `find`, `list`, `recommend`, `frontier`, and `free` map t
 
 - `intelligence_index`: composite 0-100 score across AA's benchmark suite (GPQA, HLE, MMLU-Pro, LiveCodeBench, MATH-500, AIME, SciCode, tau2, HumanEval, and others). A single composite hides which capabilities drive the score. For narrow use cases, check the individual benchmarks via `show <slug>`.
 - `intelligence_index_cost_usd` (table header `idx-run$`): USD to run AA's full benchmark suite once on this model. Relative inference-cost proxy, not a per-call price.
+- `indexTokensTotal` (table header `idx-tok`): total input plus output tokens consumed by AA's full benchmark run. Use this for token-efficiency comparisons across models.
 - `price_1m_input_tokens` / `price_1m_output_tokens` (table headers `in$/1m` / `out$/1m`): USD per million tokens. Use these for actual API cost calculations.
 - `openrouter_slug`: paid OR endpoint, e.g. `anthropic/claude-opus-4.7`. Goes straight into the OR API.
 - `openrouter_free_slug`: `:free` OR endpoint when available, e.g. `deepseek/deepseek-v4-flash:free`. `:free` is a rate-limited promotional/community listing, not a tier of the same model. Different quantization, daily caps, and no SLA are common. Recommend for prototyping only.
@@ -87,6 +90,9 @@ python query.py models --free --sort cost --top 0
 
 # Cheapest model with intelligence above 50 that supports reasoning:
 python query.py models --intel-min 50 --reasoning --sort cost --top 5
+
+# Token-efficient models with intelligence above 50:
+python query.py models --intel-min 50 --sort tokens --top 5
 
 # Fastest non-reasoning models, by measured end-to-end latency:
 python query.py models --no-reasoning --sort speed --top 10

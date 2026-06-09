@@ -28,16 +28,16 @@ cp -r /tmp/which-llm/plugins/which-llm/skills/which-llm ~/.claude/skills/which-l
 ## Example output
 
 ```text
-$ python query.py models --intel-min 50 --reasoning --sort cost --top 3
+$ python query.py models --intel-min 50 --reasoning --sort tokens --top 3
 
-slug             name                                     creator   intel  idx-run$  in$/1m  out$/1m  ctx      e2e_s  free  openrouter
----------------  ---------------------------------------  --------  -----  --------  ------  -------  -------  -----  ----  ------------------------
-mimo-v2-5-pro    MiMo-V2.5-Pro                            Xiaomi    53.8   $160.82   $0.43   $0.87    1000000  62.6         xiaomi/mimo-v2.5-pro
-qwen3-7-plus     Qwen3.7 Plus                             Alibaba   53.3   $208.89   $0.40   $1.16    1000000  49.8         qwen/qwen3.7-plus
-deepseek-v4-pro  DeepSeek V4 Pro (Reasoning, Max Effort)  DeepSeek  51.5   $267.82   $0.43   $0.87    1000000  85.3         deepseek/deepseek-v4-pro
+slug                    name                    creator  intel  idx-run$  idx-tok  in$/1m  out$/1m  ctx      e2e_s  free  openrouter
+----------------------  ----------------------  -------  -----  --------  -------  ------  -------  -------  -----  ----  -----------------------------
+gpt-5-5-low             GPT-5.5 (low)           OpenAI   50.8   $500.67   65.1M    $5.00   $30.00   922000   12.1         openai/gpt-5.5
+gpt-5-5-medium          GPT-5.5 (medium)        OpenAI   56.7   $1,199    127.5M   $5.00   $30.00   922000   18.7         openai/gpt-5.5
+gemini-3-1-pro-preview  Gemini 3.1 Pro Preview  Google   57.2   $892.28   159.7M   $2.00   $12.00   1000000  26.3         google/gemini-3.1-pro-preview
 ```
 
-`idx-run$` is USD to run AA's full benchmark suite once on the model. It is a relative inference-cost proxy, not a per-call price. For actual API pricing, use `in$/1m` and `out$/1m` in the table, or the `price_1m_input_tokens` / `price_1m_output_tokens` fields.
+`idx-run$` is USD to run AA's full benchmark suite once on the model. `idx-tok` is total tokens consumed by that benchmark run. Both are relative benchmark-run proxies, not per-call prices. For actual API pricing, use `in$/1m` and `out$/1m` in the table, or the `price_1m_input_tokens` / `price_1m_output_tokens` fields.
 
 **About `:free` OpenRouter slugs:** These are not "the free version of the model". They are community / promotional endpoints (often via Chutes or similar) with aggressive rate limits, daily caps, and sometimes different quantization than the paid listing. They are useful for prototyping. Do not wire them into production without testing throughput against your real load.
 
@@ -57,6 +57,7 @@ Agent recipe examples:
 ```text
 python query.py data status
 python query.py models --intel-min 50 --reasoning --sort cost --top 8
+python query.py models --intel-min 50 --sort tokens --top 8
 python query.py models --modality text,image --max-cost 500 --sort intel --top 8
 python query.py models --free --sort cost --top 20
 python query.py compare claude-opus-4-7 gpt-5
@@ -77,7 +78,7 @@ Short intent commands for agents.
 | `query.py data status` | Data freshness, model count, OpenRouter enrichment status |
 | `query.py data refresh` | Re-scrape AA and cross-reference OR |
 
-`models` flags: `--top N`, `--sort intel|cost|ctx|speed`, `--pareto`, `--free`, `--intel-min N`, `--max-cost N`, `--min-cost N`, `--context-min N`, `--modality text,image,audio,video`, `--reasoning`/`--no-reasoning`, `--open-weights`/`--no-open-weights`, `--json`.
+`models` flags: `--top N`, `--sort intel|cost|ctx|speed|tokens`, `--pareto`, `--free`, `--intel-min N`, `--max-cost N`, `--min-cost N`, `--max-index-tokens N`, `--min-index-tokens N`, `--context-min N`, `--modality text,image,audio,video`, `--reasoning`/`--no-reasoning`, `--open-weights`/`--no-open-weights`, `--json`.
 
 Compatibility aliases are available for agents that try older verbs: `find`, `list`, `recommend`, `frontier`, `free`, `info`, `status`, and `refresh`.
 
@@ -85,7 +86,7 @@ Compatibility aliases are available for agents that try older verbs: `find`, `li
 
 ## How it works
 
-1. `scrape.py` fetches `artificialanalysis.ai/models` (an 8 MB HTML page) and parses the Next.js RSC payload, extracting every model object with its full schema: 60+ fields including individual benchmarks, pricing tiers, modality flags, context window, and reasoning capability.
+1. `scrape.py` fetches `artificialanalysis.ai/models` (an 8 MB HTML page) and parses the Next.js RSC payload, extracting every model object with its full schema: 60+ fields including individual benchmarks, benchmark-run token usage, pricing tiers, modality flags, context window, and reasoning capability.
 2. `enrich.py` fetches the OpenRouter catalog and matches each AA model against it by name, with token-multiset fallback for word-order differences. Current match rate ~51%; the rest are mostly models OpenRouter does not carry.
 3. `query.py` reads the merged CSV and answers structured questions.
 4. A daily GitHub Action re-runs steps 1-2 and commits any changes, so the shipped snapshot is rarely more than 24h stale.

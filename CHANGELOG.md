@@ -3,6 +3,17 @@
 All notable changes to which-llm will be documented in this file. Versioning
 loosely follows [SemVer](https://semver.org/).
 
+## Unreleased
+
+### Added
+- `indexTokensTotal` is now flattened into CSV output, emitted in JSON,
+  shown as `idx-tok` in tables, and exposed through `--sort tokens`,
+  `--max-index-tokens`, and `--min-index-tokens`.
+
+### Changed
+- Pareto chart labels preserve reasoning effort and non-reasoning variants
+  when shortening model names.
+
 ## [0.3.1] - 2026-06-09
 
 ### Added

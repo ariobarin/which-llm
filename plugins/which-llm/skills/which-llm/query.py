@@ -3,6 +3,7 @@
   python query.py models                                 # top 20 by intel
   python query.py models claude                          # substring match
   python query.py models --top 5 --max-cost 500 --modality text,image
+  python query.py models --intel-min 50 --sort tokens       # token-efficient
   python query.py models --pareto --max-cost 200         # Pareto frontier
   python query.py models --free                          # OR-free models
   python query.py compare claude-opus-4-7 gpt-5          # side-by-side table
@@ -36,7 +37,8 @@ STALE_AFTER_DAYS = 7  # warn (don't refuse) if data older than this
 # Canonical output columns. Both the table renderer and `--json` use these.
 OUTPUT_FIELDS = [
     "slug", "name", "creator_name", "intelligence_index",
-    "intelligence_index_cost_usd", "context_window_tokens",
+    "intelligence_index_cost_usd", "indexTokensTotal",
+    "context_window_tokens",
     "price_1m_input_tokens", "price_1m_output_tokens",
     "ttft_seconds", "e2e_response_seconds",
     "openrouter_has_free", "openrouter_slug", "openrouter_free_slug",
@@ -115,6 +117,8 @@ def load_rows(
     max_cost: float = math.inf,
     intel_min: float | None = None,
     context_min: int | None = None,
+    max_index_tokens: float | None = None,
+    min_index_tokens: float = 0.0,
     max_latency: float | None = None,
     reasoning: bool | None = None,
     open_weights: bool | None = None,
@@ -138,6 +142,14 @@ def load_rows(
             if intel_min is not None and (_f(r.get("intelligence_index")) or -1) < intel_min:
                 continue
             if context_min is not None and (_f(r.get("context_window_tokens")) or 0) < context_min:
+                continue
+            index_tokens = _f(r.get("indexTokensTotal"))
+            if max_index_tokens is not None and index_tokens is None:
+                continue
+            if index_tokens is not None and (
+                index_tokens < min_index_tokens
+                or (max_index_tokens is not None and index_tokens > max_index_tokens)
+            ):
                 continue
             if max_latency is not None:
                 lat = _f(r.get("e2e_response_seconds"))
@@ -268,6 +280,7 @@ SORT_KEYS = {
     "intel": lambda r: (-( _f(r.get("intelligence_index")) or -math.inf),),
     "cost":  lambda r: ( _f(r.get("intelligence_index_cost_usd")) or math.inf,),
     "ctx":   lambda r: (-( _f(r.get("context_window_tokens")) or 0),),
+    "tokens": lambda r: (_f(r.get("indexTokensTotal")) or math.inf,),
     "speed": _speed_key,
 }
 
@@ -294,6 +307,19 @@ def _fmt_secs(v) -> str:
     return f"{f:.1f}" if f is not None else "-"
 
 
+def _fmt_tokens(v) -> str:
+    f = _f(v)
+    if f is None:
+        return "-"
+    if f >= 1_000_000_000:
+        return f"{f / 1_000_000_000:.2f}B"
+    if f >= 1_000_000:
+        return f"{f / 1_000_000:.1f}M"
+    if f >= 1_000:
+        return f"{f / 1_000:.1f}K"
+    return f"{f:.0f}"
+
+
 def _row_for_output(r: dict) -> dict:
     return {
         "slug": r.get("slug") or "",
@@ -301,6 +327,7 @@ def _row_for_output(r: dict) -> dict:
         "creator": r.get("creator_name") or "-",
         "intel": _fmt_intel(r.get("intelligence_index")),
         "idx-run$": _fmt_cost(r.get("intelligence_index_cost_usd")),
+        "idx-tok": _fmt_tokens(r.get("indexTokensTotal")),
         "in$/1m": _fmt_cost(r.get("price_1m_input_tokens")),
         "out$/1m": _fmt_cost(r.get("price_1m_output_tokens")),
         "ctx": r.get("context_window_tokens") or "-",
@@ -343,7 +370,7 @@ def _typed(k: str, v: str | None):
     if k in _JSON_ROUND:
         f = _f(v)
         return round(f, _JSON_ROUND[k]) if f is not None else None
-    if k == "context_window_tokens":
+    if k in ("context_window_tokens", "indexTokensTotal"):
         return int(float(v)) if v else None
     if k in _JSON_FLOAT:
         return _f(v)
@@ -381,6 +408,8 @@ def cmd_models(args) -> int:
         max_cost=args.max_cost if args.max_cost is not None else math.inf,
         intel_min=args.intel_min,
         context_min=args.context_min,
+        max_index_tokens=args.max_index_tokens,
+        min_index_tokens=args.min_index_tokens,
         max_latency=args.max_latency,
         reasoning=args.reasoning,
         open_weights=args.open_weights,
@@ -433,6 +462,7 @@ def cmd_show(args) -> int:
     print()
     print(f"  intelligence index:   {_fmt_intel(intel)}")
     print(f"  cost to run index:    {_fmt_cost(cost)}  (idx-run$, not a per-call price)")
+    print(f"  tokens to run index:  {_fmt_tokens(r.get('indexTokensTotal'))}")
     print(f"  index per 1M output:  {_fmt_cost(per_m)}")
     ttft = _f(r.get("ttft_seconds"))
     e2e = _f(r.get("e2e_response_seconds"))
@@ -570,6 +600,10 @@ def _add_filter_args(p: argparse.ArgumentParser) -> None:
                    help="Minimum idx-run$ (USD).")
     p.add_argument("--context-min", type=int, default=None,
                    help="Minimum context window in tokens.")
+    p.add_argument("--max-index-tokens", type=float, default=None,
+                   help="Maximum total tokens to run AA's Intelligence Index.")
+    p.add_argument("--min-index-tokens", type=float, default=0.0,
+                   help="Minimum total tokens to run AA's Intelligence Index.")
     p.add_argument("--max-latency", type=float, default=None,
                    help="Maximum end-to-end response latency in seconds "
                         "(AA's measured run). Drops models with no measurement.")
@@ -599,7 +633,8 @@ def main() -> int:
     sp.add_argument("--top", type=int, default=20,
                     help="Max rows to return (default 20). 0 = unlimited.")
     sp.add_argument("--sort", choices=list(SORT_KEYS), default="intel",
-                    help="Primary sort key (default intel-desc).")
+                    help="Primary sort key: intel desc, cost asc, ctx desc, "
+                         "speed asc, tokens asc.")
     sp.add_argument("--pareto", action="store_true",
                     help="Filter to cost-vs-intel Pareto frontier; ignores --sort.")
     sp.add_argument("--json", action="store_true",
