@@ -251,6 +251,11 @@ _JSON_ROUND = {
     "e2e_response_seconds": 1,
 }
 
+_JSON_FLOAT = {
+    "price_1m_input_tokens",
+    "price_1m_output_tokens",
+}
+
 
 def _typed(k: str, v: str | None):
     """Parse CSV string to native type for JSON output, rounding where appropriate."""
@@ -261,6 +266,8 @@ def _typed(k: str, v: str | None):
         return round(f, _JSON_ROUND[k]) if f is not None else None
     if k == "context_window_tokens":
         return int(float(v)) if v else None
+    if k in _JSON_FLOAT:
+        return _f(v)
     if k in ("openrouter_has_free",):
         return v.strip().lower() == "true"
     return v
