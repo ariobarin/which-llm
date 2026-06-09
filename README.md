@@ -5,7 +5,7 @@
 [![Last refresh](https://img.shields.io/github/last-commit/ariobarin/which-llm?label=last%20refresh)](https://github.com/ariobarin/which-llm/commits/main)
 [![GitHub stars](https://img.shields.io/github/stars/ariobarin/which-llm?style=flat&logo=github)](https://github.com/ariobarin/which-llm/stargazers)
 
-A Claude Code skill that resolves "which model should I use?" to a real, current answer. Joins the [Artificial Analysis](https://artificialanalysis.ai/models) leaderboard (520+ models, intelligence/cost/benchmarks) with the [OpenRouter](https://openrouter.ai) catalog (slug availability, `:free` tier reality) into a single queryable dataset your agent can reason over. Refreshed daily.
+An agent skill that resolves "which model should I use?" to a real, current answer. It joins the [Artificial Analysis](https://artificialanalysis.ai/models) leaderboard (520+ models, intelligence, cost, benchmarks) with the [OpenRouter](https://openrouter.ai) catalog (slug availability, `:free` tier reality) into a single queryable dataset your agent can reason over. Refreshed daily.
 
 ## Install
 
@@ -14,7 +14,7 @@ A Claude Code skill that resolves "which model should I use?" to a real, current
 /plugin install which-llm@which-llm
 ```
 
-Auto-updates when this repo ships a new version. Requires Python 3.10+ and [`uv`](https://docs.astral.sh/uv/).
+Auto-updates when this repo ships a new version. Requires Python 3.10+. Cached queries and data refresh use the Python standard library.
 
 <details>
 <summary>Direct install without the plugin system</summary>
@@ -28,18 +28,18 @@ cp -r /tmp/which-llm/plugins/which-llm/skills/which-llm ~/.claude/skills/which-l
 ## Example output
 
 ```text
-$ uv run python query.py models --intel-min 50 --max-cost 500 --modality text,image --top 5
+$ python query.py models --intel-min 50 --reasoning --sort cost --top 3
 
-slug                  name                                     creator   intel  idx-run$  ctx      free  openrouter
---------------------  ---------------------------------------  --------  -----  --------  -------  ----  --------------------------
-deepseek-v4-pro       DeepSeek V4 Pro (Reasoning, Max Effort)  DeepSeek  51.5   $267.82   1000000        deepseek/deepseek-v4-pro
-grok-4-3              Grok 4.3 (high)                          xAI       53.2   $395.17   1000000        x-ai/grok-4.3
-mimo-v2-5-pro         MiMo-V2.5-Pro                            Xiaomi    53.8   $461.59   1000000        xiaomi/mimo-v2.5-pro
+slug             name                                     creator   intel  idx-run$  in$/1m  out$/1m  ctx      e2e_s  free  openrouter
+---------------  ---------------------------------------  --------  -----  --------  ------  -------  -------  -----  ----  ------------------------
+mimo-v2-5-pro    MiMo-V2.5-Pro                            Xiaomi    53.8   $160.82   $0.43   $0.87    1000000  62.6         xiaomi/mimo-v2.5-pro
+qwen3-7-plus     Qwen3.7 Plus                             Alibaba   53.3   $208.89   $0.40   $1.16    1000000  49.8         qwen/qwen3.7-plus
+deepseek-v4-pro  DeepSeek V4 Pro (Reasoning, Max Effort)  DeepSeek  51.5   $267.82   $0.43   $0.87    1000000  85.3         deepseek/deepseek-v4-pro
 ```
 
-`idx-run$` = USD to run AA's full benchmark suite once on the model — a relative inference-cost proxy, *not* a per-call price. For actual API pricing, use `price_1m_input_tokens` / `price_1m_output_tokens`.
+`idx-run$` is USD to run AA's full benchmark suite once on the model. It is a relative inference-cost proxy, not a per-call price. For actual API pricing, use `in$/1m` and `out$/1m` in the table, or the `price_1m_input_tokens` / `price_1m_output_tokens` fields.
 
-> ⚠ **About `:free` OpenRouter slugs:** These aren't "the free version of the model" — they're community / promotional endpoints (often via Chutes or similar) with aggressive rate limits, daily caps, and sometimes different quantization than the paid listing. Great for prototyping; don't wire them into production without testing throughput against your real load.
+**About `:free` OpenRouter slugs:** These are not "the free version of the model". They are community / promotional endpoints (often via Chutes or similar) with aggressive rate limits, daily caps, and sometimes different quantization than the paid listing. They are useful for prototyping. Do not wire them into production without testing throughput against your real load.
 
 ## What your agent will do with it
 
@@ -50,7 +50,17 @@ Trigger phrases that activate the skill:
 > *"Cheapest model with intelligence > 50?"*
 > *"Compare GPT-5.5, Claude Opus 4.7, and Gemini 3.1 Pro."*
 
-Under the hood the agent runs short `query.py` commands and reasons over the output.
+Under the hood the agent runs short `python query.py` commands and reasons over the output.
+
+Agent recipe examples:
+
+```text
+python query.py data status
+python query.py models --intel-min 50 --reasoning --sort cost --top 8
+python query.py models --modality text,image --max-cost 500 --sort intel --top 8
+python query.py models --free --sort cost --top 20
+python query.py show claude-opus-4-7
+```
 
 ## Commands
 
@@ -58,23 +68,23 @@ Three verbs, one consistent table schema.
 
 | Command | Use |
 |---|---|
-| `query.py models [<pattern>] [filters]` | Filter / rank / list models. Default: top 20 by intel. |
+| `query.py models [<pattern>] [filters]` | Filter, rank, or list models. Default: top 20 by intel. |
 | `query.py show <slug>` | Full per-model profile (benchmarks, pricing, OR slugs, modalities). Accepts fuzzy slug if unambiguous. |
 | `query.py data status` | Data freshness, model count, OpenRouter enrichment status |
-| `query.py data refresh` | Re-scrape AA + cross-reference OR (~10s) |
+| `query.py data refresh` | Re-scrape AA and cross-reference OR |
 
-`models` flags: `--top N`, `--sort intel|cost|ctx`, `--pareto`, `--free`, `--intel-min N`, `--max-cost N`, `--min-cost N`, `--context-min N`, `--modality text,image,audio,video`, `--reasoning`/`--no-reasoning`, `--open-weights`/`--no-open-weights`, `--json`.
+`models` flags: `--top N`, `--sort intel|cost|ctx|speed`, `--pareto`, `--free`, `--intel-min N`, `--max-cost N`, `--min-cost N`, `--context-min N`, `--modality text,image,audio,video`, `--reasoning`/`--no-reasoning`, `--open-weights`/`--no-open-weights`, `--json`.
 
-`plot_pareto.py` renders the Intelligence-vs-Cost Pareto chart as a PNG for visual exploration.
+`plot_pareto.py` renders the Intelligence-vs-Cost Pareto chart as a PNG for visual exploration. It needs optional `matplotlib` and `adjustText` packages.
 
 ## How it works
 
-1. `scrape.py` fetches `artificialanalysis.ai/models` (an 8 MB HTML page) and parses the Next.js RSC payload, extracting every model object with its full schema — 60+ fields including individual benchmarks, pricing tiers, modality flags, context window, reasoning capability.
-2. `enrich.py` fetches the OpenRouter catalog and matches each AA model against it by name, with token-multiset fallback for word-order differences. Current match rate ~51% — the rest are mostly models OpenRouter doesn't carry.
+1. `scrape.py` fetches `artificialanalysis.ai/models` (an 8 MB HTML page) and parses the Next.js RSC payload, extracting every model object with its full schema: 60+ fields including individual benchmarks, pricing tiers, modality flags, context window, and reasoning capability.
+2. `enrich.py` fetches the OpenRouter catalog and matches each AA model against it by name, with token-multiset fallback for word-order differences. Current match rate ~51%; the rest are mostly models OpenRouter does not carry.
 3. `query.py` reads the merged CSV and answers structured questions.
 4. A daily GitHub Action re-runs steps 1-2 and commits any changes, so the shipped snapshot is rarely more than 24h stale.
 
-No API keys, no auth, no rate-limited services — just public pages.
+No API keys, no auth, no rate-limited services. Just public pages.
 
 ## Data files
 
@@ -86,9 +96,9 @@ No API keys, no auth, no rate-limited services — just public pages.
 
 ## When NOT to use
 
-- Benchmarks AA doesn't track (domain-specific evals).
-- Models too new for AA to have indexed (<1 week post-release sometimes).
-- For an authoritative per-API-call price on a non-OR provider — verify directly with that provider.
+- Benchmarks AA does not track (domain-specific evals).
+- Models too new for AA to have indexed (less than 1 week post-release sometimes).
+- For an authoritative per-API-call price on a non-OR provider, verify directly with that provider.
 
 ## License
 

@@ -8,8 +8,8 @@ payload, locates the full model array (the `defaultData` prop), and dumps:
   artifacts/models.csv           flat per-model rows for quick analysis
 
 Run:
-  uv run python scrape.py            use cached HTML if present
-  uv run python scrape.py --refresh  re-download HTML
+  python scrape.py            use cached HTML if present
+  python scrape.py --refresh  re-download HTML
 """
 from __future__ import annotations
 
@@ -18,11 +18,10 @@ import csv
 import json
 import re
 import sys
+import time
+import urllib.error
+import urllib.request
 from pathlib import Path
-
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 URL = "https://artificialanalysis.ai/models"
 UA = (
@@ -36,23 +35,31 @@ JSON_PATH = ART / "models.json"
 CSV_PATH = ART / "models.csv"
 
 # Minimum sanity bounds on a parse. If we come back below these the page
-# structure changed or AA is half-broken — refuse to overwrite the snapshot.
+# structure changed or AA is half-broken. Refuse to overwrite the snapshot.
 MIN_MODELS = 400
 REQUIRED_KEYS = ("name", "slug", "intelligence_index", "model_creator_id")
 
 
-def _session() -> requests.Session:
-    """requests.Session with retries on transient upstream errors."""
-    s = requests.Session()
-    retry = Retry(
-        total=3,
-        backoff_factor=2,           # 0s, 2s, 4s
-        status_forcelist=(502, 503, 504, 520, 521, 522, 524),
-        allowed_methods=("GET",),
-        raise_on_status=False,
-    )
-    s.mount("https://", HTTPAdapter(max_retries=retry))
-    return s
+def _get_text(url: str, timeout: int = 60) -> str:
+    """Fetch text with a small retry loop for transient upstream failures."""
+    transient_status = {502, 503, 504, 520, 521, 522, 524}
+    last_error: Exception | None = None
+    for attempt in range(4):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                return response.read().decode("utf-8")
+        except urllib.error.HTTPError as exc:
+            if exc.code not in transient_status:
+                raise
+            last_error = exc
+        except urllib.error.URLError as exc:
+            last_error = exc
+        if attempt < 3:
+            time.sleep(2 * attempt)
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError(f"failed to fetch {url}")
 
 
 def fetch_html(refresh: bool) -> str:
@@ -60,11 +67,10 @@ def fetch_html(refresh: bool) -> str:
         return HTML_PATH.read_text(encoding="utf-8")
     ART.mkdir(parents=True, exist_ok=True)
     print(f"GET {URL}")
-    r = _session().get(URL, headers={"User-Agent": UA}, timeout=60)
-    r.raise_for_status()
-    HTML_PATH.write_text(r.text, encoding="utf-8")
-    print(f"  saved {len(r.text):,} chars -> {HTML_PATH}")
-    return r.text
+    text = _get_text(URL)
+    HTML_PATH.write_text(text, encoding="utf-8")
+    print(f"  saved {len(text):,} chars -> {HTML_PATH}")
+    return text
 
 
 _CHUNK_RE = re.compile(r'self\.__next_f\.push\(\[(\d+),\s*"((?:[^"\\]|\\.)*)"\]\)', re.DOTALL)
@@ -78,7 +84,7 @@ def extract_rsc_stream(html: str) -> str:
             continue
         parts.append(json.loads('"' + m.group(2) + '"'))
     if not parts:
-        raise RuntimeError("No __next_f.push chunks found — page format changed?")
+        raise RuntimeError("No __next_f.push chunks found - page format changed?")
     return "".join(parts)
 
 
@@ -100,7 +106,7 @@ def find_default_data(stream: str, min_models: int = MIN_MODELS) -> list[dict]:
     m = _DEFAULT_DATA_RE.search(stream)
     if m is None:
         raise RuntimeError(
-            "Anchored defaultData marker not found — AA page structure changed?"
+            "Anchored defaultData marker not found - AA page structure changed?"
         )
     start = m.end() - 1  # position of '['
     decoder = json.JSONDecoder()
@@ -223,7 +229,7 @@ def _f(m: dict, key: str):
 def _pos(v):
     """Latency sentinel: AA reports an all-zero metrics dict for models it
     hasn't benchmarked for speed. A real run always has input_time > 0, so a
-    non-positive total_time means 'not measured' — return None, not 0."""
+    non-positive total_time means 'not measured'. Return None, not 0."""
     v = _clean(v)
     try:
         return v if v is not None and float(v) > 0 else None
@@ -346,7 +352,7 @@ def main() -> int:
                     )
                     return 2
         except (json.JSONDecodeError, OSError):
-            pass  # corrupt or missing previous snapshot — proceed
+            pass  # corrupt or missing previous snapshot, proceed
 
     ART.mkdir(parents=True, exist_ok=True)
     JSON_PATH.write_text(json.dumps(models, indent=2), encoding="utf-8")

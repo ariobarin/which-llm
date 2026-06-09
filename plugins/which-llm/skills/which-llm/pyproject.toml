@@ -1,17 +1,18 @@
 [project]
 name = "which-llm"
 version = "0.3.0"
-description = "Claude Code skill: query current LLM intelligence, cost, capabilities, and OpenRouter slugs (incl. free tier) from Artificial Analysis."
+description = "Agent skill: query current LLM intelligence, cost, capabilities, and OpenRouter slugs (incl. free tier) from Artificial Analysis."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
-    "adjusttext>=1.3.0",
-    "matplotlib>=3.10.9",
-    "requests>=2.34.2",
 ]
 
-[dependency-groups]
-dev = [
+[project.optional-dependencies]
+plot = [
+    "adjusttext>=1.3.0",
+    "matplotlib>=3.10.9",
+]
+test = [
     "pytest>=9.0.3",
 ]

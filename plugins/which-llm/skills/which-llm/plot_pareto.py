@@ -1,7 +1,7 @@
 """Plot the Intelligence vs. Cost Pareto frontier from scraped AA data.
 
-  uv run python plot_pareto.py
-  uv run python plot_pareto.py --max-cost 750 --near 3 --out artifacts/pareto.png
+  python plot_pareto.py
+  python plot_pareto.py --max-cost 750 --near 3 --out artifacts/pareto.png
 
 Conventions match the AA chart: y = Intelligence Index (linear),
 x = cost to run the Intelligence Index in USD (log base 2). Models with
@@ -15,9 +15,15 @@ import math
 import re
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-from matplotlib.ticker import FixedLocator, FuncFormatter
-from adjustText import adjust_text
+try:
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import FixedLocator, FuncFormatter
+    from adjustText import adjust_text
+except ImportError as exc:
+    raise SystemExit(
+        "plot_pareto.py needs optional plotting packages: "
+        "matplotlib and adjustText. Install them, then rerun the same command."
+    ) from exc
 
 _ART = Path(__file__).parent / "artifacts"
 # Prefer the enriched CSV (with OpenRouter columns) when present.

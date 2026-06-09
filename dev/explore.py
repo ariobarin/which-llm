@@ -23,7 +23,7 @@ for k, _ in chunks:
     kinds[k] = kinds.get(k, 0) + 1
 print(f"Chunk kinds: {kinds}")
 
-# Concatenate all kind=1 chunks — these form the RSC payload stream.
+# Concatenate all kind=1 chunks. These form the RSC payload stream.
 rsc_stream = "".join(s for k, s in chunks if k == 1)
 print(f"RSC stream size: {len(rsc_stream):,} chars")
 

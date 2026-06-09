@@ -1,6 +1,6 @@
 # Example prompts
 
-Try these in a Claude Code session after installing the skill. Each one
+Try these in an agent session after installing the skill. Each one
 should trigger which-llm and produce a substantive, data-grounded answer.
 
 ## Recommendations

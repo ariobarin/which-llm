@@ -1,5 +1,5 @@
 # Unmatched non-deprecated AA models (122 total)
-# Run: uv run python enrich.py  (regenerates this file)
+# Run: python enrich.py  (regenerates this file)
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
 apriel-v1-6-15b-thinker                        Apriel-v1.6-15B-Thinker

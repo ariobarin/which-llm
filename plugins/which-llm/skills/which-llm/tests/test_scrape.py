@@ -1,6 +1,6 @@
 """Contract tests for scrape.py's RSC parser.
 
-Uses a synthetic fixture — no real AA HTML committed. The fixture mirrors
+Uses a synthetic fixture. No real AA HTML committed. The fixture mirrors
 the exact encoding that scrape.py expects: __next_f.push chunks wrapping
 JS-escaped RSC content with the anchored 'addToSelectedModels' /
 'defaultData' markers.

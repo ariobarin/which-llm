@@ -11,8 +11,8 @@ columns:
 Matching is best-effort via name normalization. Mismatches are printed at
 the end so the schema drift can be tracked over time.
 
-  uv run python enrich.py
-  uv run python enrich.py --refresh   re-fetches openrouter.json
+  python enrich.py
+  python enrich.py --refresh   re-fetches openrouter.json
 """
 from __future__ import annotations
 
@@ -20,11 +20,10 @@ import argparse
 import csv
 import json
 import re
+import time
+import urllib.error
+import urllib.request
 from pathlib import Path
-
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 ART = Path(__file__).parent / "artifacts"
 AA_CSV = ART / "models.csv"
@@ -36,7 +35,7 @@ OR_URL = "https://openrouter.ai/api/v1/models"
 UA = "Mozilla/5.0 (compatible; aa-scrape/1.0)"
 
 # AA-only suffixes we strip from a slug to get a "base" model name.
-# Order matters — longer first.
+# Order matters: longer first.
 SUFFIX_STRIPS = [
     "-non-reasoning",
     "-adaptive",
@@ -59,18 +58,27 @@ NAME_NOISE = re.compile(
 )
 
 
-def _session() -> requests.Session:
-    """requests.Session with retries on transient upstream errors."""
-    s = requests.Session()
-    retry = Retry(
-        total=3,
-        backoff_factor=2,
-        status_forcelist=(502, 503, 504, 520, 521, 522, 524),
-        allowed_methods=("GET",),
-        raise_on_status=False,
-    )
-    s.mount("https://", HTTPAdapter(max_retries=retry))
-    return s
+def _get_json(url: str, timeout: int = 60):
+    """Fetch JSON with a small retry loop for transient upstream failures."""
+    transient_status = {502, 503, 504, 520, 521, 522, 524}
+    last_error: Exception | None = None
+    for attempt in range(4):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                payload = response.read().decode("utf-8")
+            return json.loads(payload)
+        except urllib.error.HTTPError as exc:
+            if exc.code not in transient_status:
+                raise
+            last_error = exc
+        except urllib.error.URLError as exc:
+            last_error = exc
+        if attempt < 3:
+            time.sleep(2 * attempt)
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError(f"failed to fetch {url}")
 
 
 def fetch_openrouter(refresh: bool) -> list[dict]:
@@ -78,9 +86,7 @@ def fetch_openrouter(refresh: bool) -> list[dict]:
         data = json.loads(OR_JSON.read_text(encoding="utf-8"))
     else:
         print(f"GET {OR_URL}")
-        r = _session().get(OR_URL, headers={"User-Agent": UA}, timeout=60)
-        r.raise_for_status()
-        data = r.json()
+        data = _get_json(OR_URL)
         OR_JSON.write_text(json.dumps(data, indent=2), encoding="utf-8")
         print(f"  saved {OR_JSON} ({len(json.dumps(data)):,} bytes)")
     models = data["data"] if isinstance(data, dict) else data
@@ -247,7 +253,7 @@ def main() -> int:
     unmatched_sorted = sorted(unmatched)
     UNMATCHED_TXT.write_text(
         f"# Unmatched non-deprecated AA models ({len(unmatched_sorted)} total)\n"
-        f"# Run: uv run python enrich.py  (regenerates this file)\n"
+        f"# Run: python enrich.py  (regenerates this file)\n"
         + "\n".join(unmatched_sorted) + "\n",
         encoding="utf-8",
     )
