@@ -59,21 +59,27 @@ python query.py data status
 python query.py models --intel-min 50 --reasoning --sort cost --top 8
 python query.py models --modality text,image --max-cost 500 --sort intel --top 8
 python query.py models --free --sort cost --top 20
+python query.py compare claude-opus-4-7 gpt-5
+python query.py slug claude-opus-4-7
 python query.py show claude-opus-4-7
 ```
 
 ## Commands
 
-Three verbs, one consistent table schema.
+Short intent commands for agents.
 
 | Command | Use |
 |---|---|
 | `query.py models [<pattern>] [filters]` | Filter, rank, or list models. Default: top 20 by intel. |
+| `query.py compare <model>...` | Compare exact or fuzzy model names in one table. |
+| `query.py slug <model>` | Return paid and free OpenRouter slugs for one model. |
 | `query.py show <slug>` | Full per-model profile (benchmarks, pricing, OR slugs, modalities). Accepts fuzzy slug if unambiguous. |
 | `query.py data status` | Data freshness, model count, OpenRouter enrichment status |
 | `query.py data refresh` | Re-scrape AA and cross-reference OR |
 
 `models` flags: `--top N`, `--sort intel|cost|ctx|speed`, `--pareto`, `--free`, `--intel-min N`, `--max-cost N`, `--min-cost N`, `--context-min N`, `--modality text,image,audio,video`, `--reasoning`/`--no-reasoning`, `--open-weights`/`--no-open-weights`, `--json`.
+
+Compatibility aliases are available for agents that try older verbs: `find`, `list`, `recommend`, `frontier`, `free`, `info`, `status`, and `refresh`.
 
 `plot_pareto.py` renders the Intelligence-vs-Cost Pareto chart as a PNG for visual exploration. It needs optional `matplotlib` and `adjustText` packages.
 
