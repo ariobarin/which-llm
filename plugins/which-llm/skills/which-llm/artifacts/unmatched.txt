@@ -1,4 +1,4 @@
-# Unmatched non-deprecated AA models (122 total)
+# Unmatched non-deprecated AA models (124 total)
 # Run: python enrich.py  (regenerates this file)
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
@@ -25,6 +25,7 @@ gemma-4-e2b                                    Gemma 4 E2B (Reasoning)
 gemma-4-e2b-non-reasoning                      Gemma 4 E2B (Non-reasoning)
 gemma-4-e4b                                    Gemma 4 E4B (Reasoning)
 gemma-4-e4b-non-reasoning                      Gemma 4 E4B (Non-reasoning)
+glm-5v-turbo                                   GLM 5V Turbo (Reasoning)
 gpt-5-5-instant-05-26                          GPT-5.5 Instant (May 2026)
 granite-4-0-350m                               Granite 4.0 350M
 granite-4-0-h-350m                             Granite 4.0 H 350M
@@ -82,6 +83,7 @@ motif-2-12-7b                                  Motif-2-12.7B-Reasoning
 muse-spark                                     Muse Spark
 nanbeige4-1-3b                                 Nanbeige4.1-3B
 nemotron-cascade-2-30b-a3b                     Nemotron Cascade 2 30B A3B
+north-mini-code                                North Mini Code
 nova-2-0-lite                                  Nova 2.0 Lite (Non-reasoning)
 nova-2-0-lite-reasoning                        Nova 2.0 Lite (high)
 nova-2-0-lite-reasoning-low                    Nova 2.0 Lite (low)
