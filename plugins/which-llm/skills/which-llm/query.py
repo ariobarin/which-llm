@@ -3,8 +3,11 @@
   python query.py models                                 # top 20 by intel
   python query.py models claude                          # substring match
   python query.py models --top 5 --max-cost 500 --modality text,image
+  python query.py models --intel-min 50 --sort tokens       # token-efficient
   python query.py models --pareto --max-cost 200         # Pareto frontier
   python query.py models --free                          # OR-free models
+  python query.py compare claude-opus-4-7 gpt-5          # side-by-side table
+  python query.py slug claude-opus-4-7                   # OpenRouter slugs
   python query.py show claude-opus-4-7                   # one model, full info
   python query.py data status                            # data freshness
   python query.py data refresh                           # re-scrape AA + OR
@@ -18,6 +21,7 @@ import argparse
 import csv
 import json
 import math
+import re
 import subprocess
 import sys
 import time
@@ -33,7 +37,8 @@ STALE_AFTER_DAYS = 7  # warn (don't refuse) if data older than this
 # Canonical output columns. Both the table renderer and `--json` use these.
 OUTPUT_FIELDS = [
     "slug", "name", "creator_name", "intelligence_index",
-    "intelligence_index_cost_usd", "context_window_tokens",
+    "intelligence_index_cost_usd", "indexTokensTotal",
+    "context_window_tokens",
     "price_1m_input_tokens", "price_1m_output_tokens",
     "ttft_seconds", "e2e_response_seconds",
     "openrouter_has_free", "openrouter_slug", "openrouter_free_slug",
@@ -112,6 +117,8 @@ def load_rows(
     max_cost: float = math.inf,
     intel_min: float | None = None,
     context_min: int | None = None,
+    max_index_tokens: float | None = None,
+    min_index_tokens: float = 0.0,
     max_latency: float | None = None,
     reasoning: bool | None = None,
     open_weights: bool | None = None,
@@ -136,6 +143,14 @@ def load_rows(
                 continue
             if context_min is not None and (_f(r.get("context_window_tokens")) or 0) < context_min:
                 continue
+            index_tokens = _f(r.get("indexTokensTotal"))
+            if (min_index_tokens > 0 or max_index_tokens is not None) and index_tokens is None:
+                continue
+            if index_tokens is not None and (
+                index_tokens < min_index_tokens
+                or (max_index_tokens is not None and index_tokens > max_index_tokens)
+            ):
+                continue
             if max_latency is not None:
                 lat = _f(r.get("e2e_response_seconds"))
                 if lat is None or lat > max_latency:  # unmeasured can't be confirmed fast
@@ -158,6 +173,82 @@ def apply_pattern(rows: list[dict], pattern: str | None) -> list[dict]:
         or pat in (r.get("slug") or "").lower()
         or pat in (r.get("creator_name") or "").lower()
     ]
+
+
+def _norm(s: str | None) -> str:
+    return re.sub(r"[^a-z0-9]+", "", (s or "").lower())
+
+
+def _model_matches(r: dict, pat: str) -> bool:
+    p = pat.lower()
+    return (
+        p in (r.get("slug") or "").lower()
+        or p in (r.get("name") or "").lower()
+        or p in (r.get("openrouter_slug") or "").lower()
+        or p in (r.get("openrouter_free_slug") or "").lower()
+    )
+
+
+def resolve_model(
+    rows: list[dict],
+    query: str,
+    prefer_openrouter: bool = False,
+) -> tuple[dict | None, list[dict]]:
+    """Resolve exact or fuzzy model input. Returns (match, candidates)."""
+    q = query.strip()
+    qn = _norm(q)
+    if not q:
+        return None, []
+
+    exact = [
+        r for r in rows
+        if q.lower() in {
+            (r.get("slug") or "").lower(),
+            (r.get("name") or "").lower(),
+            (r.get("openrouter_slug") or "").lower(),
+            (r.get("openrouter_free_slug") or "").lower(),
+        }
+        or qn in {
+            _norm(r.get("slug")),
+            _norm(r.get("name")),
+            _norm(r.get("openrouter_slug")),
+            _norm(r.get("openrouter_free_slug")),
+        }
+    ]
+    if len(exact) == 1:
+        return exact[0], []
+    if len(exact) > 1:
+        if prefer_openrouter:
+            ql = q.lower()
+            same_endpoint = [
+                r for r in exact
+                if ql in {
+                    (r.get("openrouter_slug") or "").lower(),
+                    (r.get("openrouter_free_slug") or "").lower(),
+                }
+            ]
+            if same_endpoint:
+                same_endpoint.sort(
+                    key=lambda r: -(_f(r.get("intelligence_index")) or -math.inf)
+                )
+                return same_endpoint[0], []
+        return None, exact
+
+    candidates = [r for r in rows if _model_matches(r, q)]
+    if len(candidates) == 1:
+        return candidates[0], []
+    return None, candidates
+
+
+def _print_candidates(query: str, candidates: list[dict]) -> None:
+    if candidates:
+        print(f"# multiple matches for {query!r}; specify slug:", file=sys.stderr)
+        print(f"# hint: python query.py models {query!r} --top 10", file=sys.stderr)
+        for c in candidates[:10]:
+            print(f"  {c['slug']:45s}  {c['name']}", file=sys.stderr)
+    else:
+        print(f"# no model matching {query!r}", file=sys.stderr)
+        print(f"# hint: python query.py models {query!r} --top 10", file=sys.stderr)
 
 
 def pareto_frontier(rows: list[dict]) -> list[dict]:
@@ -189,6 +280,7 @@ SORT_KEYS = {
     "intel": lambda r: (-( _f(r.get("intelligence_index")) or -math.inf),),
     "cost":  lambda r: ( _f(r.get("intelligence_index_cost_usd")) or math.inf,),
     "ctx":   lambda r: (-( _f(r.get("context_window_tokens")) or 0),),
+    "tokens": lambda r: (_f(r.get("indexTokensTotal")) or math.inf,),
     "speed": _speed_key,
 }
 
@@ -215,6 +307,19 @@ def _fmt_secs(v) -> str:
     return f"{f:.1f}" if f is not None else "-"
 
 
+def _fmt_tokens(v) -> str:
+    f = _f(v)
+    if f is None:
+        return "-"
+    if f >= 1_000_000_000:
+        return f"{f / 1_000_000_000:.2f}B"
+    if f >= 1_000_000:
+        return f"{f / 1_000_000:.1f}M"
+    if f >= 1_000:
+        return f"{f / 1_000:.1f}K"
+    return f"{f:.0f}"
+
+
 def _row_for_output(r: dict) -> dict:
     return {
         "slug": r.get("slug") or "",
@@ -222,6 +327,7 @@ def _row_for_output(r: dict) -> dict:
         "creator": r.get("creator_name") or "-",
         "intel": _fmt_intel(r.get("intelligence_index")),
         "idx-run$": _fmt_cost(r.get("intelligence_index_cost_usd")),
+        "idx-tok": _fmt_tokens(r.get("indexTokensTotal")),
         "in$/1m": _fmt_cost(r.get("price_1m_input_tokens")),
         "out$/1m": _fmt_cost(r.get("price_1m_output_tokens")),
         "ctx": r.get("context_window_tokens") or "-",
@@ -264,7 +370,7 @@ def _typed(k: str, v: str | None):
     if k in _JSON_ROUND:
         f = _f(v)
         return round(f, _JSON_ROUND[k]) if f is not None else None
-    if k == "context_window_tokens":
+    if k in ("context_window_tokens", "indexTokensTotal"):
         return int(float(v)) if v else None
     if k in _JSON_FLOAT:
         return _f(v)
@@ -290,6 +396,10 @@ def _emit_models(rows: list[dict], as_json: bool) -> None:
 
 
 def cmd_models(args) -> int:
+    if args.cmd == "frontier":
+        args.pareto = True
+    if args.cmd == "free":
+        args.free = True
     modalities = _parse_modalities(args.modality)
     rows = load_rows(
         modalities=modalities,
@@ -298,6 +408,8 @@ def cmd_models(args) -> int:
         max_cost=args.max_cost if args.max_cost is not None else math.inf,
         intel_min=args.intel_min,
         context_min=args.context_min,
+        max_index_tokens=args.max_index_tokens,
+        min_index_tokens=args.min_index_tokens,
         max_latency=args.max_latency,
         reasoning=args.reasoning,
         open_weights=args.open_weights,
@@ -319,26 +431,10 @@ def cmd_models(args) -> int:
 
 def cmd_show(args) -> int:
     rows = load_rows(modalities=set(), include_deprecated=True)
-    by_slug = {r["slug"]: r for r in rows}
-    r = by_slug.get(args.slug)
+    r, candidates = resolve_model(rows, args.slug)
     if not r:
-        pat = args.slug.lower()
-        candidates = [
-            x for x in rows
-            if pat in (x.get("slug") or "").lower()
-            or pat in (x.get("name") or "").lower()
-        ]
-        if len(candidates) == 1:
-            r = candidates[0]
-        elif candidates:
-            print(f"# multiple matches for {args.slug!r}; specify slug:",
-                  file=sys.stderr)
-            for c in candidates[:10]:
-                print(f"  {c['slug']:45s}  {c['name']}", file=sys.stderr)
-            return 1
-        else:
-            print(f"# no model matching {args.slug!r}", file=sys.stderr)
-            return 1
+        _print_candidates(args.slug, candidates)
+        return 1
 
     if args.json:
         json.dump(r, sys.stdout, indent=2, default=str)
@@ -366,6 +462,7 @@ def cmd_show(args) -> int:
     print()
     print(f"  intelligence index:   {_fmt_intel(intel)}")
     print(f"  cost to run index:    {_fmt_cost(cost)}  (idx-run$, not a per-call price)")
+    print(f"  tokens to run index:  {_fmt_tokens(r.get('indexTokensTotal'))}")
     print(f"  index per 1M output:  {_fmt_cost(per_m)}")
     ttft = _f(r.get("ttft_seconds"))
     e2e = _f(r.get("e2e_response_seconds"))
@@ -402,6 +499,57 @@ def cmd_show(args) -> int:
         if _is_true(r.get("openrouter_has_free")):
             print("          (:free is rate-limited promo, possibly different "
                   "quant; prototyping only)")
+    return 0
+
+
+def cmd_compare(args) -> int:
+    rows = load_rows(modalities=set(), include_deprecated=True)
+    picked = []
+    seen = set()
+    for query in args.models:
+        r, candidates = resolve_model(rows, query)
+        if not r:
+            _print_candidates(query, candidates)
+            return 1
+        key = r.get("slug")
+        if key not in seen:
+            picked.append(r)
+            seen.add(key)
+
+    _emit_models(picked, args.json)
+    return 0
+
+
+def cmd_slug(args) -> int:
+    rows = load_rows(modalities=set(), include_deprecated=True)
+    r, candidates = resolve_model(rows, args.model, prefer_openrouter=True)
+    if not r:
+        _print_candidates(args.model, candidates)
+        return 1
+
+    payload = {
+        "slug": r.get("slug") or "",
+        "name": r.get("name") or "",
+        "openrouter_slug": r.get("openrouter_slug") or None,
+        "openrouter_free_slug": r.get("openrouter_free_slug") or None,
+        "free_caveat": (
+            ":free endpoints are rate-limited prototype options and can differ from the paid listing"
+            if _is_true(r.get("openrouter_has_free"))
+            else None
+        ),
+    }
+    if args.json:
+        json.dump(payload, sys.stdout, indent=2, default=str)
+        sys.stdout.write("\n")
+        return 0
+
+    print(payload["name"])
+    print(f"  slug:       {payload['slug']}")
+    print(f"  openrouter: {payload['openrouter_slug'] or '(no match found)'}")
+    free = payload["openrouter_free_slug"]
+    print(f"  free:       {free or '(not available)'}")
+    if free:
+        print("              (:free is rate-limited; prototype only)")
     return 0
 
 
@@ -452,6 +600,10 @@ def _add_filter_args(p: argparse.ArgumentParser) -> None:
                    help="Minimum idx-run$ (USD).")
     p.add_argument("--context-min", type=int, default=None,
                    help="Minimum context window in tokens.")
+    p.add_argument("--max-index-tokens", type=float, default=None,
+                   help="Maximum total tokens to run AA's Intelligence Index.")
+    p.add_argument("--min-index-tokens", type=float, default=0.0,
+                   help="Minimum total tokens to run AA's Intelligence Index.")
     p.add_argument("--max-latency", type=float, default=None,
                    help="Maximum end-to-end response latency in seconds "
                         "(AA's measured run). Drops models with no measurement.")
@@ -471,13 +623,18 @@ def main() -> int:
     )
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    sp = sub.add_parser("models", help="Query / filter / rank models.")
+    sp = sub.add_parser(
+        "models",
+        aliases=["find", "list", "recommend", "frontier", "free"],
+        help="Query / filter / rank models.",
+    )
     sp.add_argument("pattern", nargs="?",
                     help="Optional substring; matched against name/slug/creator.")
     sp.add_argument("--top", type=int, default=20,
                     help="Max rows to return (default 20). 0 = unlimited.")
     sp.add_argument("--sort", choices=list(SORT_KEYS), default="intel",
-                    help="Primary sort key (default intel-desc).")
+                    help="Primary sort key: intel desc, cost asc, ctx desc, "
+                         "speed asc, tokens asc.")
     sp.add_argument("--pareto", action="store_true",
                     help="Filter to cost-vs-intel Pareto frontier; ignores --sort.")
     sp.add_argument("--json", action="store_true",
@@ -486,18 +643,36 @@ def main() -> int:
     sp.set_defaults(func=cmd_models)
 
     sp = sub.add_parser("show", help="Full per-model profile (benchmarks, "
-                                     "pricing, OR slugs, modalities).")
+                                     "pricing, OR slugs, modalities).",
+                        aliases=["info"])
     sp.add_argument("slug", help="Exact slug, or unambiguous name substring.")
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_show)
+
+    sp = sub.add_parser("compare", help="Compare exact or fuzzy model names.")
+    sp.add_argument("models", nargs="+",
+                    help="Model slugs, names, or OpenRouter slugs. Quote names with spaces.")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_compare)
+
+    sp = sub.add_parser("slug", help="Return OpenRouter paid and free slugs.")
+    sp.add_argument("model", help="Exact slug, OpenRouter slug, or unambiguous name substring.")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_slug)
 
     sp = sub.add_parser("data", help="Data management (status, refresh).")
     sp.add_argument("action", choices=["status", "refresh"])
     sp.set_defaults(func=cmd_data)
 
+    sp = sub.add_parser("status", help="Alias for: data status")
+    sp.set_defaults(func=cmd_data, action="status")
+
+    sp = sub.add_parser("refresh", help="Alias for: data refresh")
+    sp.set_defaults(func=cmd_data, action="refresh")
+
     args = ap.parse_args()
     # `data refresh` is the only path that's allowed to run without cached data.
-    if not (args.cmd == "data" and args.action == "refresh"):
+    if not (getattr(args, "action", None) == "refresh"):
         ensure_data()
     return args.func(args) or 0
 

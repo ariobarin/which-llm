@@ -152,6 +152,9 @@ CSV_FIELDS = [
     "intelligence_index_input_cost_usd",
     "intelligence_index_output_cost_usd",
     "intelligence_index_reasoning_cost_usd",
+    # Total tokens AA needed to run the full Intelligence Index benchmark.
+    # This is a token-usage metric, not a price field.
+    "indexTokensTotal",
     # Composite sub-indexes
     "coding_index",
     "math_index",
@@ -269,6 +272,7 @@ def flatten(m: dict) -> dict:
         "intelligence_index_input_cost_usd": _clean(cost.get("input_cost")),
         "intelligence_index_output_cost_usd": _clean(cost.get("output_cost")),
         "intelligence_index_reasoning_cost_usd": _clean(cost.get("reasoning_cost")),
+        "indexTokensTotal": _f(m, "indexTokensTotal"),
 
         "coding_index": _f(m, "coding_index"),
         "math_index": _f(m, "math_index"),
@@ -360,7 +364,7 @@ def main() -> int:
 
     rows = [flatten(m) for m in models]
     with CSV_PATH.open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+        w = csv.DictWriter(f, fieldnames=CSV_FIELDS, lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
     print(f"  wrote {CSV_PATH} ({CSV_PATH.stat().st_size:,} bytes)")

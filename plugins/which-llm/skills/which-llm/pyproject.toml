@@ -1,6 +1,6 @@
 [project]
 name = "which-llm"
-version = "0.3.0"
+version = "0.3.1"
 description = "Agent skill: query current LLM intelligence, cost, capabilities, and OpenRouter slugs (incl. free tier) from Artificial Analysis."
 readme = "README.md"
 license = "MIT"

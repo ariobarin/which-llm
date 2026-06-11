@@ -5,7 +5,7 @@ users can install which-llm with:
 
 ```text
 /plugin marketplace add ariobarin/which-llm
-/plugin install which-llm@ariobarin
+/plugin install which-llm@which-llm
 ```
 
 ## Maintenance
