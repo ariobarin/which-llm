@@ -364,7 +364,7 @@ def main() -> int:
 
     rows = [flatten(m) for m in models]
     with CSV_PATH.open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+        w = csv.DictWriter(f, fieldnames=CSV_FIELDS, lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
     print(f"  wrote {CSV_PATH} ({CSV_PATH.stat().st_size:,} bytes)")
