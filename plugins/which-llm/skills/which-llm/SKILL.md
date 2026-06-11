@@ -66,8 +66,9 @@ Compatibility aliases: `find`, `list`, `recommend`, `frontier`, and `free` map t
 
 ## Key fields and their units
 
-- `intelligence_index`: composite 0-100 score across AA's benchmark suite (GPQA, HLE, MMLU-Pro, LiveCodeBench, MATH-500, AIME, SciCode, tau2, HumanEval, and others). A single composite hides which capabilities drive the score. For narrow use cases, check the individual benchmarks via `show <slug>`.
-- `intelligence_index_cost_usd` (table header `idx-run$`): USD to run AA's full benchmark suite once on this model. Relative inference-cost proxy, not a per-call price.
+- `intelligence_index`: composite 0-100 score across AA's benchmark suite (GPQA, HLE, MMLU-Pro, LiveCodeBench, MATH-500, AIME, SciCode, tau2, HumanEval, and others). A single composite hides which capabilities drive the score. A model at 51.5 might beat one at 50.8 purely on math benchmarks while being worse at tool-calling. For narrow use cases, check the individual benchmarks via `show <slug>`.
+- Cost priority for comparisons: `idx-run$` vs intelligence first, then token-use / latency vs intelligence, then agentic, then coding, then blended token price.
+- `intelligence_index_cost_usd` (table header `idx-run$`): USD to run AA's full benchmark suite once on this model. Best available inference-cost proxy because it reflects both token price and tokens burned, not a per-call price.
 - `indexTokensTotal` (table header `idx-tok`): total input plus output tokens consumed by AA's full benchmark run. Use this for token-efficiency comparisons across models.
 - `price_1m_input_tokens` / `price_1m_output_tokens` (table headers `in$/1m` / `out$/1m`): USD per million tokens. Use these for actual API cost calculations.
 - `openrouter_slug`: paid OR endpoint, e.g. `anthropic/claude-opus-4.7`. Goes straight into the OR API.
@@ -133,4 +134,8 @@ Data is auto-refreshed daily by a GitHub Action; the snapshot shipped with the s
 ```text
 python plot_pareto.py --max-cost 750 --near 15
 python plot_pareto.py --free-only --max-cost 100000
+python plot_pareto.py --creator OpenAI --creator Anthropic --x-field e2e_response_seconds --y-field intelligence_index --max-cost 300
+python plot_pareto.py --creator OpenAI --creator Anthropic --x-field price_1m_input_tokens --y-field agentic_index --max-cost 100
+python plot_pareto.py --creator OpenAI --creator Anthropic --x-field price_1m_output_tokens --y-field coding_index --max-cost 100
+python plot_pareto.py --creator OpenAI --creator Anthropic --x-field price_1m_blended_7_2_1 --y-field intelligence_index --max-cost 100
 ```
