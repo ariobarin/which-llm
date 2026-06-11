@@ -15,16 +15,6 @@ import math
 import re
 from pathlib import Path
 
-try:
-    import matplotlib.pyplot as plt
-    from matplotlib.ticker import FixedLocator, FuncFormatter
-    from adjustText import adjust_text
-except ImportError as exc:
-    raise SystemExit(
-        "plot_pareto.py needs optional plotting packages: "
-        "matplotlib and adjustText. Install them, then rerun the same command."
-    ) from exc
-
 _ART = Path(__file__).parent / "artifacts"
 # Prefer the enriched CSV (with OpenRouter columns) when present.
 CSV_PATH = _ART / "models_enriched.csv" if (_ART / "models_enriched.csv").exists() else _ART / "models.csv"
@@ -200,7 +190,21 @@ def field_label(field: str) -> str:
     return FIELD_LABELS.get(field, field.replace("_", " ").title())
 
 
+def _load_plot_deps():
+    try:
+        import matplotlib.pyplot as plt
+        from matplotlib.ticker import FixedLocator, FuncFormatter
+        from adjustText import adjust_text
+    except ImportError as exc:
+        raise SystemExit(
+            "plot_pareto.py needs optional plotting packages: "
+            "matplotlib and adjustText. Install them, then rerun the same command."
+        ) from exc
+    return plt, FixedLocator, FuncFormatter, adjust_text
+
+
 def main() -> int:
+    plt, FixedLocator, FuncFormatter, adjust_text = _load_plot_deps()
     ap = argparse.ArgumentParser()
     ap.add_argument("--max-cost", type=float, default=750.0,
                     help="Drop models with cost above this (USD).")
