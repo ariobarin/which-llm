@@ -11,20 +11,24 @@ Up-to-date data on ~520 LLMs scraped from artificialanalysis.ai and cross-refere
 
 1. Run commands from this skill directory. Use plain `python`. Do not assume `uv` is installed.
 2. Start with `python query.py data status` when freshness matters.
-3. Use `python query.py models ...` for shortlists and `python query.py show <slug>` before recommending one model.
+3. Use `python query.py models ...` for shortlists, `python query.py compare ...` for named model comparisons, `python query.py slug ...` for OpenRouter lookups, and `python query.py show <slug>` before recommending one model.
 4. In the answer, separate `idx-run$` from real API pricing. `idx-run$` is a benchmark-run cost proxy. `in$/1m` and `out$/1m` are the per-token API prices.
 5. If the user asks for an OpenRouter model, prefer `openrouter_slug` for production. Mention `openrouter_free_slug` only as a prototype option because `:free` endpoints have rate limits and can differ from the paid listing.
 
 ## Commands
 
-Three verbs. Run from this skill's directory.
+Run from this skill's directory.
 
 | Command | Use |
 |---|---|
 | `python query.py models [<pattern>] [filters]` | Filter, rank, or list models. Default: top 20 by intelligence. |
+| `python query.py compare <model>...` | Compare exact or fuzzy model names in one table. |
+| `python query.py slug <model>` | Return paid and free OpenRouter slugs for one model. |
 | `python query.py show <slug>` | Full profile for one model. Accepts fuzzy slug when unambiguous. |
 | `python query.py data status` | Data freshness and model count. |
 | `python query.py data refresh` | Re-scrape AA and re-cross-reference OR. |
+
+Compatibility aliases: `find`, `list`, `recommend`, `frontier`, and `free` map to `models`; `info` maps to `show`; top-level `status` and `refresh` map to `data status` and `data refresh`.
 
 ### `models` flags
 
@@ -53,7 +57,9 @@ Three verbs. Run from this skill's directory.
 | Cheap long-context models | `python query.py models --context-min 256000 --sort cost --top 8` |
 | Open-weights options | `python query.py models --open-weights --sort intel --top 8` |
 | OpenRouter free prototypes | `python query.py models --free --sort cost --top 20` |
+| Compare named models | `python query.py compare claude-opus-4-7 gpt-5 gemini-3-1-pro` |
 | Compare one family or provider | `python query.py models <pattern> --top 10` |
+| Get an OpenRouter slug | `python query.py slug claude-opus-4-7` |
 | Inspect before final recommendation | `python query.py show <slug>` |
 
 ## Key fields and their units
@@ -93,6 +99,12 @@ python query.py models --pareto --max-cost 750
 
 # Look up a specific model:
 python query.py show claude-opus-4-7
+
+# Compare named models:
+python query.py compare claude-opus-4-7 gpt-5
+
+# Return paid and free OpenRouter slugs:
+python query.py slug claude-opus-4-7
 
 # Compare GPT-5 variants (substring match):
 python query.py models gpt-5 --top 10
