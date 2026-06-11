@@ -11,7 +11,7 @@ wheels/
 
 # Regenerable artifacts. CSV/JSON snapshots are tracked so the skill works
 # the instant someone clones it; the 8MB scraped HTML and plot output are
-# not — they rebuild trivially.
+# not, they rebuild trivially.
 **/artifacts/models.html
 **/artifacts/pareto.png
 **/artifacts/pareto_free.png

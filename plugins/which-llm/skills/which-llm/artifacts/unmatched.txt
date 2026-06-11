@@ -1,5 +1,5 @@
-# Unmatched non-deprecated AA models (120 total)
-# Run: uv run python enrich.py  (regenerates this file)
+# Unmatched non-deprecated AA models (124 total)
+# Run: python enrich.py  (regenerates this file)
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
 apriel-v1-6-15b-thinker                        Apriel-v1.6-15B-Thinker
@@ -20,10 +20,12 @@ exaone-4-5-33b-non-reasoning                   EXAONE 4.5 33B (Non-reasoning)
 falcon-h1r-7b                                  Falcon-H1R-7B
 gemini-3-deep-think                            Gemini 3 Deep Think
 gemma-3-270m                                   Gemma 3 270M
+gemma-4-12b                                    Gemma 4 12B (Reasoning)
 gemma-4-e2b                                    Gemma 4 E2B (Reasoning)
 gemma-4-e2b-non-reasoning                      Gemma 4 E2B (Non-reasoning)
 gemma-4-e4b                                    Gemma 4 E4B (Reasoning)
 gemma-4-e4b-non-reasoning                      Gemma 4 E4B (Non-reasoning)
+glm-5v-turbo                                   GLM 5V Turbo (Reasoning)
 gpt-5-5-instant-05-26                          GPT-5.5 Instant (May 2026)
 granite-4-0-350m                               Granite 4.0 350M
 granite-4-0-h-350m                             Granite 4.0 H 350M
@@ -50,6 +52,7 @@ k2-v2-medium                                   K2-V2 (medium)
 kat-coder-pro-v1                               KAT-Coder-Pro V1
 kimi-linear-48b-a3b-instruct                   Kimi Linear 48B A3B Instruct
 lfm2-2-6b                                      LFM2 2.6B
+lfm2-5-8b-a1b                                  LFM2.5-8B-A1B
 lfm2-5-vl-1-6b                                 LFM2.5-VL-1.6B
 lfm2-8b-a1b                                    LFM2 8B A1B
 ling-mini-2-0                                  Ling-mini-2.0
@@ -80,6 +83,7 @@ motif-2-12-7b                                  Motif-2-12.7B-Reasoning
 muse-spark                                     Muse Spark
 nanbeige4-1-3b                                 Nanbeige4.1-3B
 nemotron-cascade-2-30b-a3b                     Nemotron Cascade 2 30B A3B
+north-mini-code                                North Mini Code
 nova-2-0-lite                                  Nova 2.0 Lite (Non-reasoning)
 nova-2-0-lite-reasoning                        Nova 2.0 Lite (high)
 nova-2-0-lite-reasoning-low                    Nova 2.0 Lite (low)

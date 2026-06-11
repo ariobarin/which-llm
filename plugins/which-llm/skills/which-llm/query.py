@@ -1,13 +1,13 @@
 """Agent-facing CLI for LLM model selection queries.
 
-  uv run python query.py models                                 # top 20 by intel
-  uv run python query.py models claude                          # substring match
-  uv run python query.py models --top 5 --max-cost 500 --modality text,image
-  uv run python query.py models --pareto --max-cost 200         # Pareto frontier
-  uv run python query.py models --free                          # OR-free models
-  uv run python query.py show claude-opus-4-7                   # one model, full info
-  uv run python query.py data status                            # data freshness
-  uv run python query.py data refresh                           # re-scrape AA + OR
+  python query.py models                                 # top 20 by intel
+  python query.py models claude                          # substring match
+  python query.py models --top 5 --max-cost 500 --modality text,image
+  python query.py models --pareto --max-cost 200         # Pareto frontier
+  python query.py models --free                          # OR-free models
+  python query.py show claude-opus-4-7                   # one model, full info
+  python query.py data status                            # data freshness
+  python query.py data refresh                           # re-scrape AA + OR
 
 All `models` queries produce the same table schema (or pass `--json` for
 machine output). `show` emits a multi-line profile by default, or JSON.
@@ -34,11 +34,12 @@ STALE_AFTER_DAYS = 7  # warn (don't refuse) if data older than this
 OUTPUT_FIELDS = [
     "slug", "name", "creator_name", "intelligence_index",
     "intelligence_index_cost_usd", "context_window_tokens",
+    "price_1m_input_tokens", "price_1m_output_tokens",
     "ttft_seconds", "e2e_response_seconds",
     "openrouter_has_free", "openrouter_slug", "openrouter_free_slug",
 ]
 
-# Modality vocabulary — what the user types -> the CSV column name.
+# Modality vocabulary: what the user types -> the CSV column name.
 MODALITY_TO_COLUMN = {
     "text": "input_modality_text",
     "image": "input_modality_image",
@@ -76,8 +77,12 @@ def ensure_data() -> None:
     if not (ENRICHED_CSV.exists() or BASE_CSV.exists()):
         print("# No cached data found, fetching from Artificial Analysis...",
               file=sys.stderr)
-        subprocess.run(["uv", "run", "python", "scrape.py"], cwd=HERE, check=True)
-        subprocess.run(["uv", "run", "python", "enrich.py"], cwd=HERE, check=True)
+        _run_python("scrape.py")
+        _run_python("enrich.py")
+
+
+def _run_python(script: str, *args: str) -> None:
+    subprocess.run([sys.executable, str(HERE / script), *args], cwd=HERE, check=True)
 
 
 # ---------------------------------------------------------------------------
@@ -217,6 +222,8 @@ def _row_for_output(r: dict) -> dict:
         "creator": r.get("creator_name") or "-",
         "intel": _fmt_intel(r.get("intelligence_index")),
         "idx-run$": _fmt_cost(r.get("intelligence_index_cost_usd")),
+        "in$/1m": _fmt_cost(r.get("price_1m_input_tokens")),
+        "out$/1m": _fmt_cost(r.get("price_1m_output_tokens")),
         "ctx": r.get("context_window_tokens") or "-",
         "e2e_s": _fmt_secs(r.get("e2e_response_seconds")),
         "free": "y" if _is_true(r.get("openrouter_has_free")) else "",
@@ -244,6 +251,11 @@ _JSON_ROUND = {
     "e2e_response_seconds": 1,
 }
 
+_JSON_FLOAT = {
+    "price_1m_input_tokens",
+    "price_1m_output_tokens",
+}
+
 
 def _typed(k: str, v: str | None):
     """Parse CSV string to native type for JSON output, rounding where appropriate."""
@@ -254,6 +266,8 @@ def _typed(k: str, v: str | None):
         return round(f, _JSON_ROUND[k]) if f is not None else None
     if k == "context_window_tokens":
         return int(float(v)) if v else None
+    if k in _JSON_FLOAT:
+        return _f(v)
     if k in ("openrouter_has_free",):
         return v.strip().lower() == "true"
     return v
@@ -352,7 +366,7 @@ def cmd_show(args) -> int:
     print()
     print(f"  intelligence index:   {_fmt_intel(intel)}")
     print(f"  cost to run index:    {_fmt_cost(cost)}  (idx-run$, not a per-call price)")
-    print(f"  per 1M output tokens: {_fmt_cost(per_m)}")
+    print(f"  index per 1M output:  {_fmt_cost(per_m)}")
     ttft = _f(r.get("ttft_seconds"))
     e2e = _f(r.get("e2e_response_seconds"))
     print(f"  response latency:     ttft {_fmt_secs(ttft)}s / end-to-end "
@@ -395,7 +409,7 @@ def cmd_data(args) -> int:
     if args.action == "status":
         p = _csv_path()
         if not p.exists():
-            print("no data cached. run: uv run python query.py data refresh",
+            print("no data cached. run: python query.py data refresh",
                   file=sys.stderr)
             return 1
         age = _data_age_days() or 0
@@ -404,7 +418,7 @@ def cmd_data(args) -> int:
         if age > STALE_AFTER_DAYS:
             print(
                 f"WARN: data older than {STALE_AFTER_DAYS} days. "
-                f"Run: uv run python query.py data refresh",
+                f"Run: python query.py data refresh",
                 file=sys.stderr,
             )
         enriched = "yes" if p == ENRICHED_CSV else "no (run enrich.py)"
@@ -413,10 +427,8 @@ def cmd_data(args) -> int:
         print(f"model count: {len(rows)}")
         return 0
     if args.action == "refresh":
-        subprocess.run(["uv", "run", "python", "scrape.py", "--refresh"],
-                       cwd=HERE, check=True)
-        subprocess.run(["uv", "run", "python", "enrich.py", "--refresh"],
-                       cwd=HERE, check=True)
+        _run_python("scrape.py", "--refresh")
+        _run_python("enrich.py", "--refresh")
         return 0
     return 2
 

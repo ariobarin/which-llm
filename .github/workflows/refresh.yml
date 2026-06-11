@@ -24,23 +24,17 @@ jobs:
       # actions/checkout@v4 (resolved 2026-05-23)
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      # astral-sh/setup-uv@v3 (resolved 2026-05-23)
-      - name: Install uv
-        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39
-        with:
-          enable-cache: true
-
+      # actions/setup-python@v5 (resolved 2026-06-09)
       - name: Set up Python
-        run: uv python install 3.10
-
-      - name: Sync dependencies
-        run: uv sync --frozen
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.10"
 
       - name: Refresh AA scrape
-        run: uv run python scrape.py --refresh
+        run: python scrape.py --refresh
 
       - name: Refresh OpenRouter enrichment
-        run: uv run python enrich.py --refresh
+        run: python enrich.py --refresh
 
       - name: Commit + push if data changed
         working-directory: ${{ github.workspace }}
@@ -75,7 +69,7 @@ jobs:
           - Artificial Analysis changed the page structure (scrape.py parser broke)
           - Catastrophic-drop guard tripped (>20% fewer models parsed than the prior snapshot)
           - Transient network failure on AA or OpenRouter (re-running may succeed)
-          - GH Actions runner / uv / Python tooling issue
+          - GH Actions runner / Python tooling issue
 
           Investigate the failed step's logs in the run above.
           EOF

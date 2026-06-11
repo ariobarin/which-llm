@@ -1,7 +1,7 @@
 """Plot the Intelligence vs. Cost Pareto frontier from scraped AA data.
 
-  uv run python plot_pareto.py
-  uv run python plot_pareto.py --max-cost 750 --near 3 --out artifacts/pareto.png
+  python plot_pareto.py
+  python plot_pareto.py --max-cost 750 --near 3 --out artifacts/pareto.png
 
 Conventions match the AA chart: y = Intelligence Index (linear),
 x = cost to run the Intelligence Index in USD (log base 2). Models with
@@ -15,9 +15,15 @@ import math
 import re
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-from matplotlib.ticker import FixedLocator, FuncFormatter
-from adjustText import adjust_text
+try:
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import FixedLocator, FuncFormatter
+    from adjustText import adjust_text
+except ImportError as exc:
+    raise SystemExit(
+        "plot_pareto.py needs optional plotting packages: "
+        "matplotlib and adjustText. Install them, then rerun the same command."
+    ) from exc
 
 _ART = Path(__file__).parent / "artifacts"
 # Prefer the enriched CSV (with OpenRouter columns) when present.
@@ -175,16 +181,18 @@ def color_for(creator: str) -> str:
     return CREATOR_COLORS.get(creator or "", DEFAULT_COLOR)
 
 
-_EFFORT_RE = re.compile(
-    r"\s*\((?:Adaptive\s+|Non-)?[Rr]easoning,\s*([A-Za-z]+)\s+Effort\)"
-)
-_BARE_REASON_RE = re.compile(r"\s*\((?:Adaptive\s+)?[Rr]easoning\)|\s*\(Non-[Rr]easoning\)")
+_EFFORT_RE = re.compile(r"\s*\((?:Adaptive\s+)?[Rr]easoning,\s*([A-Za-z]+)\s+Effort\)")
+_BARE_REASON_RE = re.compile(r"\s*\((?:Adaptive\s+)?[Rr]easoning\)")
+_NON_REASON_RE = re.compile(r"\s*\(Non-[Rr]easoning\)")
 
 
-def shorten(name: str) -> str:
-    """Mirror AA's chart-label shortening: keep effort level, drop the rest."""
+def shorten(name: str, slug: str = "") -> str:
+    """Short chart labels while preserving reasoning variant disambiguation."""
     s = _EFFORT_RE.sub(lambda m: f" ({m.group(1).lower()})", name)
+    s = _NON_REASON_RE.sub(" (non-reasoning)", s)
     s = _BARE_REASON_RE.sub("", s)
+    if "non-reasoning" in slug and "(non-reasoning)" not in s.lower():
+        s = f"{s} (non-reasoning)"
     return s
 
 
@@ -310,7 +318,7 @@ def main() -> int:
         bold = r["slug"] in front_set
         free_mark = "* " if _is_true(r.get("openrouter_has_free")) else ""
         txt = ax.text(
-            r["_cost"], r["_intel"], free_mark + shorten(r["name"]),
+            r["_cost"], r["_intel"], free_mark + shorten(r["name"], r["slug"]),
             fontsize=9 if bold else 7,
             fontweight="bold" if bold else "normal",
             color=color_for(r["creator_name"]),

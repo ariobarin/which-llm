@@ -7,8 +7,8 @@ Thanks for considering a contribution.
 ```bash
 git clone https://github.com/ariobarin/which-llm
 cd which-llm/plugins/which-llm/skills/which-llm
-uv sync
-uv run pytest tests/ -v
+python -m pip install -e ".[test]"
+python -m pytest tests/ -v
 ```
 
 ## What lives where
@@ -25,8 +25,8 @@ uv run pytest tests/ -v
 
 1. Create a branch.
 2. Make your changes inside `plugins/which-llm/skills/which-llm/`.
-3. Run `uv run pytest tests/ -v` — all tests must pass.
-4. If you changed `query.py`, run a quick `uv run python query.py models --top 3` to verify.
+3. Run `python -m pytest tests/ -v`; all tests must pass.
+4. If you changed `query.py`, run a quick `python query.py models --top 3` to verify.
 5. Open a PR. Describe what you changed and why.
 
 ## Parser changes
@@ -34,7 +34,7 @@ uv run pytest tests/ -v
 `scrape.py` parses an 8 MB HTML page by regex-matching Next.js RSC chunks.
 If AA changes their page structure, this will break. To fix:
 
-1. Download the new page: `uv run python scrape.py --refresh`
+1. Download the new page: `python scrape.py --refresh`
 2. Inspect `artifacts/models.html` for the new structure.
 3. Update the regex / anchor in `scrape.py`.
 4. Add or update a test in `tests/test_scrape.py` for the new pattern.
@@ -51,4 +51,4 @@ Update `CHANGELOG.md` with the changes.
 
 ## Code style
 
-No rigid rules. Match what's there. No comments unless the *why* is non-obvious.
+No rigid rules. Match what's there. No comments unless the why is non-obvious.

@@ -1,6 +1,187 @@
 {
   "data": [
     {
+      "id": "~anthropic/claude-fable-latest",
+      "canonical_slug": "~anthropic/claude-fable-latest",
+      "hugging_face_id": null,
+      "name": "Anthropic: Claude Fable Latest",
+      "created": 1781029944,
+      "description": "This model always redirects to the latest model in the Claude Fable family.",
+      "context_length": 1000000,
+      "architecture": {
+        "modality": "text+image+file->text",
+        "input_modalities": [
+          "text",
+          "image",
+          "file"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Router",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0.00001",
+        "completion": "0.00005",
+        "web_search": "0.01",
+        "input_cache_read": "0.000001",
+        "input_cache_write": "0.0000125"
+      },
+      "top_provider": {
+        "context_length": 1000000,
+        "max_completion_tokens": 128000,
+        "is_moderated": true
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "include_reasoning",
+        "max_completion_tokens",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "tool_choice",
+        "tools",
+        "verbosity"
+      ],
+      "default_parameters": {
+        "temperature": null,
+        "top_p": null,
+        "top_k": null,
+        "frequency_penalty": null,
+        "presence_penalty": null,
+        "repetition_penalty": null
+      },
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/~anthropic/claude-fable-latest/endpoints"
+      }
+    },
+    {
+      "id": "anthropic/claude-fable-5",
+      "canonical_slug": "anthropic/claude-5-fable-20260609",
+      "hugging_face_id": null,
+      "name": "Anthropic: Claude Fable 5",
+      "created": 1781007515,
+      "description": "Claude Fable 5 is a Mythos-class model from Anthropic, built for autonomous knowledge work and coding. It supports text, image, and file inputs with text output, with reasoning support and...",
+      "context_length": 1000000,
+      "architecture": {
+        "modality": "text+image+file->text",
+        "input_modalities": [
+          "text",
+          "image",
+          "file"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Claude",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0.00001",
+        "completion": "0.00005",
+        "web_search": "0.01",
+        "input_cache_read": "0.000001",
+        "input_cache_write": "0.0000125"
+      },
+      "top_provider": {
+        "context_length": 1000000,
+        "max_completion_tokens": 128000,
+        "is_moderated": true
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "include_reasoning",
+        "max_completion_tokens",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "tool_choice",
+        "tools",
+        "verbosity"
+      ],
+      "default_parameters": {
+        "temperature": null,
+        "top_p": null,
+        "top_k": null,
+        "frequency_penalty": null,
+        "presence_penalty": null,
+        "repetition_penalty": null
+      },
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/anthropic/claude-5-fable-20260609/endpoints"
+      }
+    },
+    {
+      "id": "nex-agi/nex-n2-pro:free",
+      "canonical_slug": "nex-agi/nex-n2-pro",
+      "hugging_face_id": "nex-agi/Nex-N2-Pro",
+      "name": "Nex AGI: Nex-N2-Pro (free)",
+      "created": 1780937140,
+      "description": "Nex-N2-Pro is an agentic mixture-of-experts model from Nex AGI, with 17B active parameters out of 397B total. Built on the Qwen3.5 architecture, it accepts text and image input and produces...",
+      "context_length": 262144,
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Qwen3",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "top_provider": {
+        "context_length": 262144,
+        "max_completion_tokens": 262144,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "logprobs",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "default_parameters": {
+        "temperature": 0.7,
+        "top_p": 0.95,
+        "top_k": 40,
+        "frequency_penalty": null,
+        "presence_penalty": null,
+        "repetition_penalty": null
+      },
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/nex-agi/nex-n2-pro/endpoints"
+      }
+    },
+    {
       "id": "nvidia/nemotron-3.5-content-safety:free",
       "canonical_slug": "nvidia/nemotron-3.5-content-safety-20260604",
       "hugging_face_id": "nvidia/Nemotron-3.5-Content-Safety",
@@ -1615,13 +1796,13 @@
         "instruct_type": null
       },
       "pricing": {
-        "prompt": "0.000000684",
-        "completion": "0.00000342",
-        "input_cache_read": "0.000000144"
+        "prompt": "0.00000068",
+        "completion": "0.00000341",
+        "input_cache_read": "0.00000034"
       },
       "top_provider": {
-        "context_length": 262144,
-        "max_completion_tokens": 262144,
+        "context_length": 262142,
+        "max_completion_tokens": 262142,
         "is_moderated": false
       },
       "per_request_limits": null,
@@ -2935,13 +3116,13 @@
         "instruct_type": null
       },
       "pricing": {
-        "prompt": "0.000000684",
-        "completion": "0.00000342",
-        "input_cache_read": "0.000000144"
+        "prompt": "0.00000068",
+        "completion": "0.00000341",
+        "input_cache_read": "0.00000034"
       },
       "top_provider": {
-        "context_length": 262144,
-        "max_completion_tokens": 262144,
+        "context_length": 262142,
+        "max_completion_tokens": 262142,
         "is_moderated": false
       },
       "per_request_limits": null,
@@ -3478,63 +3659,6 @@
       }
     },
     {
-      "id": "z-ai/glm-5v-turbo",
-      "canonical_slug": "z-ai/glm-5v-turbo-20260401",
-      "hugging_face_id": "",
-      "name": "Z.ai: GLM 5V Turbo",
-      "created": 1775061458,
-      "description": "GLM-5V-Turbo is Z.ai\u2019s first native multimodal agent foundation model, built for vision-based coding and agent-driven tasks. It natively handles image, video, and text inputs, excels at long-horizon planning, complex coding,...",
-      "context_length": 202752,
-      "architecture": {
-        "modality": "text+image+video->text",
-        "input_modalities": [
-          "image",
-          "text",
-          "video"
-        ],
-        "output_modalities": [
-          "text"
-        ],
-        "tokenizer": "Other",
-        "instruct_type": null
-      },
-      "pricing": {
-        "prompt": "0.0000012",
-        "completion": "0.000004",
-        "input_cache_read": "0.00000024"
-      },
-      "top_provider": {
-        "context_length": 202752,
-        "max_completion_tokens": 131072,
-        "is_moderated": false
-      },
-      "per_request_limits": null,
-      "supported_parameters": [
-        "include_reasoning",
-        "max_tokens",
-        "reasoning",
-        "response_format",
-        "temperature",
-        "tool_choice",
-        "tools",
-        "top_p"
-      ],
-      "default_parameters": {
-        "temperature": 1,
-        "top_p": 0.95,
-        "top_k": null,
-        "frequency_penalty": null,
-        "presence_penalty": null,
-        "repetition_penalty": null
-      },
-      "supported_voices": null,
-      "knowledge_cutoff": null,
-      "expiration_date": null,
-      "links": {
-        "details": "/api/v1/models/z-ai/glm-5v-turbo-20260401/endpoints"
-      }
-    },
-    {
       "id": "arcee-ai/trinity-large-thinking",
       "canonical_slug": "arcee-ai/trinity-large-thinking",
       "hugging_face_id": "arcee-ai/Trinity-Large-Thinking",
@@ -3966,12 +4090,13 @@
         "instruct_type": null
       },
       "pricing": {
-        "prompt": "0.000000279",
-        "completion": "0.0000012"
+        "prompt": "0.00000027",
+        "completion": "0.00000108",
+        "input_cache_read": "0.000000054"
       },
       "top_provider": {
-        "context_length": 196608,
-        "max_completion_tokens": 196608,
+        "context_length": 204800,
+        "max_completion_tokens": 131072,
         "is_moderated": false
       },
       "per_request_limits": null,
@@ -4198,7 +4323,7 @@
       "name": "Z.ai: GLM 5 Turbo",
       "created": 1773583573,
       "description": "GLM-5 Turbo is a new model from Z.ai designed for fast inference and strong performance in agent-driven environments such as OpenClaw scenarios. It is deeply optimized for real-world agent workflows...",
-      "context_length": 202752,
+      "context_length": 262144,
       "architecture": {
         "modality": "text->text",
         "input_modalities": [
@@ -4216,7 +4341,7 @@
         "input_cache_read": "0.00000024"
       },
       "top_provider": {
-        "context_length": 202752,
+        "context_length": 262144,
         "max_completion_tokens": 131072,
         "is_moderated": false
       },
@@ -5672,7 +5797,8 @@
       },
       "pricing": {
         "prompt": "0.00000015",
-        "completion": "0.00000115"
+        "completion": "0.0000009",
+        "input_cache_read": "0.00000005"
       },
       "top_provider": {
         "context_length": 196608,
@@ -5989,6 +6115,7 @@
       "supported_parameters": [
         "frequency_penalty",
         "include_reasoning",
+        "logprobs",
         "max_tokens",
         "min_p",
         "presence_penalty",
@@ -7408,11 +7535,11 @@
       "pricing": {
         "prompt": "0.0000003",
         "completion": "0.0000009",
-        "input_cache_read": "0.00000005"
+        "input_cache_read": "0.000000055"
       },
       "top_provider": {
         "context_length": 131072,
-        "max_completion_tokens": 24000,
+        "max_completion_tokens": 32768,
         "is_moderated": false
       },
       "per_request_limits": null,
@@ -7442,58 +7569,6 @@
       "expiration_date": null,
       "links": {
         "details": "/api/v1/models/z-ai/glm-4.6-20251208/endpoints"
-      }
-    },
-    {
-      "id": "nex-agi/deepseek-v3.1-nex-n1",
-      "canonical_slug": "nex-agi/deepseek-v3.1-nex-n1",
-      "hugging_face_id": "nex-agi/DeepSeek-V3.1-Nex-N1",
-      "name": "Nex AGI: DeepSeek V3.1 Nex N1",
-      "created": 1765204393,
-      "description": "DeepSeek V3.1 Nex-N1 is the flagship release of the Nex-N1 series \u2014 a post-trained model designed to highlight agent autonomy, tool use, and real-world productivity. Nex-N1 demonstrates competitive performance across...",
-      "context_length": 131072,
-      "architecture": {
-        "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
-        "tokenizer": "DeepSeek",
-        "instruct_type": null
-      },
-      "pricing": {
-        "prompt": "0.000000135",
-        "completion": "0.0000005"
-      },
-      "top_provider": {
-        "context_length": 131072,
-        "max_completion_tokens": 163840,
-        "is_moderated": false
-      },
-      "per_request_limits": null,
-      "supported_parameters": [
-        "frequency_penalty",
-        "max_tokens",
-        "response_format",
-        "structured_outputs",
-        "temperature",
-        "tool_choice",
-        "tools",
-        "top_k",
-        "top_p"
-      ],
-      "default_parameters": {
-        "temperature": null,
-        "top_p": null,
-        "frequency_penalty": null
-      },
-      "supported_voices": null,
-      "knowledge_cutoff": null,
-      "expiration_date": "2026-06-08",
-      "links": {
-        "details": "/api/v1/models/nex-agi/deepseek-v3.1-nex-n1/endpoints"
       }
     },
     {
@@ -12141,56 +12216,6 @@
       }
     },
     {
-      "id": "z-ai/glm-4.5-air:free",
-      "canonical_slug": "z-ai/glm-4.5-air",
-      "hugging_face_id": "zai-org/GLM-4.5-Air",
-      "name": "Z.ai: GLM 4.5 Air (free)",
-      "created": 1753471258,
-      "description": "GLM-4.5-Air is the lightweight variant of our latest flagship model family, also purpose-built for agent-centric applications. Like GLM-4.5, it adopts the Mixture-of-Experts (MoE) architecture but with a more compact parameter...",
-      "context_length": 131072,
-      "architecture": {
-        "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
-        "tokenizer": "Other",
-        "instruct_type": null
-      },
-      "pricing": {
-        "prompt": "0",
-        "completion": "0"
-      },
-      "top_provider": {
-        "context_length": 131072,
-        "max_completion_tokens": 96000,
-        "is_moderated": false
-      },
-      "per_request_limits": null,
-      "supported_parameters": [
-        "include_reasoning",
-        "max_tokens",
-        "reasoning",
-        "temperature",
-        "tool_choice",
-        "tools",
-        "top_p"
-      ],
-      "default_parameters": {
-        "temperature": 0.75,
-        "top_p": null,
-        "frequency_penalty": null
-      },
-      "supported_voices": null,
-      "knowledge_cutoff": "2024-12-31",
-      "expiration_date": null,
-      "links": {
-        "details": "/api/v1/models/z-ai/glm-4.5-air/endpoints"
-      }
-    },
-    {
       "id": "z-ai/glm-4.5-air",
       "canonical_slug": "z-ai/glm-4.5-air",
       "hugging_face_id": "zai-org/GLM-4.5-Air",
@@ -12307,54 +12332,6 @@
       "expiration_date": null,
       "links": {
         "details": "/api/v1/models/qwen/qwen3-235b-a22b-thinking-2507/endpoints"
-      }
-    },
-    {
-      "id": "z-ai/glm-4-32b",
-      "canonical_slug": "z-ai/glm-4-32b-0414",
-      "hugging_face_id": "",
-      "name": "Z.ai: GLM 4 32B ",
-      "created": 1753376617,
-      "description": "GLM 4 32B is a cost-effective foundation language model. It can efficiently perform complex tasks and has significantly enhanced capabilities in tool use, online search, and code-related intelligent tasks. It...",
-      "context_length": 128000,
-      "architecture": {
-        "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
-        "tokenizer": "Other",
-        "instruct_type": null
-      },
-      "pricing": {
-        "prompt": "0.0000001",
-        "completion": "0.0000001"
-      },
-      "top_provider": {
-        "context_length": 128000,
-        "max_completion_tokens": null,
-        "is_moderated": false
-      },
-      "per_request_limits": null,
-      "supported_parameters": [
-        "max_tokens",
-        "temperature",
-        "tool_choice",
-        "tools",
-        "top_p"
-      ],
-      "default_parameters": {
-        "temperature": 0.75,
-        "top_p": null,
-        "frequency_penalty": null
-      },
-      "supported_voices": null,
-      "knowledge_cutoff": "2024-06-30",
-      "expiration_date": null,
-      "links": {
-        "details": "/api/v1/models/z-ai/glm-4-32b-0414/endpoints"
       }
     },
     {
@@ -13670,55 +13647,6 @@
       }
     },
     {
-      "id": "arcee-ai/maestro-reasoning",
-      "canonical_slug": "arcee-ai/maestro-reasoning",
-      "hugging_face_id": "",
-      "name": "Arcee AI: Maestro Reasoning",
-      "created": 1746481269,
-      "description": "Maestro Reasoning is Arcee's flagship analysis model: a 32 B\u2011parameter derivative of Qwen 2.5\u201132 B tuned with DPO and chain\u2011of\u2011thought RL for step\u2011by\u2011step logic. Compared to the earlier 7 B...",
-      "context_length": 131072,
-      "architecture": {
-        "modality": "text->text",
-        "input_modalities": [
-          "text"
-        ],
-        "output_modalities": [
-          "text"
-        ],
-        "tokenizer": "Other",
-        "instruct_type": null
-      },
-      "pricing": {
-        "prompt": "0.0000009",
-        "completion": "0.0000033"
-      },
-      "top_provider": {
-        "context_length": 131072,
-        "max_completion_tokens": 32000,
-        "is_moderated": false
-      },
-      "per_request_limits": null,
-      "supported_parameters": [
-        "frequency_penalty",
-        "logit_bias",
-        "max_tokens",
-        "min_p",
-        "presence_penalty",
-        "repetition_penalty",
-        "stop",
-        "temperature",
-        "top_k",
-        "top_p"
-      ],
-      "default_parameters": {},
-      "supported_voices": null,
-      "knowledge_cutoff": "2025-03-31",
-      "expiration_date": null,
-      "links": {
-        "details": "/api/v1/models/arcee-ai/maestro-reasoning/endpoints"
-      }
-    },
-    {
       "id": "arcee-ai/virtuoso-large",
       "canonical_slug": "arcee-ai/virtuoso-large",
       "hugging_face_id": "",
@@ -14589,7 +14517,7 @@
       "name": "DeepSeek: DeepSeek V3 0324",
       "created": 1742824755,
       "description": "DeepSeek V3, a 685B-parameter, mixture-of-experts model, is the latest iteration of the flagship chat model family from the DeepSeek team. It succeeds the [DeepSeek V3](/deepseek/deepseek-chat-v3) model and performs really well...",
-      "context_length": 163840,
+      "context_length": 131072,
       "architecture": {
         "modality": "text->text",
         "input_modalities": [
@@ -14607,7 +14535,7 @@
         "input_cache_read": "0.000000135"
       },
       "top_provider": {
-        "context_length": 163840,
+        "context_length": 32768,
         "max_completion_tokens": 16384,
         "is_moderated": false
       },
@@ -18522,6 +18450,7 @@
       "pricing": {
         "prompt": "0.00000025",
         "completion": "0.00000125",
+        "web_search": "0.01",
         "input_cache_read": "0.00000003",
         "input_cache_write": "0.0000003"
       },

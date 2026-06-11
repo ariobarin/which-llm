@@ -92,3 +92,11 @@ def test_pareto_front_uses_generic_plot_coordinates():
     ]
 
     assert [row["slug"] for row in plot_pareto.pareto_front(rows)] == ["cheap", "better"]
+
+
+def test_shorten_preserves_non_reasoning_variant():
+    assert (
+        plot_pareto.shorten("Qwen3.5 0.8B (Non-reasoning)")
+        == "Qwen3.5 0.8B (non-reasoning)"
+    )
+    assert plot_pareto.shorten("Qwen3.5 0.8B (Reasoning)") == "Qwen3.5 0.8B"
