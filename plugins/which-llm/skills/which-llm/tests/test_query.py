@@ -1,3 +1,5 @@
+import csv
+
 import query
 
 
@@ -63,3 +65,42 @@ def test_row_output_includes_index_token_count():
         "indexTokensTotal": "123456789",
     }
     assert query._row_for_output(row)["idx-tok"] == "123.5M"
+
+
+def test_min_index_tokens_requires_token_count(tmp_path, monkeypatch):
+    csv_path = tmp_path / "models.csv"
+    fieldnames = ["slug", "name", "deprecated", "indexTokensTotal"]
+    rows = [
+        {
+            "slug": "missing",
+            "name": "Missing",
+            "deprecated": "false",
+            "indexTokensTotal": "",
+        },
+        {
+            "slug": "low",
+            "name": "Low",
+            "deprecated": "false",
+            "indexTokensTotal": "5",
+        },
+        {
+            "slug": "high",
+            "name": "High",
+            "deprecated": "false",
+            "indexTokensTotal": "20",
+        },
+    ]
+    with csv_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    monkeypatch.setattr(query, "ENRICHED_CSV", csv_path)
+    monkeypatch.setattr(query, "BASE_CSV", tmp_path / "missing.csv")
+
+    filtered = query.load_rows(
+        modalities=set(),
+        include_deprecated=True,
+        min_index_tokens=10,
+    )
+
+    assert [row["slug"] for row in filtered] == ["high"]

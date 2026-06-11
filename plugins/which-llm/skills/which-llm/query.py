@@ -144,7 +144,7 @@ def load_rows(
             if context_min is not None and (_f(r.get("context_window_tokens")) or 0) < context_min:
                 continue
             index_tokens = _f(r.get("indexTokensTotal"))
-            if max_index_tokens is not None and index_tokens is None:
+            if (min_index_tokens > 0 or max_index_tokens is not None) and index_tokens is None:
                 continue
             if index_tokens is not None and (
                 index_tokens < min_index_tokens
