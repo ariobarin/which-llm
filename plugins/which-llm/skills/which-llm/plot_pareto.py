@@ -15,16 +15,6 @@ import math
 import re
 from pathlib import Path
 
-try:
-    import matplotlib.pyplot as plt
-    from matplotlib.ticker import FixedLocator, FuncFormatter
-    from adjustText import adjust_text
-except ImportError as exc:
-    raise SystemExit(
-        "plot_pareto.py needs optional plotting packages: "
-        "matplotlib and adjustText. Install them, then rerun the same command."
-    ) from exc
-
 _ART = Path(__file__).parent / "artifacts"
 # Prefer the enriched CSV (with OpenRouter columns) when present.
 CSV_PATH = _ART / "models_enriched.csv" if (_ART / "models_enriched.csv").exists() else _ART / "models.csv"
@@ -161,20 +151,36 @@ def color_for(creator: str) -> str:
     return CREATOR_COLORS.get(creator or "", DEFAULT_COLOR)
 
 
-_EFFORT_RE = re.compile(
-    r"\s*\((?:Adaptive\s+|Non-)?[Rr]easoning,\s*([A-Za-z]+)\s+Effort\)"
-)
-_BARE_REASON_RE = re.compile(r"\s*\((?:Adaptive\s+)?[Rr]easoning\)|\s*\(Non-[Rr]easoning\)")
+_EFFORT_RE = re.compile(r"\s*\((?:Adaptive\s+)?[Rr]easoning,\s*([A-Za-z]+)\s+Effort\)")
+_BARE_REASON_RE = re.compile(r"\s*\((?:Adaptive\s+)?[Rr]easoning\)")
+_NON_REASON_RE = re.compile(r"\s*\(Non-[Rr]easoning\)")
 
 
-def shorten(name: str) -> str:
-    """Mirror AA's chart-label shortening: keep effort level, drop the rest."""
+def shorten(name: str, slug: str = "") -> str:
+    """Short chart labels while preserving reasoning variant disambiguation."""
     s = _EFFORT_RE.sub(lambda m: f" ({m.group(1).lower()})", name)
+    s = _NON_REASON_RE.sub(" (non-reasoning)", s)
     s = _BARE_REASON_RE.sub("", s)
+    if "non-reasoning" in slug and "(non-reasoning)" not in s.lower():
+        s = f"{s} (non-reasoning)"
     return s
 
 
+def _load_plot_deps():
+    try:
+        import matplotlib.pyplot as plt
+        from matplotlib.ticker import FixedLocator, FuncFormatter
+        from adjustText import adjust_text
+    except ImportError as exc:
+        raise SystemExit(
+            "plot_pareto.py needs optional plotting packages: "
+            "matplotlib and adjustText. Install them, then rerun the same command."
+        ) from exc
+    return plt, FixedLocator, FuncFormatter, adjust_text
+
+
 def main() -> int:
+    plt, FixedLocator, FuncFormatter, adjust_text = _load_plot_deps()
     ap = argparse.ArgumentParser()
     ap.add_argument("--max-cost", type=float, default=750.0,
                     help="Drop models with cost above this (USD).")
@@ -280,7 +286,7 @@ def main() -> int:
         bold = r["slug"] in front_set
         free_mark = "* " if _is_true(r.get("openrouter_has_free")) else ""
         txt = ax.text(
-            r["_cost"], r["_intel"], free_mark + shorten(r["name"]),
+            r["_cost"], r["_intel"], free_mark + shorten(r["name"], r["slug"]),
             fontsize=9 if bold else 7,
             fontweight="bold" if bold else "normal",
             color=color_for(r["creator_name"]),

@@ -243,7 +243,7 @@ def main() -> int:
         "openrouter_slug", "openrouter_free_slug", "openrouter_has_free",
     ]
     with OUT_CSV.open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
         w.writeheader()
         w.writerows(enriched)
     print(f"  wrote {OUT_CSV}")
