@@ -15,4 +15,5 @@ wheels/
 **/artifacts/models.html
 **/artifacts/pareto.png
 **/artifacts/pareto_free.png
+analysis/
 .claude/
