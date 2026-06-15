@@ -5,7 +5,7 @@
 [![Last refresh](https://img.shields.io/github/last-commit/ariobarin/which-llm?label=last%20refresh)](https://github.com/ariobarin/which-llm/commits/main)
 [![GitHub stars](https://img.shields.io/github/stars/ariobarin/which-llm?style=flat&logo=github)](https://github.com/ariobarin/which-llm/stargazers)
 
-An agent skill that resolves "which model should I use?" to a real, current answer. It joins the [Artificial Analysis](https://artificialanalysis.ai/models) leaderboard (520+ models, intelligence, cost, benchmarks) with the [OpenRouter](https://openrouter.ai) catalog (slug availability, `:free` tier reality) into a single queryable dataset your agent can reason over. Refreshed daily.
+An agent skill that resolves "which model should I use?" to a real, current answer. It joins the [Artificial Analysis](https://artificialanalysis.ai/models) leaderboard (520+ models, intelligence, cost, benchmarks) with the [OpenRouter](https://openrouter.ai) catalog (slug availability, `:free` tier reality) into a single queryable dataset your agent can reason over. Checked for refresh daily.
 
 ## Install
 
@@ -26,6 +26,8 @@ cp -r /tmp/which-llm/plugins/which-llm/skills/which-llm ~/.claude/skills/which-l
 </details>
 
 ## Example output
+
+Example values are from one checked-in snapshot and will move as data refreshes.
 
 ```text
 $ python query.py models --intel-min 50 --reasoning --sort tokens --top 3
@@ -78,7 +80,7 @@ Short intent commands for agents.
 | `query.py data status` | Data freshness, model count, OpenRouter enrichment status |
 | `query.py data refresh` | Re-scrape AA and cross-reference OR |
 
-`models` flags: `--top N`, `--sort intel|cost|ctx|speed|tokens`, `--pareto`, `--free`, `--intel-min N`, `--max-cost N`, `--min-cost N`, `--max-index-tokens N`, `--min-index-tokens N`, `--context-min N`, `--modality text,image,audio,video`, `--reasoning`/`--no-reasoning`, `--open-weights`/`--no-open-weights`, `--json`.
+`models` flags: `--top N`, `--sort intel|cost|ctx|speed|tokens`, `--pareto`, `--free`, `--intel-min N`, `--max-cost N`, `--min-cost N`, `--max-index-tokens N`, `--min-index-tokens N`, `--context-min N`, `--max-latency N`, `--modality text,image,audio,video`, `--reasoning`/`--no-reasoning`, `--open-weights`/`--no-open-weights`, `--json`.
 
 Compatibility aliases are available for agents that try older verbs: `find`, `list`, `recommend`, `frontier`, `free`, `info`, `status`, and `refresh`.
 
@@ -87,9 +89,9 @@ Compatibility aliases are available for agents that try older verbs: `find`, `li
 ## How it works
 
 1. `scrape.py` fetches `artificialanalysis.ai/models` (an 8 MB HTML page) and parses the Next.js RSC payload, extracting every model object with its full schema: 60+ fields including individual benchmarks, benchmark-run token usage, pricing tiers, modality flags, context window, and reasoning capability.
-2. `enrich.py` fetches the OpenRouter catalog and matches each AA model against it by name, with token-multiset fallback for word-order differences. Current match rate ~51%; the rest are mostly models OpenRouter does not carry.
+2. `enrich.py` fetches the OpenRouter catalog and matches each AA model against it by name, with token-multiset fallback for word-order differences. The match rate changes as the AA and OpenRouter catalogs move; unmatched rows are written to `artifacts/unmatched.txt`.
 3. `query.py` reads the merged CSV and answers structured questions.
-4. A daily GitHub Action re-runs steps 1-2 and commits any changes, so the shipped snapshot is rarely more than 24h stale.
+4. A daily GitHub Action re-runs steps 1-2 and commits artifact changes when the fetched data differs. Run `python query.py data status` to see the age of the checked-in snapshot in your checkout.
 
 No API keys, no auth, no rate-limited services. Just public pages.
 

@@ -5,7 +5,7 @@ description: Look up current LLM intelligence, cost-to-run, benchmark scores, ca
 
 # which-llm
 
-Up-to-date data on ~520 LLMs scraped from artificialanalysis.ai and cross-referenced with the OpenRouter catalog. Trained-in model knowledge goes stale fast. Use this skill instead of guessing.
+Snapshot data on 520+ LLMs scraped from artificialanalysis.ai and cross-referenced with the OpenRouter catalog. Trained-in model knowledge goes stale fast. Use this skill instead of guessing.
 
 ## Agent workflow
 
@@ -125,7 +125,7 @@ python query.py models gpt-5 --top 10
 
 ## Refresh policy
 
-Data is auto-refreshed daily by a GitHub Action; the snapshot shipped with the skill is rarely more than 24h stale. Run `python query.py data status` to check, and `python query.py data refresh` if needed. A manual refresh usually takes a few seconds.
+Data is checked daily by a GitHub Action, and artifact changes are committed when the fetched data differs. A local checkout can lag, so run `python query.py data status` to check the snapshot age and `python query.py data refresh` if needed. A manual refresh usually takes a few seconds.
 
 ## Visual exploration (optional)
 
