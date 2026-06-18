@@ -70,6 +70,7 @@ magistral-small-2509                           Magistral Small 1.2
 mi-dm-k-2-5-pro-dec28                          Mi:dm K 2.5 Pro
 midm-250-pro-rsnsft                            Mi:dm K 2.5 Pro Preview
 mimo-v2-0206                                   MiMo-V2-Flash (Feb 2026)
+mimo-v2-flash                                  MiMo-V2-Flash (Non-reasoning)
 mimo-v2-omni                                   MiMo-V2-Omni
 mimo-v2-omni-0327                              MiMo-V2-Omni-0327
 minicpm-v4-6-1-3b                              MiniCPM-V 4.6 1.3B
@@ -85,7 +86,6 @@ motif-2-12-7b                                  Motif-2-12.7B-Reasoning
 muse-spark                                     Muse Spark
 nanbeige4-1-3b                                 Nanbeige4.1-3B
 nemotron-cascade-2-30b-a3b                     Nemotron Cascade 2 30B A3B
-north-mini-code                                North Mini Code
 nova-2-0-lite                                  Nova 2.0 Lite (Non-reasoning)
 nova-2-0-lite-reasoning                        Nova 2.0 Lite (high)
 nova-2-0-lite-reasoning-low                    Nova 2.0 Lite (low)
