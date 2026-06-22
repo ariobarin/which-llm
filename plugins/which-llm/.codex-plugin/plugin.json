@@ -1,7 +1,7 @@
 {
   "name": "which-llm",
   "version": "0.4.0",
-  "description": "Compare current LLM quality, pricing, speed, context, and OpenRouter slugs.",
+  "description": "Optional plugin wrapper for the which-llm model selection skill.",
   "author": {
     "name": "Ari Obarin",
     "url": "https://github.com/ariobarin"
@@ -19,8 +19,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "which-llm",
-    "shortDescription": "Compare current LLM quality, cost, speed, context, and OpenRouter slugs.",
-    "longDescription": "Use a compact Python CLI over a refreshed Artificial Analysis and OpenRouter snapshot to choose models quickly.",
+    "shortDescription": "Install the which-llm skill through the Codex plugin marketplace.",
+    "longDescription": "Optional wrapper around the standalone which-llm skill for plugin marketplace discovery and install UX.",
     "developerName": "Ari Obarin",
     "category": "Productivity",
     "capabilities": [

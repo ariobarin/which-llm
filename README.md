@@ -4,13 +4,16 @@
 [![Daily refresh](https://img.shields.io/github/actions/workflow/status/ariobarin/which-llm/refresh.yml?label=daily%20refresh)](https://github.com/ariobarin/which-llm/actions/workflows/refresh.yml)
 [![Last refresh](https://img.shields.io/github/last-commit/ariobarin/which-llm?label=last%20refresh)](https://github.com/ariobarin/which-llm/commits/main)
 
-A Codex plugin for current LLM selection. It ships a compact Artificial Analysis plus OpenRouter snapshot and a plain Python CLI for model quality, price, speed, context, modality, and OpenRouter slug checks.
+A lightweight Codex skill for current LLM selection. It ships a compact Artificial Analysis plus OpenRouter snapshot and a plain Python CLI for model quality, price, speed, context, modality, and OpenRouter slug checks.
 
-## Install
+The primary package is `skills/which-llm`, so skill marketplaces can index the skill directly. `plugins/which-llm` is an optional Codex plugin wrapper for users who prefer plugin marketplace install.
 
-```text
-codex plugin marketplace add ariobarin/which-llm --sparse .agents/plugins
-codex plugin add which-llm@which-llm
+## Install The Skill
+
+```bash
+git clone https://github.com/ariobarin/which-llm /tmp/which-llm
+mkdir -p ~/.codex/skills
+cp -R /tmp/which-llm/skills/which-llm ~/.codex/skills/
 ```
 
 Start a new Codex thread after installing, then ask normally:
@@ -23,18 +26,18 @@ What is the OpenRouter slug for Claude Opus?
 
 Requires Python 3.10+. No API keys are needed. First use is offline because the enriched CSV snapshot is checked in.
 
-## Direct skill install
+## Optional Plugin Wrapper
 
-```bash
-git clone https://github.com/ariobarin/which-llm /tmp/which-llm
-cp -r /tmp/which-llm/plugins/which-llm/skills/which-llm ~/.agents/skills/which-llm
+```text
+codex plugin marketplace add ariobarin/which-llm --sparse .agents/plugins
+codex plugin add which-llm@which-llm
 ```
 
-Use the plugin install when possible. It gives Codex a searchable plugin card and keeps the skill bundled with its metadata.
+The plugin wrapper exists only for Codex plugin marketplace discovery and install UX. The underlying skill package is the same `which-llm` skill.
 
 ## Commands
 
-Run commands from `plugins/which-llm/skills/which-llm`.
+Run commands from `skills/which-llm`.
 
 | Command | Use |
 |---|---|
@@ -69,21 +72,24 @@ Tracked runtime data:
 
 | File | Contents |
 |---|---|
-| `artifacts/models_enriched.csv` | The compact AA plus OpenRouter snapshot used by `query.py`. |
-| `artifacts/unmatched.txt` | Non-deprecated AA models without OpenRouter matches. |
+| `skills/which-llm/artifacts/models_enriched.csv` | The compact AA plus OpenRouter snapshot used by `query.py`. |
+| `skills/which-llm/artifacts/unmatched.txt` | Non-deprecated AA models without OpenRouter matches. |
 
-Regenerable refresh intermediates such as `models.html`, `models.csv`, `models.json`, and `openrouter.json` are ignored to keep plugin installs small.
+Regenerable refresh intermediates such as `models.html`, `models.csv`, `models.json`, and `openrouter.json` are ignored to keep skill installs small.
 
 ## Development
 
 ```bash
-cd plugins/which-llm/skills/which-llm
-python -m pip install -e ".[test]"
+git clone https://github.com/ariobarin/which-llm
+cd which-llm
+python -m pip install -e "skills/which-llm[test]"
 python -m pytest tests -v
-python query.py models --top 3
+python skills/which-llm/query.py models --top 3
 ```
 
-The daily GitHub Action refreshes the snapshot and commits CSV diffs when the public catalogs move.
+Edit `skills/which-llm` first, then run `python scripts/sync_plugin_wrapper.py` to refresh the optional plugin wrapper. The mirror test fails if the wrapper drifts.
+
+The daily GitHub Action refreshes the canonical skill snapshot, syncs the plugin wrapper, and commits CSV diffs when the public catalogs move.
 
 ## License
 

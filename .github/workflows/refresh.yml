@@ -11,7 +11,7 @@ on:
 
 defaults:
   run:
-    working-directory: plugins/which-llm/skills/which-llm
+    working-directory: skills/which-llm
 
 permissions:
   contents: write
@@ -36,13 +36,19 @@ jobs:
       - name: Refresh OpenRouter enrichment
         run: python enrich.py --refresh
 
+      - name: Sync plugin wrapper
+        working-directory: ${{ github.workspace }}
+        run: python scripts/sync_plugin_wrapper.py
+
       - name: Commit + push if data changed
         working-directory: ${{ github.workspace }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [[ -n "$(git status --porcelain plugins/which-llm/skills/which-llm/artifacts/)" ]]; then
-            git add plugins/which-llm/skills/which-llm/artifacts/models_enriched.csv \
+          if [[ -n "$(git status --porcelain skills/which-llm/artifacts/ plugins/which-llm/skills/which-llm/artifacts/)" ]]; then
+            git add skills/which-llm/artifacts/models_enriched.csv \
+                    skills/which-llm/artifacts/unmatched.txt \
+                    plugins/which-llm/skills/which-llm/artifacts/models_enriched.csv \
                     plugins/which-llm/skills/which-llm/artifacts/unmatched.txt
             git commit -m "chore: daily data refresh"
             git push

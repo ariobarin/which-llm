@@ -1,0 +1,400 @@
+"""Scrape Artificial Analysis model leaderboard data.
+
+Fetches https://artificialanalysis.ai/models, extracts the embedded RSC
+payload, locates the full model array (the `defaultData` prop), and dumps:
+
+  artifacts/models.html          raw HTML (cached for re-runs)
+  artifacts/models.csv           local flat rows for enrichment
+
+Run:
+  python scrape.py            use cached HTML if present
+  python scrape.py --refresh  re-download HTML
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import re
+import sys
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+URL = "https://artificialanalysis.ai/models"
+UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+)
+
+ART = Path(__file__).parent / "artifacts"
+HTML_PATH = ART / "models.html"
+CSV_PATH = ART / "models.csv"
+ENRICHED_CSV_PATH = ART / "models_enriched.csv"
+
+# Minimum sanity bounds on a parse. If we come back below these the page
+# structure changed or AA is half-broken. Refuse to overwrite the snapshot.
+MIN_MODELS = 400
+REQUIRED_KEYS = ("name", "slug", "intelligence_index", "model_creator_id")
+
+
+def _get_text(url: str, timeout: int = 60) -> str:
+    """Fetch text with a small retry loop for transient upstream failures."""
+    transient_status = {502, 503, 504, 520, 521, 522, 524}
+    last_error: Exception | None = None
+    for attempt in range(4):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                return response.read().decode("utf-8")
+        except urllib.error.HTTPError as exc:
+            if exc.code not in transient_status:
+                raise
+            last_error = exc
+        except urllib.error.URLError as exc:
+            last_error = exc
+        if attempt < 3:
+            time.sleep(2 * attempt)
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError(f"failed to fetch {url}")
+
+
+def fetch_html(refresh: bool) -> str:
+    if HTML_PATH.exists() and not refresh:
+        return HTML_PATH.read_text(encoding="utf-8")
+    ART.mkdir(parents=True, exist_ok=True)
+    print(f"GET {URL}")
+    text = _get_text(URL)
+    HTML_PATH.write_text(text, encoding="utf-8")
+    print(f"  saved {len(text):,} chars -> {HTML_PATH}")
+    return text
+
+
+_CHUNK_RE = re.compile(r'self\.__next_f\.push\(\[(\d+),\s*"((?:[^"\\]|\\.)*)"\]\)', re.DOTALL)
+
+
+def extract_rsc_stream(html: str) -> str:
+    """Concatenate every kind=1 __next_f.push chunk into the raw RSC stream."""
+    parts: list[str] = []
+    for m in _CHUNK_RE.finditer(html):
+        if m.group(1) != "1":
+            continue
+        parts.append(json.loads('"' + m.group(2) + '"'))
+    if not parts:
+        raise RuntimeError("No __next_f.push chunks found - page format changed?")
+    return "".join(parts)
+
+
+# Anchored: the model-list `defaultData` lives inside a component whose props
+# include both `selectModelsByDefault` and `addToSelectedModels`. Requiring
+# them adjacent kills any chance of latching onto an unrelated `defaultData`
+# array AA might add elsewhere on the page later.
+_DEFAULT_DATA_RE = re.compile(
+    r'"addToSelectedModels":\s*"\$undefined"\s*,\s*"defaultData":\['
+)
+
+
+def find_default_data(stream: str, min_models: int = MIN_MODELS) -> list[dict]:
+    """Locate the model-list array in the RSC stream and JSON-parse it.
+
+    Anchored to a multi-key signature so an unrelated `defaultData` prop
+    can't shadow us. Validates the parsed array's shape before returning.
+    """
+    m = _DEFAULT_DATA_RE.search(stream)
+    if m is None:
+        raise RuntimeError(
+            "Anchored defaultData marker not found - AA page structure changed?"
+        )
+    start = m.end() - 1  # position of '['
+    decoder = json.JSONDecoder()
+    arr, _end = decoder.raw_decode(stream, start)
+    if not isinstance(arr, list):
+        raise RuntimeError(f"defaultData is not a list (got {type(arr).__name__})")
+
+    # Schema gate: refuse to ship if the items don't look like model rows.
+    if len(arr) < min_models:
+        raise RuntimeError(
+            f"Parsed only {len(arr)} models (expected >= {MIN_MODELS}). "
+            f"Either AA shrank the catalog or we latched onto the wrong array."
+        )
+    first = arr[0] if arr else {}
+    missing = [k for k in REQUIRED_KEYS if k not in first]
+    if missing:
+        raise RuntimeError(
+            f"Parsed array's first item is missing expected keys {missing}. "
+            f"We probably latched onto the wrong `defaultData`."
+        )
+    return arr
+
+
+# Flat per-model columns for the CSV. The JSON file keeps every original field.
+CSV_FIELDS = [
+    # Identity
+    "name",
+    "short_name",
+    "slug",
+    "model_family_slug",
+    "creator_name",
+    "creator_slug",
+    "release_date",
+    "knowledge_cutoff_date",
+    "deprecated",
+    # The two chart axes
+    "intelligence_index",
+    "intelligence_index_cost_usd",
+    # Companion intelligence-index fields
+    "intelligence_index_is_estimated",
+    "estimated_intelligence_index",
+    "intelligence_index_per_m_output_tokens",
+    "intelligence_index_input_cost_usd",
+    "intelligence_index_output_cost_usd",
+    "intelligence_index_reasoning_cost_usd",
+    # Total tokens AA needed to run the full Intelligence Index benchmark.
+    # This is a token-usage metric, not a price field.
+    "indexTokensTotal",
+    # Composite sub-indexes
+    "coding_index",
+    "math_index",
+    "agentic_index",
+    # Individual benchmarks
+    "gpqa",
+    "hle",
+    "mmlu_pro",
+    "mmmu_pro",
+    "livecodebench",
+    "math_500",
+    "aime",
+    "aime25",
+    "scicode",
+    "humaneval",
+    "tau2",
+    "terminalbench_hard",
+    "ifbench",
+    "apex_agents",
+    "lcr",
+    "critpt",
+    "gdpval",
+    "omniscience",
+    # Pricing per 1M tokens, USD. AA publishes several blends; the
+    # "_X_Y_1" names are AA-internal ratio identifiers, see their site.
+    "price_1m_input_tokens",
+    "price_1m_output_tokens",
+    "price_1m_blended_0_100_1",
+    "price_1m_blended_0_1_1",
+    "price_1m_blended_0_3_1",
+    "price_1m_blended_100_1_1",
+    "price_1m_blended_7_2_1",
+    "cache_hit_price",
+    # Capability flags
+    "reasoning_model",
+    "frontier_model",
+    "is_open_weights",
+    "commercial_allowed",
+    "input_modality_text",
+    "input_modality_image",
+    "input_modality_speech",
+    "input_modality_video",
+    "output_modality_text",
+    "output_modality_image",
+    "output_modality_speech",
+    "output_modality_video",
+    # Size & context
+    "context_window_tokens",
+    "parameters_billions",
+    "active_parameters_billions",
+    "size_class",
+    # Measured response latency, seconds (AA's standardized run). Lower = faster.
+    # For reasoning models both include thinking time, so they read slower.
+    "ttft_seconds",
+    "e2e_response_seconds",
+]
+
+
+def _clean(v):
+    """Coerce RSC sentinels ('$undefined', '$null', '$<hex>') to None.
+
+    These appear because the React Server Component stream uses '$N' to mark
+    references and '$undefined'/'$null' for missing values. None of our target
+    fields legitimately start with '$', so this is safe.
+    """
+    if isinstance(v, str) and v.startswith("$"):
+        return None
+    return v
+
+
+def _f(m: dict, key: str):
+    return _clean(m.get(key))
+
+
+def _pos(v):
+    """Latency sentinel: AA reports an all-zero metrics dict for models it
+    hasn't benchmarked for speed. A real run always has input_time > 0, so a
+    non-positive total_time means 'not measured'. Return None, not 0."""
+    v = _clean(v)
+    try:
+        return v if v is not None and float(v) > 0 else None
+    except (TypeError, ValueError):
+        return None
+
+
+def previous_model_count() -> int | None:
+    """Return prior tracked row count for the catastrophic-drop guard."""
+    snapshot = ENRICHED_CSV_PATH if ENRICHED_CSV_PATH.exists() else CSV_PATH
+    if not snapshot.exists():
+        return None
+    try:
+        with snapshot.open(encoding="utf-8", newline="") as handle:
+            return sum(1 for _row in csv.DictReader(handle))
+    except (OSError, csv.Error):
+        return None
+
+
+def flatten(m: dict) -> dict:
+    creators = m.get("model_creators") or {}
+    cost = _clean(m.get("intelligence_index_cost")) or {}
+    if not isinstance(cost, dict):
+        cost = {}
+    ttft = _clean(m.get("time_to_first_answer_token_metrics")) or {}
+    if not isinstance(ttft, dict):
+        ttft = {}
+    e2e = _clean(m.get("end_to_end_response_time_metrics")) or {}
+    if not isinstance(e2e, dict):
+        e2e = {}
+    # The "_3_1" blended ratio isn't directly exposed; price_1m_blended_7_2_1
+    # is the closest standard ratio AA publishes. Keep the raw fields they expose.
+    return {
+        "name": _f(m, "name"),
+        "short_name": _f(m, "short_name"),
+        "slug": _f(m, "slug"),
+        "model_family_slug": _f(m, "model_family_slug"),
+        "creator_name": _clean(creators.get("name")),
+        "creator_slug": _clean(creators.get("slug")),
+        "release_date": _f(m, "release_date"),
+        "knowledge_cutoff_date": _f(m, "knowledge_cutoff_date"),
+        "deprecated": _f(m, "deprecated"),
+
+        "intelligence_index": _f(m, "intelligence_index"),
+        "intelligence_index_cost_usd": _clean(cost.get("total_cost")),
+        "intelligence_index_is_estimated": _f(m, "intelligence_index_is_estimated"),
+        "estimated_intelligence_index": _f(m, "estimated_intelligence_index"),
+        "intelligence_index_per_m_output_tokens": _f(m, "intelligence_index_per_m_output_tokens"),
+        "intelligence_index_input_cost_usd": _clean(cost.get("input_cost")),
+        "intelligence_index_output_cost_usd": _clean(cost.get("output_cost")),
+        "intelligence_index_reasoning_cost_usd": _clean(cost.get("reasoning_cost")),
+        "indexTokensTotal": _f(m, "indexTokensTotal"),
+
+        "coding_index": _f(m, "coding_index"),
+        "math_index": _f(m, "math_index"),
+        "agentic_index": _f(m, "agentic_index"),
+
+        "gpqa": _f(m, "gpqa"),
+        "hle": _f(m, "hle"),
+        "mmlu_pro": _f(m, "mmlu_pro"),
+        "mmmu_pro": _f(m, "mmmu_pro"),
+        "livecodebench": _f(m, "livecodebench"),
+        "math_500": _f(m, "math_500"),
+        "aime": _f(m, "aime"),
+        "aime25": _f(m, "aime25"),
+        "scicode": _f(m, "scicode"),
+        "humaneval": _f(m, "humaneval"),
+        "tau2": _f(m, "tau2"),
+        "terminalbench_hard": _f(m, "terminalbench_hard"),
+        "ifbench": _f(m, "ifbench"),
+        "apex_agents": _f(m, "apex_agents"),
+        "lcr": _f(m, "lcr"),
+        "critpt": _f(m, "critpt"),
+        "gdpval": _f(m, "gdpval"),
+        "omniscience": _f(m, "omniscience"),
+
+        "price_1m_input_tokens": _f(m, "price_1m_input_tokens"),
+        "price_1m_output_tokens": _f(m, "price_1m_output_tokens"),
+        "price_1m_blended_0_100_1": _f(m, "price_1m_blended_0_100_1"),
+        "price_1m_blended_0_1_1": _f(m, "price_1m_blended_0_1_1"),
+        "price_1m_blended_0_3_1": _f(m, "price_1m_blended_0_3_1"),
+        "price_1m_blended_100_1_1": _f(m, "price_1m_blended_100_1_1"),
+        "price_1m_blended_7_2_1": _f(m, "price_1m_blended_7_2_1"),
+        "cache_hit_price": _f(m, "cache_hit_price"),
+
+        "reasoning_model": _f(m, "reasoning_model"),
+        "frontier_model": _f(m, "frontier_model"),
+        "is_open_weights": _f(m, "is_open_weights"),
+        "commercial_allowed": _f(m, "commercial_allowed"),
+        "input_modality_text": _f(m, "input_modality_text"),
+        "input_modality_image": _f(m, "input_modality_image"),
+        "input_modality_speech": _f(m, "input_modality_speech"),
+        "input_modality_video": _f(m, "input_modality_video"),
+        "output_modality_text": _f(m, "output_modality_text"),
+        "output_modality_image": _f(m, "output_modality_image"),
+        "output_modality_speech": _f(m, "output_modality_speech"),
+        "output_modality_video": _f(m, "output_modality_video"),
+
+        "context_window_tokens": _f(m, "context_window_tokens"),
+        "parameters_billions": _f(m, "parameters"),
+        "active_parameters_billions": _f(m, "activeParams"),
+        "size_class": _f(m, "size_class"),
+
+        "ttft_seconds": _pos(ttft.get("total_time")),
+        "e2e_response_seconds": _pos(e2e.get("total_time")),
+    }
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--refresh", action="store_true", help="re-fetch the HTML")
+    args = ap.parse_args()
+
+    html = fetch_html(args.refresh)
+    stream = extract_rsc_stream(html)
+    models = find_default_data(stream)
+    print(f"Parsed {len(models)} models from defaultData")
+
+    # Catastrophic-drop guard: if we already have a known-good tracked CSV and
+    # the new parse comes back with <80% of that count, refuse to overwrite.
+    # Almost always means AA changed page structure and we're parsing garbage.
+    prior_count = previous_model_count()
+    if prior_count:
+        ratio = len(models) / prior_count
+        if ratio < 0.8:
+            print(
+                f"ABORT: parsed {len(models)} models, previous snapshot "
+                f"had {prior_count} ({ratio:.0%}). Refusing to overwrite. "
+                f"Investigate before re-running.",
+                file=sys.stderr,
+            )
+            return 2
+
+    ART.mkdir(parents=True, exist_ok=True)
+
+    rows = [flatten(m) for m in models]
+    with CSV_PATH.open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=CSV_FIELDS, lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+    print(f"  wrote {CSV_PATH} ({CSV_PATH.stat().st_size:,} bytes)")
+
+    # Spot-check a few chart-visible models against the screenshot.
+    print("\n--- Spot checks against the Intelligence-vs-Cost chart ---")
+    targets = [
+        "claude-opus-4-7",
+        "gpt-5-4-xhigh",
+        "gpt-5-5-xhigh",
+        "deepseek-v3-2",
+        "gemini-3-5-flash",
+    ]
+    by_slug = {r["slug"]: r for r in rows if r.get("slug")}
+    for slug in targets:
+        r = by_slug.get(slug)
+        if not r:
+            print(f"  {slug}: NOT FOUND")
+            continue
+        print(
+            f"  {r['name']:55s}  index={r['intelligence_index']!s:>6}  "
+            f"cost=${r['intelligence_index_cost_usd']!s:>10}"
+        )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

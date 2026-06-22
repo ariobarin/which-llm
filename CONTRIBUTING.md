@@ -6,16 +6,19 @@ Thanks for considering a contribution.
 
 ```bash
 git clone https://github.com/ariobarin/which-llm
-cd which-llm/plugins/which-llm/skills/which-llm
-python -m pip install -e ".[test]"
-python -m pytest tests/ -v
+cd which-llm
+python -m pip install -e "skills/which-llm[test]"
+python -m pytest tests -v
 ```
 
 ## What lives where
 
 | Path | Purpose |
 |---|---|
-| `plugins/which-llm/skills/which-llm/` | The skill: scripts, data, tests |
+| `skills/which-llm/` | Canonical skill package: instructions, scripts, and data |
+| `plugins/which-llm/skills/which-llm/` | Optional plugin wrapper mirror of the skill package |
+| `tests/which_llm/` | Repo tests, kept out of install packages |
+| `scripts/sync_plugin_wrapper.py` | Refreshes the plugin wrapper from the canonical skill |
 | `plugins/which-llm/.codex-plugin/` | Codex plugin manifest |
 | `.agents/plugins/` | Codex repo marketplace metadata |
 | `.github/workflows/refresh.yml` | Daily data refresh cron |
@@ -26,10 +29,11 @@ python -m pytest tests/ -v
 ## Making changes
 
 1. Create a branch.
-2. Make your changes inside `plugins/which-llm/skills/which-llm/`.
-3. Run `python -m pytest tests/ -v`; all tests must pass.
-4. If you changed `query.py`, run a quick `python query.py models --top 3` to verify.
-5. Open a PR. Describe what you changed and why.
+2. Make runtime changes inside `skills/which-llm/`.
+3. Run `python scripts/sync_plugin_wrapper.py`.
+4. Run `python -m pytest tests -v`; all tests must pass.
+5. If you changed `query.py`, run `python skills/which-llm/query.py models --top 3`.
+6. Open a PR. Describe what changed and why.
 
 ## Parser changes
 
@@ -47,7 +51,7 @@ If AA changes their page structure, this will break. To fix:
 Bump `version` in all three places when cutting a release:
 - `plugins/which-llm/.codex-plugin/plugin.json`
 - `plugins/which-llm/.claude-plugin/plugin.json`
-- `plugins/which-llm/skills/which-llm/pyproject.toml`
+- `skills/which-llm/pyproject.toml`
 - `.claude-plugin/marketplace.json`
 
 Update `CHANGELOG.md` with the changes.
