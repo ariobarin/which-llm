@@ -26,6 +26,9 @@ python -m pytest tests -v
 | `.claude-plugin/` | Legacy-compatible marketplace metadata |
 | `dev/` | One-off exploration scripts (not part of the shipped skill) |
 
+Keep `skills/which-llm` agent-agnostic. Put platform-specific wording only in
+integration wrappers and install docs.
+
 ## Making changes
 
 1. Create a branch.

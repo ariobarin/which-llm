@@ -1,7 +1,7 @@
 {
   "name": "which-llm",
   "version": "0.4.0",
-  "description": "Optional plugin wrapper for the which-llm model selection skill.",
+  "description": "Codex plugin wrapper for the agent-agnostic which-llm skill.",
   "author": {
     "name": "Ari Obarin",
     "url": "https://github.com/ariobarin"
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "which-llm",
     "shortDescription": "Install the which-llm skill through the Codex plugin marketplace.",
-    "longDescription": "Optional wrapper around the standalone which-llm skill for plugin marketplace discovery and install UX.",
+    "longDescription": "Optional Codex wrapper around the standalone, agent-agnostic which-llm skill.",
     "developerName": "Ari Obarin",
     "category": "Productivity",
     "capabilities": [

@@ -20,4 +20,5 @@ paste here
 **Environment:**
 - OS: 
 - Python version: 
-- Claude Code version: 
+- Agent host/version:
+- Install method: direct skill / Codex plugin / legacy plugin

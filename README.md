@@ -4,19 +4,23 @@
 [![Daily refresh](https://img.shields.io/github/actions/workflow/status/ariobarin/which-llm/refresh.yml?label=daily%20refresh)](https://github.com/ariobarin/which-llm/actions/workflows/refresh.yml)
 [![Last refresh](https://img.shields.io/github/last-commit/ariobarin/which-llm?label=last%20refresh)](https://github.com/ariobarin/which-llm/commits/main)
 
-A lightweight Codex skill for current LLM selection. It ships a compact Artificial Analysis plus OpenRouter snapshot and a plain Python CLI for model quality, price, speed, context, modality, and OpenRouter slug checks.
+A lightweight agent skill for current LLM selection. It ships a compact Artificial Analysis plus OpenRouter snapshot and a plain Python CLI for model quality, price, speed, context, modality, and OpenRouter slug checks.
 
-The primary package is `skills/which-llm`, so skill marketplaces can index the skill directly. `plugins/which-llm` is an optional Codex plugin wrapper for users who prefer plugin marketplace install.
+The primary package is `skills/which-llm`, so skill marketplaces can index the skill directly. Integration-specific wrappers live outside that package.
 
-## Install The Skill
+## Install The Skill Directly
+
+Copy `skills/which-llm` into your agent host's configured skill directory.
+Example for Codex user skills:
 
 ```bash
 git clone https://github.com/ariobarin/which-llm /tmp/which-llm
-mkdir -p ~/.codex/skills
-cp -R /tmp/which-llm/skills/which-llm ~/.codex/skills/
+CODEX_SKILLS_DIR="${CODEX_HOME:-$HOME/.codex}/skills"
+mkdir -p "$CODEX_SKILLS_DIR"
+cp -R /tmp/which-llm/skills/which-llm "$CODEX_SKILLS_DIR/"
 ```
 
-Start a new Codex thread after installing, then ask normally:
+Start a new agent session after installing, then ask normally:
 
 ```text
 Which cheap vision model should I use?
@@ -28,12 +32,14 @@ Requires Python 3.10+. No API keys are needed. First use is offline because the 
 
 ## Optional Plugin Wrapper
 
+Codex users can also install through the plugin marketplace wrapper:
+
 ```text
 codex plugin marketplace add ariobarin/which-llm --sparse .agents/plugins
 codex plugin add which-llm@which-llm
 ```
 
-The plugin wrapper exists only for Codex plugin marketplace discovery and install UX. The underlying skill package is the same `which-llm` skill.
+The plugin wrapper exists only for Codex plugin marketplace discovery and install UX. The underlying package is the same `which-llm` skill.
 
 ## Commands
 

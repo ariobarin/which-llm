@@ -1,11 +1,10 @@
 # Legacy marketplace metadata
 
 The primary package is the standalone skill at `skills/which-llm`.
-Codex can also use `.agents/plugins/marketplace.json` and
-`plugins/which-llm/.codex-plugin/plugin.json` as a light plugin wrapper.
-
-This directory remains for legacy-compatible plugin clients that still read
-`.claude-plugin/marketplace.json`.
+Platform wrappers live outside that package. Codex uses
+`.agents/plugins/marketplace.json` plus
+`plugins/which-llm/.codex-plugin/plugin.json`, while this directory remains for
+legacy-compatible plugin clients that still read `.claude-plugin/marketplace.json`.
 
 Keep the version in `marketplace.json` aligned with:
 
