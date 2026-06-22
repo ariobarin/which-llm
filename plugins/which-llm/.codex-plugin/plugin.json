@@ -1,0 +1,37 @@
+{
+  "name": "which-llm",
+  "version": "0.4.0",
+  "description": "Optional plugin wrapper for the which-llm model selection skill.",
+  "author": {
+    "name": "Ari Obarin",
+    "url": "https://github.com/ariobarin"
+  },
+  "homepage": "https://github.com/ariobarin/which-llm",
+  "repository": "https://github.com/ariobarin/which-llm",
+  "license": "MIT",
+  "keywords": [
+    "llm",
+    "model-selection",
+    "openrouter",
+    "artificial-analysis",
+    "pricing"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "which-llm",
+    "shortDescription": "Install the which-llm skill through the Codex plugin marketplace.",
+    "longDescription": "Optional wrapper around the standalone which-llm skill for plugin marketplace discovery and install UX.",
+    "developerName": "Ari Obarin",
+    "category": "Productivity",
+    "capabilities": [
+      "Read"
+    ],
+    "websiteURL": "https://github.com/ariobarin/which-llm",
+    "defaultPrompt": [
+      "Use which-llm to compare GPT-5, Claude, and Gemini.",
+      "Use which-llm to find a cheap vision model.",
+      "Use which-llm to get an OpenRouter slug."
+    ],
+    "brandColor": "#10A37F"
+  }
+}
