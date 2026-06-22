@@ -41,7 +41,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: python scripts/sync_plugin_wrapper.py
 
-      - name: Open refresh PR if data changed
+      - name: Open or update refresh PR if data changed
         working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -50,6 +50,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [[ -n "$(git status --porcelain skills/which-llm/artifacts/ plugins/which-llm/skills/which-llm/artifacts/)" ]]; then
             REFRESH_BRANCH="automation/daily-data-refresh"
+            REFRESH_TITLE="Refresh model data"
+            REFRESH_BODY="Daily refresh found model catalog changes. Later refresh runs update this same PR instead of opening another one."
             git fetch origin "$REFRESH_BRANCH:refs/remotes/origin/$REFRESH_BRANCH" || true
             git switch -C "$REFRESH_BRANCH" "$GITHUB_SHA"
             git add skills/which-llm/artifacts/models_enriched.csv \
@@ -65,14 +67,14 @@ jobs:
             EXISTING_PR=$(gh pr list --head "$REFRESH_BRANCH" --state open --json number --jq '.[0].number')
             if [[ -n "$EXISTING_PR" ]]; then
               gh pr edit "$EXISTING_PR" \
-                --title "Refresh model data" \
-                --body "Daily refresh found model catalog changes."
+                --title "$REFRESH_TITLE" \
+                --body "$REFRESH_BODY"
             else
               gh pr create \
                 --base main \
                 --head "$REFRESH_BRANCH" \
-                --title "Refresh model data" \
-                --body "Daily refresh found model catalog changes."
+                --title "$REFRESH_TITLE" \
+                --body "$REFRESH_BODY"
             fi
           else
             echo "No artifact changes; nothing to commit."
