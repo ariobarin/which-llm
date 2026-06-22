@@ -16,6 +16,7 @@ defaults:
 permissions:
   contents: write
   issues: write  # for the failure-issue-opener step
+  pull-requests: write
 
 jobs:
   refresh:
@@ -40,18 +41,39 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: python scripts/sync_plugin_wrapper.py
 
-      - name: Commit + push if data changed
+      - name: Open refresh PR if data changed
         working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [[ -n "$(git status --porcelain skills/which-llm/artifacts/ plugins/which-llm/skills/which-llm/artifacts/)" ]]; then
+            REFRESH_BRANCH="automation/daily-data-refresh"
+            git fetch origin "$REFRESH_BRANCH:refs/remotes/origin/$REFRESH_BRANCH" || true
+            git switch -C "$REFRESH_BRANCH" "$GITHUB_SHA"
             git add skills/which-llm/artifacts/models_enriched.csv \
                     skills/which-llm/artifacts/unmatched.txt \
                     plugins/which-llm/skills/which-llm/artifacts/models_enriched.csv \
                     plugins/which-llm/skills/which-llm/artifacts/unmatched.txt
-            git commit -m "chore: daily data refresh"
-            git push
+            if git diff --cached --quiet; then
+              echo "No artifact changes; nothing to commit."
+              exit 0
+            fi
+            git commit -m "refresh model data"
+            git push --force-with-lease=refs/heads/$REFRESH_BRANCH origin "HEAD:$REFRESH_BRANCH"
+            EXISTING_PR=$(gh pr list --head "$REFRESH_BRANCH" --state open --json number --jq '.[0].number')
+            if [[ -n "$EXISTING_PR" ]]; then
+              gh pr edit "$EXISTING_PR" \
+                --title "Refresh model data" \
+                --body "Daily refresh found model catalog changes."
+            else
+              gh pr create \
+                --base main \
+                --head "$REFRESH_BRANCH" \
+                --title "Refresh model data" \
+                --body "Daily refresh found model catalog changes."
+            fi
           else
             echo "No artifact changes; nothing to commit."
           fi
