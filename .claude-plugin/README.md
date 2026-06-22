@@ -1,20 +1,14 @@
-# Plugin marketplace metadata
+# Legacy marketplace metadata
 
-This directory declares the repo as a Claude Code **plugin marketplace** so
-users can install which-llm with:
+Codex uses `.agents/plugins/marketplace.json` and
+`plugins/which-llm/.codex-plugin/plugin.json` as the primary install surface.
 
-```text
-/plugin marketplace add ariobarin/which-llm
-/plugin install which-llm@which-llm
-```
+This directory remains for legacy-compatible plugin clients that still read
+`.claude-plugin/marketplace.json`.
 
-## Maintenance
+Keep the version in `marketplace.json` aligned with:
 
-1. Bump `version` in `marketplace.json` whenever you cut a release. Keep it
-   in sync with `pyproject.toml` and the top of `CHANGELOG.md`.
-2. If `/plugin marketplace add` ever starts rejecting the file, the plugin
-   schema has likely evolved. Check the current Claude Code plugin docs
-   and update field names here.
-
-If you don't want the plugin route, this directory is harmless. The
-`git clone .../.claude/skills/which-llm` install flow works without it.
+- `plugins/which-llm/.codex-plugin/plugin.json`
+- `plugins/which-llm/.claude-plugin/plugin.json`
+- `plugins/which-llm/skills/which-llm/pyproject.toml`
+- `CHANGELOG.md`

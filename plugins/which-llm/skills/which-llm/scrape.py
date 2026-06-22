@@ -4,8 +4,7 @@ Fetches https://artificialanalysis.ai/models, extracts the embedded RSC
 payload, locates the full model array (the `defaultData` prop), and dumps:
 
   artifacts/models.html          raw HTML (cached for re-runs)
-  artifacts/models.json          full normalized model list
-  artifacts/models.csv           flat per-model rows for quick analysis
+  artifacts/models.csv           local flat rows for enrichment
 
 Run:
   python scrape.py            use cached HTML if present
@@ -31,8 +30,8 @@ UA = (
 
 ART = Path(__file__).parent / "artifacts"
 HTML_PATH = ART / "models.html"
-JSON_PATH = ART / "models.json"
 CSV_PATH = ART / "models.csv"
+ENRICHED_CSV_PATH = ART / "models_enriched.csv"
 
 # Minimum sanity bounds on a parse. If we come back below these the page
 # structure changed or AA is half-broken. Refuse to overwrite the snapshot.
@@ -240,6 +239,18 @@ def _pos(v):
         return None
 
 
+def previous_model_count() -> int | None:
+    """Return prior tracked row count for the catastrophic-drop guard."""
+    snapshot = ENRICHED_CSV_PATH if ENRICHED_CSV_PATH.exists() else CSV_PATH
+    if not snapshot.exists():
+        return None
+    try:
+        with snapshot.open(encoding="utf-8", newline="") as handle:
+            return sum(1 for _row in csv.DictReader(handle))
+    except (OSError, csv.Error):
+        return None
+
+
 def flatten(m: dict) -> dict:
     creators = m.get("model_creators") or {}
     cost = _clean(m.get("intelligence_index_cost")) or {}
@@ -339,28 +350,22 @@ def main() -> int:
     models = find_default_data(stream)
     print(f"Parsed {len(models)} models from defaultData")
 
-    # Catastrophic-drop guard: if we already have a known-good snapshot and the
-    # new parse comes back with <80% of that count, refuse to overwrite. Almost
-    # always means AA changed page structure and we're parsing garbage.
-    if JSON_PATH.exists():
-        try:
-            prev = json.loads(JSON_PATH.read_text(encoding="utf-8"))
-            if isinstance(prev, list) and len(prev) > 0:
-                ratio = len(models) / len(prev)
-                if ratio < 0.8:
-                    print(
-                        f"ABORT: parsed {len(models)} models, previous snapshot "
-                        f"had {len(prev)} ({ratio:.0%}). Refusing to overwrite. "
-                        f"Investigate before re-running.",
-                        file=sys.stderr,
-                    )
-                    return 2
-        except (json.JSONDecodeError, OSError):
-            pass  # corrupt or missing previous snapshot, proceed
+    # Catastrophic-drop guard: if we already have a known-good tracked CSV and
+    # the new parse comes back with <80% of that count, refuse to overwrite.
+    # Almost always means AA changed page structure and we're parsing garbage.
+    prior_count = previous_model_count()
+    if prior_count:
+        ratio = len(models) / prior_count
+        if ratio < 0.8:
+            print(
+                f"ABORT: parsed {len(models)} models, previous snapshot "
+                f"had {prior_count} ({ratio:.0%}). Refusing to overwrite. "
+                f"Investigate before re-running.",
+                file=sys.stderr,
+            )
+            return 2
 
     ART.mkdir(parents=True, exist_ok=True)
-    JSON_PATH.write_text(json.dumps(models, indent=2), encoding="utf-8")
-    print(f"  wrote {JSON_PATH} ({JSON_PATH.stat().st_size:,} bytes)")
 
     rows = [flatten(m) for m in models]
     with CSV_PATH.open("w", encoding="utf-8", newline="") as f:

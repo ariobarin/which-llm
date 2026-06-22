@@ -1,8 +1,8 @@
 """Cross-reference AA scrape with the OpenRouter model catalog.
 
-Reads `artifacts/models.csv` (from scrape.py) and `artifacts/openrouter.json`
-(fetched on demand). Writes `artifacts/models_enriched.csv` with three new
-columns:
+Reads `artifacts/models.csv` from a fresh scrape, or the tracked enriched CSV
+when re-matching only. Fetches OpenRouter on demand. Writes
+`artifacts/models_enriched.csv` with three OpenRouter columns:
 
   openrouter_slug          primary paid OR slug we matched (e.g. anthropic/claude-opus-4.7)
   openrouter_free_slug     :free OR slug, if one exists for the same model
@@ -30,6 +30,7 @@ AA_CSV = ART / "models.csv"
 OR_JSON = ART / "openrouter.json"
 OUT_CSV = ART / "models_enriched.csv"
 UNMATCHED_TXT = ART / "unmatched.txt"
+OR_FIELDS = ["openrouter_slug", "openrouter_free_slug", "openrouter_has_free"]
 
 OR_URL = "https://openrouter.ai/api/v1/models"
 UA = "Mozilla/5.0 (compatible; aa-scrape/1.0)"
@@ -190,6 +191,21 @@ def match_aa_to_or(
     return []
 
 
+def load_aa_rows() -> list[dict]:
+    source = AA_CSV if AA_CSV.exists() else OUT_CSV
+    if not source.exists():
+        raise FileNotFoundError(
+            "No AA snapshot found. Run: python scrape.py --refresh"
+        )
+    rows = list(csv.DictReader(source.open(encoding="utf-8")))
+    if source == OUT_CSV:
+        return [
+            {key: value for key, value in row.items() if key not in OR_FIELDS}
+            for row in rows
+        ]
+    return rows
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--refresh", action="store_true",
@@ -199,7 +215,7 @@ def main() -> int:
     or_models = fetch_openrouter(args.refresh)
     print(f"OpenRouter catalog: {len(or_models)} models")
 
-    aa_rows = list(csv.DictReader(AA_CSV.open(encoding="utf-8")))
+    aa_rows = load_aa_rows()
     print(f"AA scrape:          {len(aa_rows)} models")
 
     exact_idx, loose_idx = build_or_index(or_models)
@@ -239,9 +255,7 @@ def main() -> int:
         })
 
     # Write the enriched CSV.
-    fieldnames = list(aa_rows[0].keys()) + [
-        "openrouter_slug", "openrouter_free_slug", "openrouter_has_free",
-    ]
+    fieldnames = list(aa_rows[0].keys()) + OR_FIELDS
     with OUT_CSV.open("w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
         w.writeheader()

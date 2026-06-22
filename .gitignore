@@ -9,10 +9,12 @@ wheels/
 # Virtual environments
 .venv
 
-# Regenerable artifacts. CSV/JSON snapshots are tracked so the skill works
-# the instant someone clones it; the 8MB scraped HTML and plot output are
-# not, they rebuild trivially.
+# Regenerable artifacts. The enriched runtime CSV stays tracked so the skill
+# works instantly; refresh intermediates and plot output rebuild locally.
 **/artifacts/models.html
+**/artifacts/models.csv
+**/artifacts/models.json
+**/artifacts/openrouter.json
 **/artifacts/pareto.png
 **/artifacts/pareto_free.png
 .claude/

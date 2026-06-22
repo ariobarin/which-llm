@@ -5,14 +5,26 @@ loosely follows [SemVer](https://semver.org/).
 
 ## Unreleased
 
+## [0.4.0] - 2026-06-22
+
 ### Added
+- Codex-native `.codex-plugin/plugin.json`, repo marketplace metadata, and
+  skill UI metadata.
 - `indexTokensTotal` is now flattened into CSV output, emitted in JSON,
   shown as `idx-tok` in tables, and exposed through `--sort tokens`,
   `--max-index-tokens`, and `--min-index-tokens`.
 
 ### Changed
+- `SKILL.md` is trimmed to the activation-critical workflow and command
+  recipes.
+- README install and usage now follow the current Codex plugin docs.
+- The refresh guard now compares against the tracked CSV snapshot.
 - Pareto chart labels preserve reasoning effort and non-reasoning variants
   when shortening model names.
+
+### Removed
+- Regenerable AA and OpenRouter refresh intermediates are no longer tracked,
+  cutting the installed plugin payload by more than 12 MB.
 
 ## [0.3.1] - 2026-06-09
 

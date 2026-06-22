@@ -16,9 +16,11 @@ python -m pytest tests/ -v
 | Path | Purpose |
 |---|---|
 | `plugins/which-llm/skills/which-llm/` | The skill: scripts, data, tests |
+| `plugins/which-llm/.codex-plugin/` | Codex plugin manifest |
+| `.agents/plugins/` | Codex repo marketplace metadata |
 | `.github/workflows/refresh.yml` | Daily data refresh cron |
 | `README.md`, `CHANGELOG.md` | Repo-level docs |
-| `.claude-plugin/` | Plugin marketplace metadata |
+| `.claude-plugin/` | Legacy-compatible marketplace metadata |
 | `dev/` | One-off exploration scripts (not part of the shipped skill) |
 
 ## Making changes
@@ -43,6 +45,7 @@ If AA changes their page structure, this will break. To fix:
 ## Versioning
 
 Bump `version` in all three places when cutting a release:
+- `plugins/which-llm/.codex-plugin/plugin.json`
 - `plugins/which-llm/.claude-plugin/plugin.json`
 - `plugins/which-llm/skills/which-llm/pyproject.toml`
 - `.claude-plugin/marketplace.json`

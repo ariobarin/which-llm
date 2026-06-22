@@ -1,0 +1,20 @@
+{
+  "name": "which-llm",
+  "interface": {
+    "displayName": "which-llm"
+  },
+  "plugins": [
+    {
+      "name": "which-llm",
+      "source": {
+        "source": "local",
+        "path": "./plugins/which-llm"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
