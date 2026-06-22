@@ -19,8 +19,8 @@ loosely follows [SemVer](https://semver.org/).
 ### Changed
 - `SKILL.md` is trimmed to the activation-critical workflow and command
   recipes.
-- README now presents the skill install first, with plugin install as an
-  optional wrapper.
+- README now presents `which-llm` as an agent-agnostic skill first, with
+  Codex plugin install as an optional wrapper.
 - The refresh guard now compares against the tracked CSV snapshot.
 - Tests moved out of the installed skill payload.
 - Pareto chart labels preserve reasoning effort and non-reasoning variants
