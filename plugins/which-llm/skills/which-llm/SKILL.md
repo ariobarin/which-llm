@@ -17,9 +17,10 @@ Use this skill when model knowledge may be stale. It queries a checked-in Artifi
    - `python query.py slug <model>` for OpenRouter endpoint names.
    - `python query.py show <model>` before recommending a specific model.
 4. Explain cost fields correctly:
-   - `idx-run$` is the estimated cost to run the AA benchmark suite.
+   - `idx-run$` (`intelligence_index_cost_usd`) is the estimated cost to run the AA benchmark suite. Use this as the default price metric for value, ranking, and frontier decisions whenever it is present because it best approximates in-use model expense.
    - `idx-tok` is total benchmark-run token use.
    - `in$/1m` and `out$/1m` are API prices per million tokens.
+   - Do not substitute per-million token prices for `idx-run$` in frontier decisions unless `idx-run$` is missing. If it is missing, say so and label per-token pricing as a fallback billing estimate, not observed run-index cost.
 5. Prefer `openrouter_slug` for production. Mention `openrouter_free_slug` only as a prototype option because `:free` endpoints can be rate-limited or served differently.
 
 ## Fast Recipes
