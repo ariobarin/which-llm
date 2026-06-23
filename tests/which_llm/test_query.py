@@ -67,6 +67,41 @@ def test_row_output_includes_index_token_count():
     assert query._row_for_output(row)["idx-tok"] == "123.5M"
 
 
+def test_row_output_marks_estimated_index_cost():
+    row = {
+        "slug": "model",
+        "name": "Model",
+        "creator_name": "Creator",
+        "intelligence_index": "50",
+        "intelligence_index_cost_usd": "",
+        "indexTokensTotal": "2500000",
+        "price_1m_output_tokens": "4",
+    }
+
+    output = query._row_for_output(row)
+
+    assert output["idx-run$"] == "~$10.00"
+    assert output["cost-src"] == "est"
+
+
+def test_json_row_exposes_effective_index_cost_fields():
+    row = {
+        "slug": "model",
+        "name": "Model",
+        "creator_name": "Creator",
+        "intelligence_index": "50",
+        "intelligence_index_cost_usd": "",
+        "indexTokensTotal": "2500000",
+        "price_1m_output_tokens": "4",
+    }
+
+    output = query._json_row(row)
+
+    assert output["estimated_index_output_cost_usd"] == 10
+    assert output["effective_index_cost_usd"] == 10
+    assert output["effective_index_cost_source"] == "estimated_output"
+
+
 def test_min_index_tokens_requires_token_count(tmp_path, monkeypatch):
     csv_path = tmp_path / "models.csv"
     fieldnames = ["slug", "name", "deprecated", "indexTokensTotal"]
@@ -104,3 +139,55 @@ def test_min_index_tokens_requires_token_count(tmp_path, monkeypatch):
     )
 
     assert [row["slug"] for row in filtered] == ["high"]
+
+
+def test_max_cost_uses_estimated_index_cost(tmp_path, monkeypatch):
+    csv_path = tmp_path / "models.csv"
+    fieldnames = [
+        "slug",
+        "name",
+        "deprecated",
+        "intelligence_index_cost_usd",
+        "indexTokensTotal",
+        "price_1m_output_tokens",
+    ]
+    rows = [
+        {
+            "slug": "cheap-estimate",
+            "name": "Cheap Estimate",
+            "deprecated": "false",
+            "intelligence_index_cost_usd": "",
+            "indexTokensTotal": "2500000",
+            "price_1m_output_tokens": "4",
+        },
+        {
+            "slug": "expensive-estimate",
+            "name": "Expensive Estimate",
+            "deprecated": "false",
+            "intelligence_index_cost_usd": "",
+            "indexTokensTotal": "25000000",
+            "price_1m_output_tokens": "4",
+        },
+        {
+            "slug": "missing-cost",
+            "name": "Missing Cost",
+            "deprecated": "false",
+            "intelligence_index_cost_usd": "",
+            "indexTokensTotal": "2500000",
+            "price_1m_output_tokens": "",
+        },
+    ]
+    with csv_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    monkeypatch.setattr(query, "ENRICHED_CSV", csv_path)
+    monkeypatch.setattr(query, "BASE_CSV", tmp_path / "missing.csv")
+
+    filtered = query.load_rows(
+        modalities=set(),
+        include_deprecated=True,
+        max_cost=20,
+    )
+
+    assert [row["slug"] for row in filtered] == ["cheap-estimate"]

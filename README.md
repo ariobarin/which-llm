@@ -68,7 +68,7 @@ gpt-5-5-medium          GPT-5.5 (medium)        OpenAI   56.7   $1,199    127.5M
 gemini-3-1-pro-preview  Gemini 3.1 Pro Preview  Google   57.2   $892.28   159.7M   $2.00   $12.00   1000000  26.3         google/gemini-3.1-pro-preview
 ```
 
-`idx-run$` and `idx-tok` are benchmark-run proxies from Artificial Analysis, not per-call API pricing. For API pricing, use `in$/1m` and `out$/1m`.
+`idx-run$` and `idx-tok` are benchmark-run proxies from Artificial Analysis, not per-call API pricing. A plain `idx-run$` value is published by AA. A `~` prefix means which-llm estimated it from `idx-tok * out$/1m`. `--sort cost`, `--max-cost`, and Pareto use that effective cost. For API billing display, use `in$/1m` and `out$/1m`.
 
 OpenRouter `:free` slugs are prototype options. They can have rate limits, daily caps, weaker availability, or different serving details than paid endpoints.
 

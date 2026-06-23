@@ -37,7 +37,9 @@ STALE_AFTER_DAYS = 7  # warn (don't refuse) if data older than this
 # Canonical output columns. Both the table renderer and `--json` use these.
 OUTPUT_FIELDS = [
     "slug", "name", "creator_name", "intelligence_index",
-    "intelligence_index_cost_usd", "indexTokensTotal",
+    "intelligence_index_cost_usd", "estimated_index_output_cost_usd",
+    "effective_index_cost_usd", "effective_index_cost_source",
+    "indexTokensTotal",
     "context_window_tokens",
     "price_1m_input_tokens", "price_1m_output_tokens",
     "ttft_seconds", "e2e_response_seconds",
@@ -68,6 +70,32 @@ def _f(v) -> float | None:
         return float(v)
     except ValueError:
         return None
+
+
+def _estimated_index_output_cost_usd(r: dict) -> float | None:
+    tokens = _f(r.get("indexTokensTotal"))
+    output_price = _f(r.get("price_1m_output_tokens"))
+    if tokens is None or output_price is None or tokens <= 0 or output_price <= 0:
+        return None
+    return tokens * output_price / 1_000_000
+
+
+def _index_cost(r: dict) -> tuple[float | None, str | None]:
+    published = _f(r.get("intelligence_index_cost_usd"))
+    if published is not None and published > 0:
+        return published, "published"
+    estimated = _estimated_index_output_cost_usd(r)
+    if estimated is not None:
+        return estimated, "estimated_output"
+    return None, None
+
+
+def _effective_index_cost_usd(r: dict) -> float | None:
+    return _index_cost(r)[0]
+
+
+def _effective_index_cost_source(r: dict) -> str | None:
+    return _index_cost(r)[1]
 
 
 def _data_age_days() -> float | None:
@@ -136,7 +164,10 @@ def load_rows(
                 continue
             if free_only and not _is_true(r.get("openrouter_has_free")):
                 continue
-            cost = _f(r.get("intelligence_index_cost_usd"))
+            cost = _effective_index_cost_usd(r)
+            cost_filter_active = min_cost > 0 or max_cost < math.inf
+            if cost_filter_active and cost is None:
+                continue
             if cost is not None and (cost < min_cost or cost > max_cost):
                 continue
             if intel_min is not None and (_f(r.get("intelligence_index")) or -1) < intel_min:
@@ -256,9 +287,9 @@ def pareto_frontier(rows: list[dict]) -> list[dict]:
     pts = [
         r for r in rows
         if _f(r.get("intelligence_index")) is not None
-        and (_f(r.get("intelligence_index_cost_usd")) or 0) > 0
+        and (_effective_index_cost_usd(r) or 0) > 0
     ]
-    pts.sort(key=lambda r: (_f(r["intelligence_index_cost_usd"]),
+    pts.sort(key=lambda r: (_effective_index_cost_usd(r),
                             -_f(r["intelligence_index"])))
     front = []
     best = -math.inf
@@ -278,7 +309,7 @@ def _speed_key(r):
 
 SORT_KEYS = {
     "intel": lambda r: (-( _f(r.get("intelligence_index")) or -math.inf),),
-    "cost":  lambda r: ( _f(r.get("intelligence_index_cost_usd")) or math.inf,),
+    "cost":  lambda r: ( _effective_index_cost_usd(r) or math.inf,),
     "ctx":   lambda r: (-( _f(r.get("context_window_tokens")) or 0),),
     "tokens": lambda r: (_f(r.get("indexTokensTotal")) or math.inf,),
     "speed": _speed_key,
@@ -295,6 +326,23 @@ def _fmt_cost(v) -> str:
     if f is None:
         return "-"
     return f"${f:,.2f}" if f < 1000 else f"${f:,.0f}"
+
+
+def _fmt_index_cost(r: dict) -> str:
+    cost, source = _index_cost(r)
+    if cost is None:
+        return "-"
+    formatted = _fmt_cost(cost)
+    return f"~{formatted}" if source == "estimated_output" else formatted
+
+
+def _fmt_index_cost_source(r: dict) -> str:
+    source = _effective_index_cost_source(r)
+    if source == "published":
+        return "pub"
+    if source == "estimated_output":
+        return "est"
+    return "-"
 
 
 def _fmt_intel(v) -> str:
@@ -326,7 +374,8 @@ def _row_for_output(r: dict) -> dict:
         "name": r.get("name") or "",
         "creator": r.get("creator_name") or "-",
         "intel": _fmt_intel(r.get("intelligence_index")),
-        "idx-run$": _fmt_cost(r.get("intelligence_index_cost_usd")),
+        "idx-run$": _fmt_index_cost(r),
+        "cost-src": _fmt_index_cost_source(r),
         "idx-tok": _fmt_tokens(r.get("indexTokensTotal")),
         "in$/1m": _fmt_cost(r.get("price_1m_input_tokens")),
         "out$/1m": _fmt_cost(r.get("price_1m_output_tokens")),
@@ -353,6 +402,8 @@ def _print_table(rows: list[dict]) -> None:
 _JSON_ROUND = {
     "intelligence_index": 1,
     "intelligence_index_cost_usd": 2,
+    "estimated_index_output_cost_usd": 2,
+    "effective_index_cost_usd": 2,
     "ttft_seconds": 1,
     "e2e_response_seconds": 1,
 }
@@ -379,11 +430,25 @@ def _typed(k: str, v: str | None):
     return v
 
 
+def _json_row(r: dict) -> dict:
+    out = {}
+    for k in OUTPUT_FIELDS:
+        if k == "estimated_index_output_cost_usd":
+            v = _estimated_index_output_cost_usd(r)
+            out[k] = round(v, _JSON_ROUND[k]) if v is not None else None
+        elif k == "effective_index_cost_usd":
+            v = _effective_index_cost_usd(r)
+            out[k] = round(v, _JSON_ROUND[k]) if v is not None else None
+        elif k == "effective_index_cost_source":
+            out[k] = _effective_index_cost_source(r)
+        else:
+            out[k] = _typed(k, r.get(k))
+    return out
+
+
 def _emit_models(rows: list[dict], as_json: bool) -> None:
     if as_json:
-        out = []
-        for r in rows:
-            out.append({k: _typed(k, r.get(k)) for k in OUTPUT_FIELDS})
+        out = [_json_row(r) for r in rows]
         json.dump(out, sys.stdout, indent=2, default=str)
         sys.stdout.write("\n")
     else:
@@ -442,7 +507,8 @@ def cmd_show(args) -> int:
         return 0
 
     intel = _f(r["intelligence_index"])
-    cost = _f(r["intelligence_index_cost_usd"])
+    cost, cost_source = _index_cost(r)
+    estimated_cost = _estimated_index_output_cost_usd(r)
     per_m = _f(r.get("intelligence_index_per_m_output_tokens"))
     print(f"{r['name']}")
     print(f"  slug:            {r['slug']}")
@@ -461,7 +527,16 @@ def cmd_show(args) -> int:
     print(f"  input modality:  {'+'.join(mods) or '-'}")
     print()
     print(f"  intelligence index:   {_fmt_intel(intel)}")
-    print(f"  cost to run index:    {_fmt_cost(cost)}  (idx-run$, not a per-call price)")
+    if cost_source == "published":
+        cost_note = "published idx-run$"
+    elif cost_source == "estimated_output":
+        cost_note = "estimated from idx-tok * output price"
+    else:
+        cost_note = "not available"
+    print(f"  cost to run index:    {_fmt_cost(cost)}  ({cost_note})")
+    if cost_source == "published" and estimated_cost is not None:
+        print(f"  output-price estimate: {_fmt_cost(estimated_cost)}  "
+              f"(idx-tok * out$/1m)")
     print(f"  tokens to run index:  {_fmt_tokens(r.get('indexTokensTotal'))}")
     print(f"  index per 1M output:  {_fmt_cost(per_m)}")
     ttft = _f(r.get("ttft_seconds"))
@@ -595,9 +670,10 @@ def _add_filter_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--intel-min", type=float, default=None,
                    help="Minimum intelligence_index.")
     p.add_argument("--max-cost", type=float, default=None,
-                   help="Maximum idx-run$ (cost to run AA's index, USD).")
+                   help="Maximum effective idx-run$ in USD. Uses published "
+                        "AA cost, then estimated idx-tok * out$/1m fallback.")
     p.add_argument("--min-cost", type=float, default=0.0,
-                   help="Minimum idx-run$ (USD).")
+                   help="Minimum effective idx-run$ in USD.")
     p.add_argument("--context-min", type=int, default=None,
                    help="Minimum context window in tokens.")
     p.add_argument("--max-index-tokens", type=float, default=None,

@@ -4,8 +4,9 @@
   python plot_pareto.py --max-cost 750 --near 3 --out artifacts/pareto.png
 
 Conventions match the AA chart: y = Intelligence Index (linear),
-x = cost to run the Intelligence Index in USD (log base 2). Models with
-no published cost or intelligence are silently dropped.
+x = effective cost to run the Intelligence Index in USD (log base 2).
+Published AA cost is preferred. When it is missing, the plot falls back to
+indexTokensTotal * price_1m_output_tokens / 1,000,000.
 """
 from __future__ import annotations
 
@@ -48,9 +49,11 @@ CREATOR_COLORS = {
     "Perplexity": "#20808D",
 }
 DEFAULT_COLOR = "#6B7280"
-DEFAULT_X_FIELD = "intelligence_index_cost_usd"
+DEFAULT_X_FIELD = "effective_index_cost_usd"
 DEFAULT_Y_FIELD = "intelligence_index"
 FIELD_LABELS = {
+    "effective_index_cost_usd": "Effective Cost to Run Intelligence Index (USD, log base 2)",
+    "estimated_index_output_cost_usd": "Estimated Cost from Index Tokens and Output Price (USD, log base 2)",
     "intelligence_index_cost_usd": "Cost to Run Intelligence Index (USD, log base 2)",
     "intelligence_index": "Artificial Analysis Intelligence Index",
     "price_1m_input_tokens": "Input Price per 1M Tokens (USD, log scale)",
@@ -76,6 +79,32 @@ def _is_true(v) -> bool:
     return (v or "").strip().lower() == "true"
 
 
+def estimated_index_output_cost_usd(r: dict) -> float | None:
+    tokens = _float(r.get("indexTokensTotal"))
+    output_price = _float(r.get("price_1m_output_tokens"))
+    if tokens is None or output_price is None or tokens <= 0 or output_price <= 0:
+        return None
+    return tokens * output_price / 1_000_000
+
+
+def effective_index_cost_usd(r: dict) -> tuple[float | None, str | None]:
+    published = _float(r.get("intelligence_index_cost_usd"))
+    if published is not None and published > 0:
+        return published, "published"
+    estimated = estimated_index_output_cost_usd(r)
+    if estimated is not None:
+        return estimated, "estimated_output"
+    return None, None
+
+
+def metric_value(r: dict, field: str) -> tuple[float | None, str | None]:
+    if field == "effective_index_cost_usd":
+        return effective_index_cost_usd(r)
+    if field == "estimated_index_output_cost_usd":
+        return estimated_index_output_cost_usd(r), "estimated_output"
+    return _float(r.get(field)), None
+
+
 def load_rows(
     min_cost: float,
     max_cost: float,
@@ -93,7 +122,7 @@ def load_rows(
     with CSV_PATH.open(encoding="utf-8") as f:
         for r in csv.DictReader(f):
             y_value = _float(r.get(y_field))
-            x_value = _float(r.get(x_field))
+            x_value, x_source = metric_value(r, x_field)
             if y_value is None or x_value is None or x_value <= 0:
                 continue
             if x_value < min_cost or x_value > max_cost:
@@ -113,6 +142,7 @@ def load_rows(
             if free_only and not _is_true(r.get("openrouter_has_free")):
                 continue
             rows.append({**r, "_intel": y_value, "_cost": x_value,
+                         "_cost_source": x_source or "field",
                          "_x": x_value, "_y": y_value})
     return rows
 
