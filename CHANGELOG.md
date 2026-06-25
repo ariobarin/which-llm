@@ -10,6 +10,8 @@ loosely follows [SemVer](https://semver.org/).
   flows.
 - A shared command core for hidden snapshot readiness, presets, filters,
   formatting, frontier calculation, and artifact writing.
+- Composable export field groups, including pricing plus context CSV output.
+- `cheap-vision` pick preset for image-capable low-price shortlist requests.
 
 ### Changed
 - Skill and README docs now present neutral capabilities instead of a

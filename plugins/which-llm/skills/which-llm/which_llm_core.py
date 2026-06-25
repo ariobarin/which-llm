@@ -18,6 +18,11 @@ EXPORT_DIR = HERE / "artifacts" / "exports"
 PICK_PRESETS = {
     "best": {"sort": "intel"},
     "cheap-good": {"intel_min": 50, "sort": "cost"},
+    "cheap-vision": {
+        "intel_min": 40,
+        "modalities": {"text", "image"},
+        "sort": "input-price",
+    },
     "fast-good": {"intel_min": 30, "sort": "speed"},
     "vision": {"modalities": {"text", "image"}, "sort": "intel"},
     "long-context": {"context_min": 256000, "sort": "intel"},
@@ -98,6 +103,23 @@ FIELD_GROUPS = {
         "openrouter_slug",
         "openrouter_free_slug",
     ],
+    "context": [
+        "slug",
+        "name",
+        "creator_name",
+        "context_window_tokens",
+        "input_modality_text",
+        "input_modality_image",
+        "input_modality_speech",
+        "input_modality_video",
+        "output_modality_text",
+        "output_modality_image",
+        "output_modality_speech",
+        "output_modality_video",
+        "reasoning_model",
+        "is_open_weights",
+        "openrouter_slug",
+    ],
     "benchmarks": [
         "slug",
         "name",
@@ -121,6 +143,16 @@ FIELD_GROUPS = {
         "openrouter_free_slug",
         "openrouter_has_free",
     ],
+}
+
+FIELD_GROUP_ALIASES = {
+    "price": "pricing",
+    "prices": "pricing",
+    "benchmark": "benchmarks",
+    "slug": "slugs",
+    "endpoint": "slugs",
+    "endpoints": "slugs",
+    "contexts": "context",
 }
 
 SORT_KEYS = {
@@ -187,8 +219,14 @@ def add_output_args(p: argparse.ArgumentParser, *, default_format: str = "markdo
 
 
 def add_fields_arg(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--fields", choices=["core", "pricing", "benchmarks", "slugs", "full"],
-                   default="core")
+    p.add_argument(
+        "--fields",
+        default="core",
+        help=(
+            "Field group or comma list: core, pricing, context, benchmarks, "
+            "slugs, full."
+        ),
+    )
 
 
 def _preset_cfg(preset: str | None) -> dict:
@@ -488,15 +526,31 @@ def json_record(row: dict, fields: list[str] | None = None) -> dict:
     return {key: query._typed(key, row.get(key)) for key in keys if key in row}
 
 
-def selected_fields(rows: list[dict], group: str) -> list[str]:
-    if group == "full":
+def selected_fields(rows: list[dict], group_spec: str) -> list[str]:
+    groups = [
+        FIELD_GROUP_ALIASES.get(item.strip(), item.strip())
+        for item in group_spec.split(",")
+        if item.strip()
+    ] or ["core"]
+    if "full" in groups:
         seen = []
         for row in rows:
             for key in row.keys():
                 if key not in seen and not key.startswith("_"):
                     seen.append(key)
         return seen
-    return FIELD_GROUPS[group]
+    valid = sorted([*FIELD_GROUPS.keys(), "full"])
+    fields = []
+    for group in groups:
+        if group not in FIELD_GROUPS:
+            raise SystemExit(
+                f"unknown field group {group!r}; valid: {', '.join(valid)}; "
+                "comma-separated groups are allowed"
+            )
+        for field in FIELD_GROUPS[group]:
+            if field not in fields:
+                fields.append(field)
+    return fields
 
 
 def write_data_file(rows: list[dict], path: Path, fmt: str, fields: list[str]) -> Path:

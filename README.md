@@ -57,8 +57,8 @@ Run commands from `skills/which-llm`.
 Data readiness is handled inside each command. `query.py` and `plot_pareto.py`
 remain available for compatibility.
 
-Pick presets: `best`, `cheap-good`, `fast-good`, `vision`, `long-context`,
-`open-weights`, `free`, and `coding`.
+Pick presets: `best`, `cheap-good`, `cheap-vision`, `fast-good`, `vision`,
+`long-context`, `open-weights`, `free`, and `coding`.
 
 Frontier presets: `cost-intel`, `speed-intel`, `tokens-intel`, `context-intel`,
 `input-price-intel`, and `output-price-intel`.
@@ -67,6 +67,10 @@ Common filters: `--min-intel N`, `--max-cost N`, `--min-context N`,
 `--max-latency N`, `--modality text,image`, `--reasoning`,
 `--open-weights`, and `--free`. `pick.py` and `export.py` also accept
 `--top N` and `--sort intel|cost|ctx|speed|tokens|coding|agentic`.
+
+Export field groups: `core`, `pricing`, `context`, `benchmarks`, `slugs`, and
+`full`. Groups can be combined with commas, such as
+`--fields pricing,context`.
 
 ## Example
 

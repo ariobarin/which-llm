@@ -106,6 +106,66 @@ def test_pick_preset_filters_and_ranks(tmp_path, monkeypatch):
     assert [row["slug"] for row in ranked] == ["cheap", "expensive"]
 
 
+def test_cheap_vision_preset_filters_image_and_ranks_price(tmp_path, monkeypatch):
+    csv_path = tmp_path / "models.csv"
+    _write_rows(
+        csv_path,
+        [
+            {
+                "slug": "cheap-image",
+                "name": "Cheap Image",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "input_modality_image": "true",
+                "openrouter_has_free": "false",
+                "intelligence_index": "42",
+                "price_1m_input_tokens": "0.2",
+            },
+            {
+                "slug": "expensive-image",
+                "name": "Expensive Image",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "input_modality_image": "true",
+                "openrouter_has_free": "false",
+                "intelligence_index": "45",
+                "price_1m_input_tokens": "2",
+            },
+            {
+                "slug": "text-only",
+                "name": "Text Only",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "input_modality_image": "false",
+                "openrouter_has_free": "false",
+                "intelligence_index": "50",
+                "price_1m_input_tokens": "0.1",
+            },
+            {
+                "slug": "weak-image",
+                "name": "Weak Image",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "input_modality_image": "true",
+                "openrouter_has_free": "false",
+                "intelligence_index": "20",
+                "price_1m_input_tokens": "0.01",
+            },
+        ],
+    )
+    monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
+    monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
+
+    rows = core.load_filtered_rows(_args(), preset="cheap-vision")
+    ranked = core.rank_rows(rows, core.sort_name(_args(), "cheap-vision"))
+
+    assert [row["slug"] for row in ranked] == ["cheap-image", "expensive-image"]
+
+
 def test_context_frontier_maximizes_x():
     rows = core.metric_rows(
         [
@@ -148,3 +208,13 @@ def test_write_json_export_uses_selected_fields(tmp_path):
 
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload == [{"slug": "model", "intelligence_index": 50.2}]
+
+
+def test_selected_fields_combines_export_groups():
+    fields = core.selected_fields([], "pricing,context")
+
+    assert fields.count("slug") == 1
+    assert "price_1m_input_tokens" in fields
+    assert "price_1m_output_tokens" in fields
+    assert "context_window_tokens" in fields
+    assert "input_modality_image" in fields

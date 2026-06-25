@@ -33,6 +33,7 @@ atomic commands above are the fastest surface for normal use.
 |---|---|
 | `best` | Highest intelligence. |
 | `cheap-good` | Intelligence at least 50, ranked by benchmark-run cost. |
+| `cheap-vision` | Image-capable models with intelligence at least 40, ranked by input price. |
 | `fast-good` | Useful quality, ranked by end to end latency. |
 | `vision` | Text and image capable models. |
 | `long-context` | Context window at least 256K tokens. |
@@ -78,6 +79,10 @@ atomic commands above are the fastest surface for normal use.
 `tokens`, `speed`, `coding`, `agentic`, `input-price`, or `output-price`.
 They also accept `--top N`.
 
+`export.py` accepts `--fields core`, `pricing`, `context`, `benchmarks`,
+`slugs`, or `full`. Field groups can be combined with commas, such as
+`--fields pricing,context`.
+
 ## Output Notes
 
 - `idx-run$` is the estimated cost to run the Artificial Analysis benchmark
@@ -92,11 +97,12 @@ They also accept `--top N`.
 
 ```text
 python pick.py cheap-good --image --top 8
+python pick.py cheap-vision --top 5
 python compare.py gpt-5-5-medium glm-5-2
 python profile.py glm-5-2
 python slug.py glm-5-2
 python frontier.py cost-intel --max-x 1200 --out-dir artifacts
-python export.py open-weights --fields pricing --format csv
+python export.py open-weights --fields pricing,context --format csv
 ```
 
 ## Do Not Use For
