@@ -1,0 +1,1 @@
+/which-llm:which-llm What OpenRouter endpoint should I use for glm-5-2?

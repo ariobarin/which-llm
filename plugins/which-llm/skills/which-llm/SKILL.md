@@ -5,40 +5,103 @@ description: Choose current LLMs by quality, price, speed, context, modality, or
 
 # which-llm
 
-Use this skill when model knowledge may be stale. It queries a checked-in Artificial Analysis plus OpenRouter snapshot and can refresh it on demand.
+This skill provides a current Artificial Analysis plus OpenRouter snapshot and
+small Python commands for model selection data. Data readiness is internal to
+each command: cached data is used immediately, missing data is created
+automatically, and stale data only prints a warning.
 
-## Workflow
+Run commands from this skill directory with `python`, or call scripts by path
+with `${CLAUDE_SKILL_DIR}` in Claude Code.
 
-1. Run commands from this directory with `python`.
-2. If freshness matters, run `python query.py data status`. If the snapshot is stale, run `python query.py data refresh`.
-3. Use the narrowest command:
-   - `python query.py models [pattern] [filters]` for shortlists.
-   - `python query.py compare <model>...` for side-by-side comparisons.
-   - `python query.py slug <model>` for OpenRouter endpoint names.
-   - `python query.py show <model>` before recommending a specific model.
-4. Explain cost fields correctly:
-   - `idx-run$` is the estimated cost to run the AA benchmark suite.
-   - `idx-tok` is total benchmark-run token use.
-   - `in$/1m` and `out$/1m` are API prices per million tokens.
-5. Prefer `openrouter_slug` for production. Mention `openrouter_free_slug` only as a prototype option because `:free` endpoints can be rate-limited or served differently.
+## Capabilities
 
-## Fast Recipes
+| Capability | Command | Produces |
+|---|---|---|
+| Pick ranked models from constraints | `python pick.py [preset] [filters]` | Ranked shortlist |
+| Compare named models | `python compare.py <model>...` | Side-by-side table |
+| Inspect one model | `python profile.py <model>` | Model profile |
+| Resolve endpoint names | `python slug.py <model>` | Provider endpoint record |
+| Generate tradeoff frontier | `python frontier.py [preset] [filters]` | PNG chart plus CSV data |
+| Export filtered rows | `python export.py [preset] [filters]` | CSV or JSON file |
+
+`query.py` and `plot_pareto.py` remain available for compatibility, but the
+atomic commands above are the fastest surface for normal use.
+
+## Pick Presets
+
+| Preset | Meaning |
+|---|---|
+| `best` | Highest intelligence. |
+| `cheap-good` | Intelligence at least 50, ranked by benchmark-run cost. |
+| `fast-good` | Useful quality, ranked by end to end latency. |
+| `vision` | Text and image capable models. |
+| `long-context` | Context window at least 256K tokens. |
+| `open-weights` | Open-weight models. |
+| `free` | Models with OpenRouter free prototype endpoints. |
+| `coding` | Ranked by Artificial Analysis coding index. |
+
+## Frontier Presets
+
+| Preset | X metric | Y metric |
+|---|---|---|
+| `cost-intel` | Benchmark-run cost, minimized | Intelligence, maximized |
+| `speed-intel` | End to end latency, minimized | Intelligence, maximized |
+| `tokens-intel` | Benchmark-run tokens, minimized | Intelligence, maximized |
+| `context-intel` | Context window, maximized | Intelligence, maximized |
+| `input-price-intel` | Input price per 1M, minimized | Intelligence, maximized |
+| `output-price-intel` | Output price per 1M, minimized | Intelligence, maximized |
+
+## Shared Filters
+
+`pick.py`, `frontier.py`, and `export.py` share these filters:
 
 ```text
-python query.py models --intel-min 50 --reasoning --sort cost --top 8
-python query.py models --modality text,image --max-cost 500 --sort intel --top 8
-python query.py models --no-reasoning --max-latency 6 --sort intel --top 8
-python query.py models --context-min 256000 --sort cost --top 8
-python query.py models --open-weights --sort intel --top 8
-python query.py models --free --sort cost --top 20
-python query.py compare claude-opus-4-7 gpt-5 gemini-3-1-pro
-python query.py slug claude-opus-4-7
+--pattern TEXT
+--creator NAME
+--reasoning / --no-reasoning
+--open-weights / --no-open-weights
+--free
+--text / --no-text
+--image
+--video
+--audio
+--modality text,image
+--min-intel N
+--max-cost N
+--min-context N
+--max-latency N
+--max-index-tokens N
+--min-index-tokens N
 ```
 
-Use `python query.py models --help` for all filters, including `--json`.
+`pick.py` and `export.py` also accept `--sort` with `intel`, `cost`, `ctx`,
+`tokens`, `speed`, `coding`, `agentic`, `input-price`, or `output-price`.
+They also accept `--top N`.
+
+## Output Notes
+
+- `idx-run$` is the estimated cost to run the Artificial Analysis benchmark
+  suite. It is not a per-call API price.
+- `idx-tok` is total benchmark-run token use.
+- `in$/1m` and `out$/1m` are API prices per million tokens.
+- `openrouter_slug` is the production endpoint name.
+- `openrouter_free_slug` is a prototype option. Free endpoints can be
+  rate-limited or served differently from paid listings.
+
+## Examples
+
+```text
+python pick.py cheap-good --image --top 8
+python compare.py gpt-5-5-medium glm-5-2
+python profile.py glm-5-2
+python slug.py glm-5-2
+python frontier.py cost-intel --max-x 1200 --out-dir artifacts
+python export.py open-weights --fields pricing --format csv
+```
 
 ## Do Not Use For
 
-- Domain evals or private benchmarks that AA does not track.
-- Models so new that AA has not indexed them yet.
-- Authoritative non-OpenRouter provider pricing. Verify those prices with the provider.
+- Domain evals or private benchmarks that Artificial Analysis does not track.
+- Models so new that Artificial Analysis has not indexed them yet.
+- Authoritative non-OpenRouter provider pricing. Verify those prices with the
+  provider.

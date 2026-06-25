@@ -5,6 +5,16 @@ loosely follows [SemVer](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- Atomic command scripts for pick, compare, profile, slug, frontier, and export
+  flows.
+- A shared command core for hidden snapshot readiness, presets, filters,
+  formatting, frontier calculation, and artifact writing.
+
+### Changed
+- Skill and README docs now present neutral capabilities instead of a
+  status-first workflow.
+
 ## [0.4.0] - 2026-06-22
 
 ### Added
