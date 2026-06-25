@@ -1,0 +1,1 @@
+Use the which-llm skill. I need cheap strong image-capable models under 1200 benchmark-run cost. Return a concise shortlist.
