@@ -524,6 +524,9 @@ def test_write_json_export_uses_selected_fields(tmp_path):
             "coding_index": "62.5",
             "gpqa": "0.734",
             "terminalbench_hard": "41",
+            "reasoning_model": "True",
+            "is_open_weights": "False",
+            "input_modality_text": "true",
         }
     ]
 
@@ -531,7 +534,16 @@ def test_write_json_export_uses_selected_fields(tmp_path):
         rows,
         path,
         "json",
-        ["slug", "intelligence_index", "coding_index", "gpqa", "terminalbench_hard"],
+        [
+            "slug",
+            "intelligence_index",
+            "coding_index",
+            "gpqa",
+            "terminalbench_hard",
+            "reasoning_model",
+            "is_open_weights",
+            "input_modality_text",
+        ],
     )
 
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -542,6 +554,9 @@ def test_write_json_export_uses_selected_fields(tmp_path):
             "coding_index": 62.5,
             "gpqa": 0.734,
             "terminalbench_hard": 41.0,
+            "reasoning_model": True,
+            "is_open_weights": False,
+            "input_modality_text": True,
         }
     ]
 

@@ -403,6 +403,24 @@ _JSON_FLOAT = {
     "terminalbench_hard",
 }
 
+_JSON_BOOL = {
+    "commercial_allowed",
+    "deprecated",
+    "frontier_model",
+    "input_modality_image",
+    "input_modality_speech",
+    "input_modality_text",
+    "input_modality_video",
+    "intelligence_index_is_estimated",
+    "is_open_weights",
+    "openrouter_has_free",
+    "output_modality_image",
+    "output_modality_speech",
+    "output_modality_text",
+    "output_modality_video",
+    "reasoning_model",
+}
+
 
 def _typed(k: str, v: str | None):
     """Parse CSV string to native type for JSON output, rounding where appropriate."""
@@ -415,7 +433,7 @@ def _typed(k: str, v: str | None):
         return int(float(v)) if v else None
     if k in _JSON_FLOAT:
         return _f(v)
-    if k in ("openrouter_has_free",):
+    if k in _JSON_BOOL:
         return v.strip().lower() == "true"
     return v
 
