@@ -21,6 +21,34 @@ $KnownScripts = @(
 )
 $HadFailure = $false
 
+function Get-BashCommands {
+    param([string]$Path)
+    $commands = @()
+    foreach ($line in Get-Content -LiteralPath $Path) {
+        try {
+            $event = $line | ConvertFrom-Json
+        }
+        catch {
+            continue
+        }
+        if ($event.type -eq "assistant" -and $event.message.content) {
+            foreach ($item in $event.message.content) {
+                if ($item.type -eq "tool_use" -and
+                    $item.name -match "^(Bash|bash)$" -and
+                    $item.input.command) {
+                    $commands += [string]$item.input.command
+                }
+            }
+        }
+        if ($event.type -eq "tool_use" -and
+            $event.part.tool -match "^(Bash|bash)$" -and
+            $event.part.state.input.command) {
+            $commands += [string]$event.part.state.input.command
+        }
+    }
+    return $commands
+}
+
 foreach ($Name in $Case) {
     $PromptPath = Join-Path $PSScriptRoot "prompts\$Name.txt"
     if (-not (Test-Path -LiteralPath $PromptPath)) {
@@ -49,15 +77,20 @@ foreach ($Name in $Case) {
         $HadFailure = $true
         continue
     }
+    $Commands = Get-BashCommands -Path $OutPath
     $Observed = @()
     foreach ($Script in $KnownScripts) {
-        if ($Text -match [regex]::Escape($Script)) {
+        if (($Commands -join "`n") -match [regex]::Escape($Script)) {
             $Observed += $Script
         }
+    }
+    if ($Commands.Count -eq 0) {
+        $Commands = @("(none)")
     }
     if ($Observed.Count -eq 0) {
         $Observed = @("(none)")
     }
+    Write-Host "$Name bash commands: $($Commands -join ' ; ')"
     Write-Host "$Name scripts: $($Observed -join ', ')"
 }
 

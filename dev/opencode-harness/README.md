@@ -22,3 +22,9 @@ missing provider key, the current shell cannot see the key expected by your
 local config. This checkout's observed config uses `{env:BIGMODEL_API_KEY}` for
 the BigModel provider, so run the harness from an environment where that
 variable is set, then rerun it.
+
+To load a local env file for the harness process without printing secrets:
+
+```powershell
+.\dev\opencode-harness\run-opencode-flow.ps1 -EnvFile C:\path\to\.env
+```
