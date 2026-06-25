@@ -1,7 +1,10 @@
 import argparse
 import csv
 import json
+import sys
 
+import export as export_cmd
+import pytest
 import which_llm_core as core
 
 
@@ -379,6 +382,38 @@ def test_write_json_export_uses_selected_fields(tmp_path):
 
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload == [{"slug": "model", "intelligence_index": 50.2}]
+
+
+def test_export_default_empty_behavior_does_not_write_file(tmp_path, monkeypatch):
+    csv_path = tmp_path / "models.csv"
+    out_path = tmp_path / "empty.csv"
+    _write_rows(
+        csv_path,
+        [
+            {
+                "slug": "weak",
+                "name": "Weak",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "intelligence_index": "20",
+            },
+        ],
+    )
+    monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
+    monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["export.py", "best", "--min-intel", "70", "--out", str(out_path)],
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        export_cmd.main()
+
+    assert "no models match" in str(exc.value)
+    assert not out_path.exists()
 
 
 def test_selected_fields_combines_export_groups():

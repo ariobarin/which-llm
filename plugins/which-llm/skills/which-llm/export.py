@@ -31,30 +31,32 @@ def main() -> int:
     sort = core.sort_name(args, args.preset)
     rows = core.rank_rows(rows, sort)
     rows = core.limit_rows(rows, args.top)
-    if not rows and args.if_empty == "nearest":
-        if args.format == "json":
+    if not rows:
+        if args.if_empty == "nearest":
+            if args.format == "json":
+                core.emit_empty_with_nearest(
+                    args,
+                    preset=args.preset,
+                    sort=sort,
+                    top=args.top,
+                    fmt="json",
+                )
+                return 0
+            print("path: (not written)")
+            print(f"format: {args.format}")
+            print("row_count: 0")
+            print("relaxation_status: original filters matched 0 rows")
+            core.print_snapshot_summary()
+            print()
             core.emit_empty_with_nearest(
                 args,
                 preset=args.preset,
                 sort=sort,
                 top=args.top,
-                fmt="json",
+                fmt="markdown",
             )
             return 0
-        print("path: (not written)")
-        print(f"format: {args.format}")
-        print("row_count: 0")
-        print("relaxation_status: original filters matched 0 rows")
-        core.print_snapshot_summary()
-        print()
-        core.emit_empty_with_nearest(
-            args,
-            preset=args.preset,
-            sort=sort,
-            top=args.top,
-            fmt="markdown",
-        )
-        return 0
+        raise SystemExit("no models match")
     fields = (
         core.selected_columns(rows, args.columns)
         if args.columns
