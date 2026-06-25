@@ -33,11 +33,6 @@ atomic commands above are the fastest surface for normal use.
 | Preset | Meaning |
 |---|---|
 | `best` | Highest intelligence. |
-| `cheap-good` | Intelligence at least 50, ranked by benchmark-run cost. |
-| `cheap-vision` | Image-capable models with intelligence at least 40, ranked by input price. |
-| `cheap-coding` | Coding index at least 45, ranked by input price. |
-| `cheap-long-context` | Context at least 256K and intelligence at least 40, ranked by input price. |
-| `fast-good` | Useful quality, ranked by end to end latency. |
 | `vision` | Text and image capable models. |
 | `long-context` | Context window at least 256K tokens. |
 | `open-weights` | Open-weight models. |
@@ -100,6 +95,24 @@ selecting the strongest ambiguous match and listing alternates is acceptable.
 as `--fields pricing,context`. Exact columns can be selected with
 `--columns name,openrouter_slug,coding_index`.
 
+## Useful Argument Compositions
+
+These are ordinary command shapes built from presets, filters, and sorts.
+Replace `N` with a price ceiling in USD per million input tokens.
+
+| Behavior | Command shape |
+|---|---|
+| Benchmark-run efficient quality | `python pick.py best --min-intel 50 --sort cost --top 5` |
+| Fast quality shortlist | `python pick.py best --min-intel 30 --sort speed --top 5` |
+| Low input-price shortlist | `python pick.py best --min-intel 40 --sort input-price --top 5` |
+| Low-price image-capable shortlist | `python pick.py vision --min-intel 40 --sort input-price --top 5` |
+| Price-aware coding shortlist | `python pick.py coding --min-coding 45 --sort input-price --top 5` |
+| Long-context ranked by input price | `python pick.py long-context --min-intel 40 --sort input-price --top 5` |
+| Long-context under input-price budget | `python pick.py long-context --min-intel 40 --max-input-price N --sort input-price --top 5` |
+| Low output-price shortlist | `python pick.py best --max-output-price 5 --sort output-price --top 5` |
+| Strict no-match behavior | `python pick.py vision --free --min-intel 70 --if-empty error` |
+| Nearest no-match evidence | `python pick.py vision --free --min-intel 70 --top 5` |
+
 ## Export Field Groups
 
 | Field group | Contains |
@@ -125,10 +138,10 @@ as `--fields pricing,context`. Exact columns can be selected with
 ## Examples
 
 ```text
-python pick.py cheap-good --image --top 8
-python pick.py cheap-vision --top 5
-python pick.py cheap-coding --top 5
-python pick.py cheap-long-context --max-input-price 2 --top 5
+python pick.py best --min-intel 50 --sort cost --image --top 8
+python pick.py vision --min-intel 40 --sort input-price --top 5
+python pick.py coding --min-coding 45 --sort input-price --top 5
+python pick.py long-context --min-intel 40 --sort input-price --top 5
 python compare.py gpt-5-5-medium glm-5-2
 python resolve.py "gemini flash" "gpt nano"
 python profile.py glm-5-2

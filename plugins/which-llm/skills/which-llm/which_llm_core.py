@@ -18,22 +18,6 @@ EXPORT_DIR = HERE / "artifacts" / "exports"
 
 PICK_PRESETS = {
     "best": {"sort": "intel"},
-    "cheap-good": {"intel_min": 50, "sort": "cost"},
-    "cheap-vision": {
-        "intel_min": 40,
-        "modalities": {"text", "image"},
-        "sort": "input-price",
-    },
-    "cheap-coding": {
-        "coding_min": 45,
-        "sort": "input-price",
-    },
-    "cheap-long-context": {
-        "context_min": 256000,
-        "intel_min": 40,
-        "sort": "input-price",
-    },
-    "fast-good": {"intel_min": 30, "sort": "speed"},
     "vision": {"modalities": {"text", "image"}, "sort": "intel"},
     "long-context": {"context_min": 256000, "sort": "intel"},
     "open-weights": {"open_weights": True, "sort": "intel"},
@@ -255,7 +239,7 @@ def add_fields_arg(p: argparse.ArgumentParser) -> None:
         default="core",
         help=(
             "Field group or comma list: core, pricing, context, benchmarks, "
-            "slugs, full."
+            "coding, slugs, full."
         ),
     )
 
@@ -272,7 +256,11 @@ def add_if_empty_arg(p: argparse.ArgumentParser, *, default: str = "error") -> N
 def _preset_cfg(preset: str | None) -> dict:
     if not preset:
         return {}
-    return PICK_PRESETS.get(preset, {})
+    if preset not in PICK_PRESETS:
+        raise SystemExit(
+            f"unknown preset {preset!r}; valid: {', '.join(sorted(PICK_PRESETS))}"
+        )
+    return PICK_PRESETS[preset]
 
 
 def modalities_from_args(args, preset_modalities: set[str] | None = None) -> set[str]:

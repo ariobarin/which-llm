@@ -58,9 +58,8 @@ Run commands from `skills/which-llm`.
 Data readiness is handled inside each command. `query.py` and `plot_pareto.py`
 remain available for compatibility.
 
-Pick presets: `best`, `cheap-good`, `cheap-vision`, `cheap-coding`,
-`cheap-long-context`, `fast-good`, `vision`, `long-context`, `open-weights`,
-`free`, and `coding`.
+Pick presets: `best`, `vision`, `long-context`, `open-weights`, `free`, and
+`coding`.
 
 Frontier presets: `cost-intel`, `speed-intel`, `tokens-intel`, `context-intel`,
 `input-price-intel`, and `output-price-intel`.
@@ -70,9 +69,22 @@ Common filters: `--min-intel N`, `--max-run-cost N`, `--max-input-price N`,
 `--modality text,image`, `--reasoning`, `--open-weights`, and `--free`.
 `--max-cost` remains an alias for benchmark-run cost, not API price.
 `pick.py` and `export.py` also accept `--top N` and
-`--sort intel|cost|ctx|speed|tokens|coding|agentic`. `pick.py` shows labeled
-nearest relaxations when no rows match; use `--if-empty error` for strict
-empty-result failure.
+`--sort intel|cost|ctx|speed|tokens|coding|agentic|input-price|output-price`.
+`pick.py` shows labeled nearest relaxations when no rows match; use
+`--if-empty error` for strict empty-result failure.
+
+Common behavior is built by composing presets, filters, and sorts:
+
+```text
+python pick.py best --min-intel 50 --sort cost --top 5
+python pick.py best --min-intel 30 --sort speed --top 5
+python pick.py vision --min-intel 40 --sort input-price --top 5
+python pick.py coding --min-coding 45 --sort input-price --top 5
+python pick.py long-context --min-intel 40 --sort input-price --top 5
+python pick.py long-context --min-intel 40 --max-input-price N --sort input-price --top 5
+```
+
+Replace `N` with a price ceiling in USD per million input tokens.
 
 Export field groups: `core`, `pricing`, `context`, `benchmarks`, `coding`,
 `slugs`, and `full`. Groups can be combined with commas, such as
@@ -84,12 +96,13 @@ scores, and coding benchmarks.
 ## Example
 
 ```text
-$ python pick.py cheap-good --reasoning --sort tokens --top 3
+$ python pick.py best --min-intel 50 --reasoning --sort tokens --top 3
 
 | rank | model | slug | creator | intel | idx-run$ | idx-tok | in$/1m | out$/1m | ctx | e2e_s | openrouter |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | GPT-5.5 (medium) | gpt-5-5-medium | OpenAI | 50.4 | $869.91 | 127.5M | $5.00 | $30.00 | 922.0K | 20.5 | openai/gpt-5.5 |
-| 2 | GLM-5.2 (max) | glm-5-2 | Z AI | 51.1 | $982.90 | 616.1M | $1.40 | $4.40 | 1.0M | 22.6 | z-ai/glm-5.2 |
+| 2 | GPT-5.5 (high) | gpt-5-5-high | OpenAI | 53.1 | $1,655 | 209.3M | $5.00 | $30.00 | 922.0K | 39.2 | openai/gpt-5.5 |
+| 3 | GPT-5.5 (xhigh) | gpt-5-5 | OpenAI | 54.8 | $2,630 | 295.5M | $5.00 | $30.00 | 922.0K | 115.9 | openai/gpt-5.5 |
 ```
 
 `idx-run$` and `idx-tok` are benchmark-run proxies from Artificial Analysis, not per-call API pricing. For API pricing, use `in$/1m` and `out$/1m`.

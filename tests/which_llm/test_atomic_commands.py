@@ -63,7 +63,7 @@ def _args(**overrides):
     return argparse.Namespace(**defaults)
 
 
-def test_pick_preset_filters_and_ranks(tmp_path, monkeypatch):
+def test_quality_cost_behavior_uses_composed_filters(tmp_path, monkeypatch):
     csv_path = tmp_path / "models.csv"
     _write_rows(
         csv_path,
@@ -103,13 +103,30 @@ def test_pick_preset_filters_and_ranks(tmp_path, monkeypatch):
     monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
     monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
 
-    rows = core.load_filtered_rows(_args(), preset="cheap-good")
-    ranked = core.rank_rows(rows, core.sort_name(_args(), "cheap-good"))
+    args = _args(intel_min=50, sort="cost")
+    rows = core.load_filtered_rows(args, preset="best")
+    ranked = core.rank_rows(rows, core.sort_name(args, "best"))
 
     assert [row["slug"] for row in ranked] == ["cheap", "expensive"]
 
 
-def test_cheap_vision_preset_filters_image_and_ranks_price(tmp_path, monkeypatch):
+def test_removed_compound_presets_fail_loudly():
+    for preset in [
+        "cheap-good",
+        "fast-good",
+        "cheap-vision",
+        "cheap-coding",
+        "cheap-long-context",
+    ]:
+        try:
+            core.sort_name(_args(), preset)
+        except SystemExit as exc:
+            assert "unknown preset" in str(exc)
+        else:
+            raise AssertionError(f"{preset} did not fail")
+
+
+def test_vision_price_behavior_uses_composed_filters(tmp_path, monkeypatch):
     csv_path = tmp_path / "models.csv"
     _write_rows(
         csv_path,
@@ -163,13 +180,14 @@ def test_cheap_vision_preset_filters_image_and_ranks_price(tmp_path, monkeypatch
     monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
     monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
 
-    rows = core.load_filtered_rows(_args(), preset="cheap-vision")
-    ranked = core.rank_rows(rows, core.sort_name(_args(), "cheap-vision"))
+    args = _args(intel_min=40, sort="input-price")
+    rows = core.load_filtered_rows(args, preset="vision")
+    ranked = core.rank_rows(rows, core.sort_name(args, "vision"))
 
     assert [row["slug"] for row in ranked] == ["cheap-image", "expensive-image"]
 
 
-def test_cheap_coding_preset_ranks_price_after_coding_floor(tmp_path, monkeypatch):
+def test_coding_price_behavior_uses_composed_filters(tmp_path, monkeypatch):
     csv_path = tmp_path / "models.csv"
     _write_rows(
         csv_path,
@@ -209,8 +227,9 @@ def test_cheap_coding_preset_ranks_price_after_coding_floor(tmp_path, monkeypatc
     monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
     monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
 
-    rows = core.load_filtered_rows(_args(), preset="cheap-coding")
-    ranked = core.rank_rows(rows, core.sort_name(_args(), "cheap-coding"))
+    args = _args(coding_min=45, sort="input-price")
+    rows = core.load_filtered_rows(args, preset="coding")
+    ranked = core.rank_rows(rows, core.sort_name(args, "coding"))
 
     assert [row["slug"] for row in ranked] == ["cheap-code", "expensive-code"]
 
