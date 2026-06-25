@@ -137,6 +137,8 @@ def load_rows(
             if free_only and not _is_true(r.get("openrouter_has_free")):
                 continue
             cost = _f(r.get("intelligence_index_cost_usd"))
+            if (min_cost > 0 or max_cost < math.inf) and cost is None:
+                continue
             if cost is not None and (cost < min_cost or cost > max_cost):
                 continue
             if intel_min is not None and (_f(r.get("intelligence_index")) or -1) < intel_min:

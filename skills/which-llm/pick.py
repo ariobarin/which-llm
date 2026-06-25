@@ -36,7 +36,13 @@ def main() -> int:
             )
             return 0
         raise SystemExit("no models match")
-    core.emit_rows(core.shortlist_rows(rows), args.format)
+    core.emit_rows(
+        core.shortlist_rows(
+            rows,
+            include_free_slug=args.preset == "free" or args.free,
+        ),
+        args.format,
+    )
     core.print_snapshot_footer(args.format)
     return 0
 

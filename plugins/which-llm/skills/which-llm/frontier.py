@@ -41,6 +41,14 @@ def _status_rows(rows: list[dict], front: list[dict], near: list[dict]) -> list[
     return out
 
 
+def _unique_fields(fields: list[str]) -> list[str]:
+    out = []
+    for field in fields:
+        if field not in out:
+            out.append(field)
+    return out
+
+
 def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
           x_field: str, y_field: str, x_dir: str, near_pct: float,
           chart_path: Path) -> None:
@@ -199,7 +207,7 @@ def main() -> int:
         args.out_dir,
     )
     data_path = Path(args.data_out) if args.data_out else chart_path.with_suffix(".csv")
-    fields = [
+    fields = _unique_fields([
         "frontier_status",
         "slug",
         "name",
@@ -214,7 +222,8 @@ def main() -> int:
         "price_1m_output_tokens",
         "e2e_response_seconds",
         "openrouter_slug",
-    ]
+    ])
+    _load_plot_deps()
     core.write_data_file(status_rows, data_path, "csv", fields)
     _plot(
         rows,

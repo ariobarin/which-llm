@@ -163,16 +163,22 @@ FIELD_GROUP_ALIASES = {
     "contexts": "context",
 }
 
+
+def _number_or(row: dict, field: str, missing):
+    value = query._f(row.get(field))
+    return missing if value is None else value
+
+
 SORT_KEYS = {
-    "intel": lambda r: (-(query._f(r.get("intelligence_index")) or -math.inf),),
-    "cost": lambda r: (query._f(r.get("intelligence_index_cost_usd")) or math.inf,),
-    "ctx": lambda r: (-(query._f(r.get("context_window_tokens")) or 0),),
-    "tokens": lambda r: (query._f(r.get("indexTokensTotal")) or math.inf,),
-    "speed": lambda r: (query._f(r.get("e2e_response_seconds")) or math.inf,),
-    "coding": lambda r: (-(query._f(r.get("coding_index")) or -math.inf),),
-    "agentic": lambda r: (-(query._f(r.get("agentic_index")) or -math.inf),),
-    "input-price": lambda r: (query._f(r.get("price_1m_input_tokens")) or math.inf,),
-    "output-price": lambda r: (query._f(r.get("price_1m_output_tokens")) or math.inf,),
+    "intel": lambda r: (-_number_or(r, "intelligence_index", -math.inf),),
+    "cost": lambda r: (_number_or(r, "intelligence_index_cost_usd", math.inf),),
+    "ctx": lambda r: (-_number_or(r, "context_window_tokens", 0),),
+    "tokens": lambda r: (_number_or(r, "indexTokensTotal", math.inf),),
+    "speed": lambda r: (_number_or(r, "e2e_response_seconds", math.inf),),
+    "coding": lambda r: (-_number_or(r, "coding_index", -math.inf),),
+    "agentic": lambda r: (-_number_or(r, "agentic_index", -math.inf),),
+    "input-price": lambda r: (_number_or(r, "price_1m_input_tokens", math.inf),),
+    "output-price": lambda r: (_number_or(r, "price_1m_output_tokens", math.inf),),
 }
 
 
@@ -308,13 +314,19 @@ def load_filtered_rows(args, *, preset: str | None = None,
     if max_input_price is not None:
         rows = [
             row for row in rows
-            if (query._f(row.get("price_1m_input_tokens")) or math.inf) <= max_input_price
+            if (
+                (value := query._f(row.get("price_1m_input_tokens"))) is not None
+                and value <= max_input_price
+            )
         ]
     max_output_price = getattr(args, "max_output_price", None)
     if max_output_price is not None:
         rows = [
             row for row in rows
-            if (query._f(row.get("price_1m_output_tokens")) or math.inf) <= max_output_price
+            if (
+                (value := query._f(row.get("price_1m_output_tokens"))) is not None
+                and value <= max_output_price
+            )
         ]
     coding_min = getattr(args, "coding_min", None)
     if coding_min is None:
@@ -377,7 +389,7 @@ def _row_search_text(row: dict) -> str:
 def _candidate_sort_key(row: dict):
     return (
         -(query._f(row.get("intelligence_index")) or -math.inf),
-        query._f(row.get("price_1m_input_tokens")) or math.inf,
+        _number_or(row, "price_1m_input_tokens", math.inf),
         row.get("slug") or "",
     )
 
@@ -560,7 +572,8 @@ def _display_value(row: dict, key: str):
     return row.get(key) or ""
 
 
-def shortlist_rows(rows: list[dict], *, include_rank: bool = True) -> list[dict]:
+def shortlist_rows(rows: list[dict], *, include_rank: bool = True,
+                   include_free_slug: bool = False) -> list[dict]:
     fields = [
         ("rank", "rank"),
         ("model", "model"),
@@ -575,6 +588,8 @@ def shortlist_rows(rows: list[dict], *, include_rank: bool = True) -> list[dict]
         ("e2e_s", "e2e_s"),
         ("openrouter_slug", "openrouter"),
     ]
+    if include_free_slug:
+        fields.append(("openrouter_free_slug", "free_openrouter"))
     out = []
     for idx, row in enumerate(rows, start=1):
         item = dict(row)
@@ -751,11 +766,15 @@ def emit_empty_with_nearest(args, *, preset: str | None, sort: str,
         print("No single-filter relaxation produced rows.")
         print_snapshot_footer(fmt)
         return
+    include_free_slug = preset == "free" or getattr(args, "free", False)
     print("Nearest results below require relaxing one listed constraint.")
     for item in relaxations:
         print()
         print(f"Relaxation: {item['relaxation']} ({item['row_count']} rows)")
-        print_markdown_table(shortlist_rows(item["rows"]))
+        print_markdown_table(shortlist_rows(
+            item["rows"],
+            include_free_slug=include_free_slug,
+        ))
     print_snapshot_footer(fmt)
 
 

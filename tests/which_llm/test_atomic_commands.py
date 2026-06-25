@@ -4,6 +4,7 @@ import json
 import sys
 
 import export as export_cmd
+import frontier as frontier_cmd
 import pytest
 import which_llm_core as core
 
@@ -277,6 +278,83 @@ def test_api_price_filters_are_separate_from_run_cost(tmp_path, monkeypatch):
     assert [row["slug"] for row in rows] == ["cheap-api"]
 
 
+def test_zero_api_price_filters_and_sorts_as_real_value(tmp_path, monkeypatch):
+    csv_path = tmp_path / "models.csv"
+    _write_rows(
+        csv_path,
+        [
+            {
+                "slug": "zero-api",
+                "name": "Zero API",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "price_1m_input_tokens": "0",
+                "price_1m_output_tokens": "0",
+            },
+            {
+                "slug": "paid-api",
+                "name": "Paid API",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "price_1m_input_tokens": "0.2",
+                "price_1m_output_tokens": "1",
+            },
+            {
+                "slug": "unknown-api",
+                "name": "Unknown API",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+            },
+        ],
+    )
+    monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
+    monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
+
+    args = _args(max_input_price=0, max_output_price=0)
+    rows = core.load_filtered_rows(args, preset="best")
+    ranked = core.rank_rows(rows, "input-price")
+
+    assert [row["slug"] for row in ranked] == ["zero-api"]
+
+
+def test_run_cost_bound_excludes_unknown_run_cost(tmp_path, monkeypatch):
+    csv_path = tmp_path / "models.csv"
+    _write_rows(
+        csv_path,
+        [
+            {
+                "slug": "cheap-run",
+                "name": "Cheap Run",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "intelligence_index_cost_usd": "0.5",
+            },
+            {
+                "slug": "unknown-run",
+                "name": "Unknown Run",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+            },
+        ],
+    )
+    monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
+    monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
+
+    rows = core.load_filtered_rows(_args(max_cost=1), preset="best")
+
+    assert [row["slug"] for row in rows] == ["cheap-run"]
+
+
 def test_resolve_choice_uses_token_matching_for_family_names():
     rows = [
         {
@@ -374,6 +452,22 @@ def test_endpoint_record_marks_free_slug_as_caveated():
     assert "prototype" in record["caveat"]
 
 
+def test_shortlist_can_include_free_openrouter_slug():
+    rows = [
+        {
+            "slug": "model",
+            "name": "Model",
+            "creator_name": "Lab",
+            "openrouter_slug": "provider/model",
+            "openrouter_free_slug": "provider/model:free",
+        }
+    ]
+
+    rendered = core.shortlist_rows(rows, include_free_slug=True)
+
+    assert rendered[0]["free_openrouter"] == "provider/model:free"
+
+
 def test_write_json_export_uses_selected_fields(tmp_path):
     path = tmp_path / "export.json"
     rows = [{"slug": "model", "name": "Model", "intelligence_index": "50.2"}]
@@ -450,3 +544,102 @@ def test_selected_columns_accepts_exact_export_columns():
     fields = core.selected_columns(rows, "name,coding_index")
 
     assert fields == ["name", "coding_index"]
+
+
+def test_frontier_csv_headers_are_unique(tmp_path, monkeypatch):
+    csv_path = tmp_path / "models.csv"
+    data_path = tmp_path / "frontier.csv"
+    chart_path = tmp_path / "frontier.png"
+    _write_rows(
+        csv_path,
+        [
+            {
+                "slug": "cheap",
+                "name": "Cheap",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "intelligence_index": "40",
+                "intelligence_index_cost_usd": "1",
+            },
+            {
+                "slug": "smart",
+                "name": "Smart",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "intelligence_index": "50",
+                "intelligence_index_cost_usd": "2",
+            },
+        ],
+    )
+    monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
+    monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
+    monkeypatch.setattr(frontier_cmd, "_load_plot_deps", lambda: object())
+    monkeypatch.setattr(frontier_cmd, "_plot", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "frontier.py",
+            "cost-intel",
+            "--out",
+            str(chart_path),
+            "--data-out",
+            str(data_path),
+        ],
+    )
+
+    assert frontier_cmd.main() == 0
+    header = data_path.read_text(encoding="utf-8").splitlines()[0].split(",")
+
+    assert len(header) == len(set(header))
+
+
+def test_frontier_dependency_failure_does_not_write_artifacts(tmp_path, monkeypatch):
+    csv_path = tmp_path / "models.csv"
+    data_path = tmp_path / "frontier.csv"
+    chart_path = tmp_path / "frontier.png"
+    _write_rows(
+        csv_path,
+        [
+            {
+                "slug": "model",
+                "name": "Model",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "intelligence_index": "40",
+                "intelligence_index_cost_usd": "1",
+            },
+        ],
+    )
+    monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
+    monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
+    monkeypatch.setattr(
+        frontier_cmd,
+        "_load_plot_deps",
+        lambda: (_ for _ in ()).throw(SystemExit("missing plot deps")),
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "frontier.py",
+            "cost-intel",
+            "--out",
+            str(chart_path),
+            "--data-out",
+            str(data_path),
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        frontier_cmd.main()
+
+    assert "missing plot deps" in str(exc.value)
+    assert not data_path.exists()
+    assert not chart_path.exists()
