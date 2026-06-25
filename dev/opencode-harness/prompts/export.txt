@@ -1,1 +1,0 @@
-Use the which-llm skill. Export open-weight reasoning models as CSV and return the path and row count.

@@ -1,1 +1,0 @@
-Use the which-llm skill. What OpenRouter endpoint should I use for glm-5-2?

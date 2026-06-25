@@ -1,1 +1,0 @@
-Use the which-llm skill. Compare gpt-5-5-medium and glm-5-2 for price, speed, context, and endpoint.
