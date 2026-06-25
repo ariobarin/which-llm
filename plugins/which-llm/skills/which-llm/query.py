@@ -359,9 +359,48 @@ _JSON_ROUND = {
     "e2e_response_seconds": 1,
 }
 
+_JSON_INT = {
+    "context_window_tokens",
+    "indexTokensTotal",
+}
+
 _JSON_FLOAT = {
+    "active_parameters_billions",
+    "agentic_index",
+    "aime",
+    "aime25",
+    "apex_agents",
+    "cache_hit_price",
+    "coding_index",
+    "critpt",
+    "estimated_intelligence_index",
+    "gdpval",
+    "gpqa",
+    "hle",
+    "humaneval",
+    "ifbench",
+    "intelligence_index_input_cost_usd",
+    "intelligence_index_output_cost_usd",
+    "intelligence_index_per_m_output_tokens",
+    "intelligence_index_reasoning_cost_usd",
+    "lcr",
+    "livecodebench",
+    "math_500",
+    "math_index",
+    "mmlu_pro",
+    "mmmu_pro",
+    "omniscience",
+    "parameters_billions",
+    "price_1m_blended_0_100_1",
+    "price_1m_blended_0_1_1",
+    "price_1m_blended_0_3_1",
+    "price_1m_blended_100_1_1",
+    "price_1m_blended_7_2_1",
     "price_1m_input_tokens",
     "price_1m_output_tokens",
+    "scicode",
+    "tau2",
+    "terminalbench_hard",
 }
 
 
@@ -372,7 +411,7 @@ def _typed(k: str, v: str | None):
     if k in _JSON_ROUND:
         f = _f(v)
         return round(f, _JSON_ROUND[k]) if f is not None else None
-    if k in ("context_window_tokens", "indexTokensTotal"):
+    if k in _JSON_INT:
         return int(float(v)) if v else None
     if k in _JSON_FLOAT:
         return _f(v)

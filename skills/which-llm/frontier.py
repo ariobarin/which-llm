@@ -49,6 +49,22 @@ def _unique_fields(fields: list[str]) -> list[str]:
     return out
 
 
+def _format_axis_value(value: float, is_usd: bool) -> str:
+    if not is_usd:
+        if value >= 1_000_000:
+            return f"{value / 1_000_000:g}M"
+        if value >= 1_000:
+            return f"{value / 1_000:g}K"
+        return f"{value:g}"
+    if value >= 1000:
+        return f"${value / 1000:.1f}k".replace(".0k", "k")
+    if value == 0:
+        return "$0"
+    if 0 < abs(value) < 1:
+        return f"${value:.2f}"
+    return f"${value:.0f}"
+
+
 def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
           x_field: str, y_field: str, x_dir: str, near_pct: float,
           chart_path: Path) -> None:
@@ -143,15 +159,7 @@ def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
     x_is_usd = "cost" in x_field or "price" in x_field
 
     def fmt_x(value, _pos):
-        if not x_is_usd:
-            if value >= 1_000_000:
-                return f"{value / 1_000_000:g}M"
-            if value >= 1_000:
-                return f"{value / 1_000:g}K"
-            return f"{value:g}"
-        if value >= 1000:
-            return f"${value / 1000:.1f}k".replace(".0k", "k")
-        return f"${value:.0f}"
+        return _format_axis_value(value, x_is_usd)
 
     ax.xaxis.set_major_formatter(FuncFormatter(fmt_x))
     x_goal = "maximize" if x_dir == "max" else "minimize"

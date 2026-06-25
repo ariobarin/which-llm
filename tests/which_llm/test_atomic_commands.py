@@ -516,12 +516,34 @@ def test_shortlist_can_include_free_openrouter_slug():
 
 def test_write_json_export_uses_selected_fields(tmp_path):
     path = tmp_path / "export.json"
-    rows = [{"slug": "model", "name": "Model", "intelligence_index": "50.2"}]
+    rows = [
+        {
+            "slug": "model",
+            "name": "Model",
+            "intelligence_index": "50.2",
+            "coding_index": "62.5",
+            "gpqa": "0.734",
+            "terminalbench_hard": "41",
+        }
+    ]
 
-    core.write_data_file(rows, path, "json", ["slug", "intelligence_index"])
+    core.write_data_file(
+        rows,
+        path,
+        "json",
+        ["slug", "intelligence_index", "coding_index", "gpqa", "terminalbench_hard"],
+    )
 
     payload = json.loads(path.read_text(encoding="utf-8"))
-    assert payload == [{"slug": "model", "intelligence_index": 50.2}]
+    assert payload == [
+        {
+            "slug": "model",
+            "intelligence_index": 50.2,
+            "coding_index": 62.5,
+            "gpqa": 0.734,
+            "terminalbench_hard": 41.0,
+        }
+    ]
 
 
 def test_export_default_empty_behavior_does_not_write_file(tmp_path, monkeypatch):
@@ -689,3 +711,11 @@ def test_frontier_dependency_failure_does_not_write_artifacts(tmp_path, monkeypa
     assert "missing plot deps" in str(exc.value)
     assert not data_path.exists()
     assert not chart_path.exists()
+
+
+def test_frontier_price_axis_preserves_sub_dollar_labels():
+    assert frontier_cmd._format_axis_value(0, True) == "$0"
+    assert frontier_cmd._format_axis_value(0.25, True) == "$0.25"
+    assert frontier_cmd._format_axis_value(1, True) == "$1"
+    assert frontier_cmd._format_axis_value(2500, True) == "$2.5k"
+    assert frontier_cmd._format_axis_value(2500, False) == "2.5K"
