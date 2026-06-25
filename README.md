@@ -50,6 +50,7 @@ Run commands from `skills/which-llm`.
 | `python pick.py [preset] [filters]` | Ranked shortlist. |
 | `python compare.py <model>...` | Side-by-side table. |
 | `python profile.py <model>` | Model profile. |
+| `python resolve.py <model>...` | Selected slugs plus alternates. |
 | `python slug.py <model>` | Provider endpoint record. |
 | `python frontier.py [preset] [filters]` | PNG chart plus CSV data. |
 | `python export.py [preset] [filters]` | CSV or JSON file. |
@@ -57,20 +58,28 @@ Run commands from `skills/which-llm`.
 Data readiness is handled inside each command. `query.py` and `plot_pareto.py`
 remain available for compatibility.
 
-Pick presets: `best`, `cheap-good`, `cheap-vision`, `fast-good`, `vision`,
-`long-context`, `open-weights`, `free`, and `coding`.
+Pick presets: `best`, `cheap-good`, `cheap-vision`, `cheap-coding`,
+`cheap-long-context`, `fast-good`, `vision`, `long-context`, `open-weights`,
+`free`, and `coding`.
 
 Frontier presets: `cost-intel`, `speed-intel`, `tokens-intel`, `context-intel`,
 `input-price-intel`, and `output-price-intel`.
 
-Common filters: `--min-intel N`, `--max-cost N`, `--min-context N`,
-`--max-latency N`, `--modality text,image`, `--reasoning`,
-`--open-weights`, and `--free`. `pick.py` and `export.py` also accept
-`--top N` and `--sort intel|cost|ctx|speed|tokens|coding|agentic`.
+Common filters: `--min-intel N`, `--max-run-cost N`, `--max-input-price N`,
+`--max-output-price N`, `--min-context N`, `--max-latency N`,
+`--modality text,image`, `--reasoning`, `--open-weights`, and `--free`.
+`--max-cost` remains an alias for benchmark-run cost, not API price.
+`pick.py` and `export.py` also accept `--top N` and
+`--sort intel|cost|ctx|speed|tokens|coding|agentic`. `pick.py` shows labeled
+nearest relaxations when no rows match; use `--if-empty error` for strict
+empty-result failure.
 
-Export field groups: `core`, `pricing`, `context`, `benchmarks`, `slugs`, and
-`full`. Groups can be combined with commas, such as
-`--fields pricing,context`.
+Export field groups: `core`, `pricing`, `context`, `benchmarks`, `coding`,
+`slugs`, and `full`. Groups can be combined with commas, such as
+`--fields pricing,context`. Exact CSV columns can be selected with
+`--columns name,openrouter_slug,coding_index`.
+The `coding` group includes API prices, context, OpenRouter slugs, coding
+scores, and coding benchmarks.
 
 ## Example
 

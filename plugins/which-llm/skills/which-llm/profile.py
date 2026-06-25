@@ -19,6 +19,7 @@ def main() -> int:
         print(json.dumps(core.json_record(row), indent=2, default=str))
         return 0
     print(core.profile_text(row))
+    core.print_snapshot_footer(args.format)
     return 0
 
 

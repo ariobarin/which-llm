@@ -234,6 +234,7 @@ def main() -> int:
     print(f"near_frontier_rows: {len(near)}")
     print(f"x_metric: {x_field} ({'maximize' if x_dir == 'max' else 'minimize'})")
     print(f"y_metric: {y_field} (maximize)")
+    core.print_snapshot_summary()
     print()
     print("Frontier:")
     display = [

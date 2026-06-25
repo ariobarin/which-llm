@@ -43,10 +43,13 @@ def _args(**overrides):
         "intel_min": None,
         "max_cost": None,
         "min_cost": 0.0,
+        "max_input_price": None,
+        "max_output_price": None,
         "context_min": None,
         "max_index_tokens": None,
         "min_index_tokens": 0.0,
         "max_latency": None,
+        "coding_min": None,
         "reasoning": None,
         "open_weights": None,
         "modality": None,
@@ -166,6 +169,155 @@ def test_cheap_vision_preset_filters_image_and_ranks_price(tmp_path, monkeypatch
     assert [row["slug"] for row in ranked] == ["cheap-image", "expensive-image"]
 
 
+def test_cheap_coding_preset_ranks_price_after_coding_floor(tmp_path, monkeypatch):
+    csv_path = tmp_path / "models.csv"
+    _write_rows(
+        csv_path,
+        [
+            {
+                "slug": "cheap-code",
+                "name": "Cheap Code",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "coding_index": "50",
+                "price_1m_input_tokens": "0.2",
+            },
+            {
+                "slug": "expensive-code",
+                "name": "Expensive Code",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "coding_index": "60",
+                "price_1m_input_tokens": "5",
+            },
+            {
+                "slug": "weak-code",
+                "name": "Weak Code",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "coding_index": "20",
+                "price_1m_input_tokens": "0.1",
+            },
+        ],
+    )
+    monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
+    monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
+
+    rows = core.load_filtered_rows(_args(), preset="cheap-coding")
+    ranked = core.rank_rows(rows, core.sort_name(_args(), "cheap-coding"))
+
+    assert [row["slug"] for row in ranked] == ["cheap-code", "expensive-code"]
+
+
+def test_api_price_filters_are_separate_from_run_cost(tmp_path, monkeypatch):
+    csv_path = tmp_path / "models.csv"
+    _write_rows(
+        csv_path,
+        [
+            {
+                "slug": "cheap-api",
+                "name": "Cheap API",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "intelligence_index_cost_usd": "1000",
+                "price_1m_input_tokens": "0.2",
+                "price_1m_output_tokens": "0.8",
+            },
+            {
+                "slug": "cheap-run",
+                "name": "Cheap Run",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "intelligence_index_cost_usd": "1",
+                "price_1m_input_tokens": "5",
+                "price_1m_output_tokens": "20",
+            },
+        ],
+    )
+    monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
+    monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
+
+    rows = core.load_filtered_rows(
+        _args(max_input_price=1, max_output_price=1),
+        preset="best",
+    )
+
+    assert [row["slug"] for row in rows] == ["cheap-api"]
+
+
+def test_resolve_choice_uses_token_matching_for_family_names():
+    rows = [
+        {
+            "slug": "gemini-3-5-flash",
+            "name": "Gemini 3.5 Flash",
+            "openrouter_slug": "google/gemini-3.5-flash",
+            "intelligence_index": "50",
+            "price_1m_input_tokens": "1.5",
+        },
+        {
+            "slug": "gpt-5-4-nano",
+            "name": "GPT-5.4 nano (xhigh)",
+            "openrouter_slug": "openai/gpt-5.4-nano",
+            "intelligence_index": "38",
+            "price_1m_input_tokens": "0.2",
+        },
+    ]
+
+    row, candidates, status = core.resolve_choice(rows, "gemini flash")
+
+    assert row["slug"] == "gemini-3-5-flash"
+    assert candidates == []
+    assert status == "single"
+
+
+def test_nearest_relaxations_label_relaxed_constraints(tmp_path, monkeypatch):
+    csv_path = tmp_path / "models.csv"
+    _write_rows(
+        csv_path,
+        [
+            {
+                "slug": "free-vision",
+                "name": "Free Vision",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "input_modality_image": "true",
+                "openrouter_has_free": "true",
+                "intelligence_index": "20",
+            },
+            {
+                "slug": "paid-smart",
+                "name": "Paid Smart",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "input_modality_image": "true",
+                "openrouter_has_free": "false",
+                "intelligence_index": "80",
+            },
+        ],
+    )
+    monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
+    monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
+
+    args = _args(free=True, intel_min=70, image=True)
+    relaxations = core.nearest_relaxations(args, preset="vision", sort="intel", top=5)
+
+    labels = {item["relaxation"] for item in relaxations}
+    assert "drop --free" in labels
+    assert "drop --min-intel" in labels
+
+
 def test_context_frontier_maximizes_x():
     rows = core.metric_rows(
         [
@@ -218,3 +370,29 @@ def test_selected_fields_combines_export_groups():
     assert "price_1m_output_tokens" in fields
     assert "context_window_tokens" in fields
     assert "input_modality_image" in fields
+
+
+def test_coding_export_group_is_focused():
+    fields = core.selected_fields([], "coding")
+
+    assert fields == [
+        "slug",
+        "name",
+        "creator_name",
+        "price_1m_input_tokens",
+        "price_1m_output_tokens",
+        "context_window_tokens",
+        "openrouter_slug",
+        "openrouter_free_slug",
+        "coding_index",
+        "livecodebench",
+        "terminalbench_hard",
+    ]
+
+
+def test_selected_columns_accepts_exact_export_columns():
+    rows = [{"slug": "model", "name": "Model", "coding_index": "50"}]
+
+    fields = core.selected_columns(rows, "name,coding_index")
+
+    assert fields == ["name", "coding_index"]

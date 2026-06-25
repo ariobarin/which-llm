@@ -21,13 +21,45 @@ def main() -> int:
     parser.add_argument("--out", help="Output file path.")
     parser.add_argument("--out-dir", help="Output directory for default file name.")
     core.add_fields_arg(parser)
+    parser.add_argument("--columns",
+                        help="Exact comma-separated output columns.")
     core.add_filter_args(parser)
+    core.add_if_empty_arg(parser)
     args = parser.parse_args()
 
     rows = core.load_filtered_rows(args, preset=args.preset)
-    rows = core.rank_rows(rows, core.sort_name(args, args.preset))
+    sort = core.sort_name(args, args.preset)
+    rows = core.rank_rows(rows, sort)
     rows = core.limit_rows(rows, args.top)
-    fields = core.selected_fields(rows, args.fields)
+    if not rows and args.if_empty == "nearest":
+        if args.format == "json":
+            core.emit_empty_with_nearest(
+                args,
+                preset=args.preset,
+                sort=sort,
+                top=args.top,
+                fmt="json",
+            )
+            return 0
+        print("path: (not written)")
+        print(f"format: {args.format}")
+        print("row_count: 0")
+        print("relaxation_status: original filters matched 0 rows")
+        core.print_snapshot_summary()
+        print()
+        core.emit_empty_with_nearest(
+            args,
+            preset=args.preset,
+            sort=sort,
+            top=args.top,
+            fmt="markdown",
+        )
+        return 0
+    fields = (
+        core.selected_columns(rows, args.columns)
+        if args.columns
+        else core.selected_fields(rows, args.fields)
+    )
     suffix = "json" if args.format == "json" else "csv"
     path = Path(args.out) if args.out else core.default_artifact_path(
         "export",
@@ -39,6 +71,7 @@ def main() -> int:
     print(f"format: {args.format}")
     print(f"row_count: {len(rows)}")
     print(f"fields: {', '.join(fields)}")
+    core.print_snapshot_summary()
     return 0
 
 

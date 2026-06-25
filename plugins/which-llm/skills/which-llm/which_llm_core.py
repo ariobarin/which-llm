@@ -4,6 +4,7 @@ import argparse
 import csv
 import json
 import math
+import re
 import sys
 import time
 from pathlib import Path
@@ -21,6 +22,15 @@ PICK_PRESETS = {
     "cheap-vision": {
         "intel_min": 40,
         "modalities": {"text", "image"},
+        "sort": "input-price",
+    },
+    "cheap-coding": {
+        "coding_min": 45,
+        "sort": "input-price",
+    },
+    "cheap-long-context": {
+        "context_min": 256000,
+        "intel_min": 40,
         "sort": "input-price",
     },
     "fast-good": {"intel_min": 30, "sort": "speed"},
@@ -135,6 +145,19 @@ FIELD_GROUPS = {
         "aime",
         "terminalbench_hard",
     ],
+    "coding": [
+        "slug",
+        "name",
+        "creator_name",
+        "price_1m_input_tokens",
+        "price_1m_output_tokens",
+        "context_window_tokens",
+        "openrouter_slug",
+        "openrouter_free_slug",
+        "coding_index",
+        "livecodebench",
+        "terminalbench_hard",
+    ],
     "slugs": [
         "slug",
         "name",
@@ -148,6 +171,7 @@ FIELD_GROUPS = {
 FIELD_GROUP_ALIASES = {
     "price": "pricing",
     "prices": "pricing",
+    "code": "coding",
     "benchmark": "benchmarks",
     "slug": "slugs",
     "endpoint": "slugs",
@@ -189,10 +213,15 @@ def add_filter_args(p: argparse.ArgumentParser) -> None:
                    help="Only include models with an OpenRouter free variant.")
     p.add_argument("--min-intel", "--intel-min", dest="intel_min", type=float,
                    help="Minimum intelligence_index.")
-    p.add_argument("--max-cost", type=float,
-                   help="Maximum idx-run$ benchmark-run cost.")
-    p.add_argument("--min-cost", type=float, default=0.0,
-                   help="Minimum idx-run$ benchmark-run cost.")
+    p.add_argument("--max-run-cost", "--max-cost", dest="max_cost", type=float,
+                   help="Maximum idx-run$ benchmark-run cost, not API price.")
+    p.add_argument("--min-run-cost", "--min-cost", dest="min_cost",
+                   type=float, default=0.0,
+                   help="Minimum idx-run$ benchmark-run cost, not API price.")
+    p.add_argument("--max-input-price", type=float,
+                   help="Maximum input price in USD per 1M tokens.")
+    p.add_argument("--max-output-price", type=float,
+                   help="Maximum output price in USD per 1M tokens.")
     p.add_argument("--min-context", "--context-min", dest="context_min", type=int,
                    help="Minimum context window in tokens.")
     p.add_argument("--max-index-tokens", type=float,
@@ -201,6 +230,8 @@ def add_filter_args(p: argparse.ArgumentParser) -> None:
                    help="Minimum total tokens to run AA's Intelligence Index.")
     p.add_argument("--max-latency", type=float,
                    help="Maximum end to end response latency in seconds.")
+    p.add_argument("--min-coding", dest="coding_min", type=float,
+                   help="Minimum coding_index.")
     p.add_argument("--reasoning", action=argparse.BooleanOptionalAction,
                    default=None, help="Filter reasoning models.")
     p.add_argument("--open-weights", action=argparse.BooleanOptionalAction,
@@ -226,6 +257,15 @@ def add_fields_arg(p: argparse.ArgumentParser) -> None:
             "Field group or comma list: core, pricing, context, benchmarks, "
             "slugs, full."
         ),
+    )
+
+
+def add_if_empty_arg(p: argparse.ArgumentParser, *, default: str = "error") -> None:
+    p.add_argument(
+        "--if-empty",
+        choices=["error", "nearest"],
+        default=default,
+        help="Behavior when filters match no rows.",
     )
 
 
@@ -276,6 +316,26 @@ def load_filtered_rows(args, *, preset: str | None = None,
         open_weights=getattr(args, "open_weights", None) if getattr(args, "open_weights", None) is not None
         else cfg.get("open_weights"),
     )
+    max_input_price = getattr(args, "max_input_price", None)
+    if max_input_price is not None:
+        rows = [
+            row for row in rows
+            if (query._f(row.get("price_1m_input_tokens")) or math.inf) <= max_input_price
+        ]
+    max_output_price = getattr(args, "max_output_price", None)
+    if max_output_price is not None:
+        rows = [
+            row for row in rows
+            if (query._f(row.get("price_1m_output_tokens")) or math.inf) <= max_output_price
+        ]
+    coding_min = getattr(args, "coding_min", None)
+    if coding_min is None:
+        coding_min = cfg.get("coding_min")
+    if coding_min is not None:
+        rows = [
+            row for row in rows
+            if (query._f(row.get("coding_index")) or -1) >= coding_min
+        ]
     creators = {
         creator.strip().lower()
         for creator in getattr(args, "creator", [])
@@ -307,35 +367,174 @@ def limit_rows(rows: list[dict], top: int | None) -> list[dict]:
     return rows
 
 
-def resolve_one(model: str, *, prefer_openrouter: bool = False) -> dict:
-    ensure_snapshot()
-    rows = query.load_rows(modalities=set(), include_deprecated=True)
+def _model_tokens(text: str | None) -> set[str]:
+    return set(re.findall(r"[a-z0-9]+", (text or "").lower()))
+
+
+def _row_search_text(row: dict) -> str:
+    return " ".join(
+        str(row.get(key) or "")
+        for key in (
+            "slug",
+            "name",
+            "short_name",
+            "model_family_slug",
+            "creator_name",
+            "openrouter_slug",
+            "openrouter_free_slug",
+        )
+    )
+
+
+def _candidate_sort_key(row: dict):
+    return (
+        -(query._f(row.get("intelligence_index")) or -math.inf),
+        query._f(row.get("price_1m_input_tokens")) or math.inf,
+        row.get("slug") or "",
+    )
+
+
+def _dedupe_candidates(rows: list[dict]) -> list[dict]:
+    seen = set()
+    out = []
+    for row in sorted(rows, key=_candidate_sort_key):
+        key = row.get("slug")
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(row)
+    return out
+
+
+def resolve_choice(rows: list[dict], model: str, *,
+                   mode: str = "strict",
+                   prefer_openrouter: bool = False) -> tuple[dict | None, list[dict], str]:
     row, candidates = query.resolve_model(
         rows,
         model,
         prefer_openrouter=prefer_openrouter,
     )
     if row:
+        return row, [], "exact"
+    if not candidates:
+        tokens = _model_tokens(model)
+        if tokens:
+            candidates = [
+                item for item in rows
+                if tokens <= _model_tokens(_row_search_text(item))
+            ]
+    candidates = _dedupe_candidates(candidates)
+    if len(candidates) == 1:
+        return candidates[0], [], "single"
+    if candidates and mode == "auto":
+        return candidates[0], candidates[1:6], "auto"
+    return None, candidates, "ambiguous" if candidates else "none"
+
+
+def print_resolve_candidates(model: str, candidates: list[dict]) -> None:
+    if candidates:
+        print(f"# multiple matches for {model!r}; specify slug:", file=sys.stderr)
+        print(f"# hint: python resolve.py {model!r} --mode auto", file=sys.stderr)
+        for candidate in candidates[:10]:
+            print(
+                f"  {candidate['slug']:45s}  {candidate['name']}",
+                file=sys.stderr,
+            )
+    else:
+        print(f"# no model matching {model!r}", file=sys.stderr)
+        print(f"# hint: python resolve.py {model!r}", file=sys.stderr)
+
+
+def resolve_one(model: str, *, prefer_openrouter: bool = False,
+                mode: str = "strict") -> dict:
+    ensure_snapshot()
+    rows = query.load_rows(modalities=set(), include_deprecated=True)
+    row, candidates, status = resolve_choice(
+        rows,
+        model,
+        mode=mode,
+        prefer_openrouter=prefer_openrouter,
+    )
+    if row:
+        if status == "auto" and candidates:
+            print(
+                f"# resolved {model!r} to {row.get('slug')} "
+                f"({row.get('name')}); alternates omitted from table",
+                file=sys.stderr,
+            )
         return row
-    query._print_candidates(model, candidates)
+    print_resolve_candidates(model, candidates)
     raise SystemExit(1)
 
 
-def resolve_many(models: list[str]) -> list[dict]:
+def resolve_many(models: list[str], *, mode: str = "strict") -> list[dict]:
     ensure_snapshot()
     rows = query.load_rows(modalities=set(), include_deprecated=True)
     picked = []
     seen = set()
     for model in models:
-        row, candidates = query.resolve_model(rows, model)
+        row, candidates, status = resolve_choice(rows, model, mode=mode)
         if not row:
-            query._print_candidates(model, candidates)
+            print_resolve_candidates(model, candidates)
             raise SystemExit(1)
+        if status == "auto" and candidates:
+            print(
+                f"# resolved {model!r} to {row.get('slug')} "
+                f"({row.get('name')}); alternates omitted from table",
+                file=sys.stderr,
+            )
         key = row.get("slug")
         if key not in seen:
             picked.append(row)
             seen.add(key)
     return picked
+
+
+def resolve_display_rows(models: list[str], *, mode: str = "auto") -> list[dict]:
+    ensure_snapshot()
+    rows = query.load_rows(modalities=set(), include_deprecated=True)
+    out = []
+    for model in models:
+        row, candidates, status = resolve_choice(rows, model, mode=mode)
+        if row:
+            out.append({
+                "query": model,
+                "status": status,
+                "selected": row.get("slug") or "",
+                "model": row.get("name") or "",
+                "openrouter": row.get("openrouter_slug") or "",
+                "intel": _display_value(row, "intelligence"),
+                "in$/1m": _display_value(row, "input_usd_1m"),
+                "alternates": ", ".join(
+                    candidate.get("slug") or ""
+                    for candidate in candidates[:5]
+                ),
+            })
+            continue
+        if candidates:
+            for candidate in candidates[:10]:
+                out.append({
+                    "query": model,
+                    "status": "candidate",
+                    "selected": candidate.get("slug") or "",
+                    "model": candidate.get("name") or "",
+                    "openrouter": candidate.get("openrouter_slug") or "",
+                    "intel": _display_value(candidate, "intelligence"),
+                    "in$/1m": _display_value(candidate, "input_usd_1m"),
+                    "alternates": "",
+                })
+        else:
+            out.append({
+                "query": model,
+                "status": "none",
+                "selected": "",
+                "model": "",
+                "openrouter": "",
+                "intel": "",
+                "in$/1m": "",
+                "alternates": "",
+            })
+    return out
 
 
 def _display_value(row: dict, key: str):
@@ -455,6 +654,123 @@ def emit_rows(rows: list[dict], fmt: str) -> None:
     print_markdown_table(rows)
 
 
+def snapshot_metadata() -> dict:
+    path = query._csv_path()
+    age = query._data_age_days()
+    return {
+        "snapshot_path": str(path),
+        "snapshot_file": path.name,
+        "snapshot_age_days": None if age is None else round(age, 2),
+    }
+
+
+def print_snapshot_footer(fmt: str) -> None:
+    if fmt == "json":
+        return
+    meta = snapshot_metadata()
+    age = meta["snapshot_age_days"]
+    age_text = "unknown" if age is None else str(age)
+    print(
+        f"# snapshot: {meta['snapshot_file']} age_days={age_text}",
+        file=sys.stderr,
+    )
+
+
+def print_snapshot_summary() -> None:
+    meta = snapshot_metadata()
+    age = meta["snapshot_age_days"]
+    age_text = "unknown" if age is None else str(age)
+    print(f"snapshot: {meta['snapshot_file']}")
+    print(f"snapshot_age_days: {age_text}")
+
+
+def _clone_args(args, **updates):
+    data = vars(args).copy()
+    data.update(updates)
+    return argparse.Namespace(**data)
+
+
+def nearest_relaxations(args, *, preset: str | None, sort: str,
+                        top: int | None, limit: int = 5) -> list[dict]:
+    variants = []
+    if getattr(args, "free", False):
+        variants.append(("drop --free", _clone_args(args, free=False), preset))
+    if getattr(args, "intel_min", None) is not None:
+        variants.append(("drop --min-intel", _clone_args(args, intel_min=None), preset))
+    if getattr(args, "max_input_price", None) is not None:
+        variants.append(("drop --max-input-price", _clone_args(args, max_input_price=None), preset))
+    if getattr(args, "max_output_price", None) is not None:
+        variants.append(("drop --max-output-price", _clone_args(args, max_output_price=None), preset))
+    if getattr(args, "max_cost", None) is not None:
+        variants.append(("drop --max-run-cost", _clone_args(args, max_cost=None), preset))
+    if getattr(args, "context_min", None) is not None:
+        variants.append(("drop --min-context", _clone_args(args, context_min=None), preset))
+    if getattr(args, "max_latency", None) is not None:
+        variants.append(("drop --max-latency", _clone_args(args, max_latency=None), preset))
+    if getattr(args, "reasoning", None) is not None:
+        variants.append(("drop reasoning filter", _clone_args(args, reasoning=None), preset))
+    if getattr(args, "open_weights", None) is not None:
+        variants.append(("drop open-weights filter", _clone_args(args, open_weights=None), preset))
+    if getattr(args, "image", False):
+        variants.append(("drop --image", _clone_args(args, image=False), preset))
+    if getattr(args, "video", False):
+        variants.append(("drop --video", _clone_args(args, video=False), preset))
+    if getattr(args, "audio", False):
+        variants.append(("drop --audio", _clone_args(args, audio=False), preset))
+
+    out = []
+    seen_labels = set()
+    for label, relaxed_args, relaxed_preset in variants:
+        if label in seen_labels:
+            continue
+        seen_labels.add(label)
+        rows = load_filtered_rows(relaxed_args, preset=relaxed_preset)
+        if not rows:
+            continue
+        ranked = rank_rows(rows, sort)
+        out.append({
+            "relaxation": label,
+            "row_count": len(rows),
+            "rows": limit_rows(ranked, min(limit, top or limit)),
+        })
+    return out
+
+
+def emit_empty_with_nearest(args, *, preset: str | None, sort: str,
+                            top: int | None, fmt: str) -> None:
+    relaxations = nearest_relaxations(args, preset=preset, sort=sort, top=top)
+    if fmt == "json":
+        payload = {
+            "match_count": 0,
+            "relaxation_status": "original filters matched 0 rows",
+            "nearest": [
+                {
+                    "relaxation": item["relaxation"],
+                    "row_count": item["row_count"],
+                    "rows": [
+                        json_record(row, FIELD_GROUPS["core"])
+                        for row in item["rows"]
+                    ],
+                }
+                for item in relaxations
+            ],
+            "snapshot": snapshot_metadata(),
+        }
+        print(json.dumps(payload, indent=2, default=str))
+        return
+    print("No models matched the original filters.")
+    if not relaxations:
+        print("No single-filter relaxation produced rows.")
+        print_snapshot_footer(fmt)
+        return
+    print("Nearest results below require relaxing one listed constraint.")
+    for item in relaxations:
+        print()
+        print(f"Relaxation: {item['relaxation']} ({item['row_count']} rows)")
+        print_markdown_table(shortlist_rows(item["rows"]))
+    print_snapshot_footer(fmt)
+
+
 def profile_text(row: dict) -> str:
     bench_keys = [
         ("gpqa", "GPQA Diamond"),
@@ -551,6 +867,22 @@ def selected_fields(rows: list[dict], group_spec: str) -> list[str]:
             if field not in fields:
                 fields.append(field)
     return fields
+
+
+def selected_columns(rows: list[dict], column_spec: str) -> list[str]:
+    columns = [item.strip() for item in column_spec.split(",") if item.strip()]
+    if not columns:
+        raise SystemExit("--columns needs at least one column")
+    known = set()
+    for row in rows:
+        known.update(key for key in row.keys() if not key.startswith("_"))
+    unknown = [column for column in columns if known and column not in known]
+    if unknown:
+        raise SystemExit(
+            f"unknown columns: {', '.join(unknown)}; "
+            "use --fields full to inspect available columns"
+        )
+    return columns
 
 
 def write_data_file(rows: list[dict], path: Path, fmt: str, fields: list[str]) -> Path:

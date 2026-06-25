@@ -12,6 +12,14 @@ loosely follows [SemVer](https://semver.org/).
   formatting, frontier calculation, and artifact writing.
 - Composable export field groups, including pricing plus context CSV output.
 - `cheap-vision` pick preset for image-capable low-price shortlist requests.
+- `cheap-coding` and `cheap-long-context` presets for price-aware common picks.
+- `resolve.py` for natural model name resolution with selected slugs and
+  alternates.
+- API price filters separate from benchmark-run cost filters.
+- Labeled nearest-result summaries for empty pick filters and opt-in export
+  recovery.
+- Exact `export.py --columns` selection plus a focused coding field group.
+- Snapshot metadata in human-readable command output and artifact summaries.
 
 ### Changed
 - Skill and README docs now present neutral capabilities instead of a

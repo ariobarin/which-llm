@@ -25,6 +25,7 @@ def main() -> int:
     print(f"openrouter_free_slug: {record['openrouter_free_slug'] or '(not available)'}")
     if record["caveat"]:
         print(f"caveat: {record['caveat']}")
+    core.print_snapshot_footer("text")
     return 0
 
 

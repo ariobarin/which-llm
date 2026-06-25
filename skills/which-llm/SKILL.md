@@ -20,6 +20,7 @@ with `${CLAUDE_SKILL_DIR}` in Claude Code.
 | Pick ranked models from constraints | `python pick.py [preset] [filters]` | Ranked shortlist |
 | Compare named models | `python compare.py <model>...` | Side-by-side table |
 | Inspect one model | `python profile.py <model>` | Model profile |
+| Resolve natural names | `python resolve.py <model>...` | Selected slugs plus alternates |
 | Resolve endpoint names | `python slug.py <model>` | Provider endpoint record |
 | Generate tradeoff frontier | `python frontier.py [preset] [filters]` | PNG chart plus CSV data |
 | Export filtered rows | `python export.py [preset] [filters]` | CSV or JSON file |
@@ -34,6 +35,8 @@ atomic commands above are the fastest surface for normal use.
 | `best` | Highest intelligence. |
 | `cheap-good` | Intelligence at least 50, ranked by benchmark-run cost. |
 | `cheap-vision` | Image-capable models with intelligence at least 40, ranked by input price. |
+| `cheap-coding` | Coding index at least 45, ranked by input price. |
+| `cheap-long-context` | Context at least 256K and intelligence at least 40, ranked by input price. |
 | `fast-good` | Useful quality, ranked by end to end latency. |
 | `vision` | Text and image capable models. |
 | `long-context` | Context window at least 256K tokens. |
@@ -68,20 +71,46 @@ atomic commands above are the fastest surface for normal use.
 --audio
 --modality text,image
 --min-intel N
---max-cost N
+--max-run-cost N
+--max-input-price N
+--max-output-price N
 --min-context N
+--min-coding N
 --max-latency N
 --max-index-tokens N
 --min-index-tokens N
 ```
 
+`--max-cost` remains an alias for `--max-run-cost`, the benchmark-run cost.
+Use `--max-input-price` or `--max-output-price` for API price per 1M tokens.
+
 `pick.py` and `export.py` also accept `--sort` with `intel`, `cost`, `ctx`,
 `tokens`, `speed`, `coding`, `agentic`, `input-price`, or `output-price`.
 They also accept `--top N`.
+`pick.py` shows clearly labeled one-filter relaxations when no rows match.
+Use `--if-empty error` for strict empty-result failure. `export.py` accepts
+`--if-empty nearest` for the same labeled recovery without writing a relaxed
+data file.
+
+`compare.py` resolves strictly by default. It accepts `--resolve auto` when
+selecting the strongest ambiguous match and listing alternates is acceptable.
 
 `export.py` accepts `--fields core`, `pricing`, `context`, `benchmarks`,
-`slugs`, or `full`. Field groups can be combined with commas, such as
-`--fields pricing,context`.
+`coding`, `slugs`, or `full`. Field groups can be combined with commas, such
+as `--fields pricing,context`. Exact columns can be selected with
+`--columns name,openrouter_slug,coding_index`.
+
+## Export Field Groups
+
+| Field group | Contains |
+|---|---|
+| `core` | Main quality, cost, context, speed, and OpenRouter columns. |
+| `pricing` | Benchmark-run cost, token use, API prices, cache price, and slugs. |
+| `context` | Context window, modalities, reasoning, open weights, and slug. |
+| `coding` | API prices, context, OpenRouter slugs, coding scores, and coding benchmarks. |
+| `benchmarks` | Intelligence, coding, agentic, math, and benchmark scores. |
+| `slugs` | Internal slug, OpenRouter production slug, and free slug. |
+| `full` | All tracked columns. |
 
 ## Output Notes
 
@@ -98,11 +127,15 @@ They also accept `--top N`.
 ```text
 python pick.py cheap-good --image --top 8
 python pick.py cheap-vision --top 5
+python pick.py cheap-coding --top 5
+python pick.py cheap-long-context --max-input-price 2 --top 5
 python compare.py gpt-5-5-medium glm-5-2
+python resolve.py "gemini flash" "gpt nano"
 python profile.py glm-5-2
 python slug.py glm-5-2
 python frontier.py cost-intel --max-x 1200 --out-dir artifacts
 python export.py open-weights --fields pricing,context --format csv
+python export.py open-weights --reasoning --fields coding --format csv
 ```
 
 ## Do Not Use For
