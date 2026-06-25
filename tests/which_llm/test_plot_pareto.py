@@ -94,6 +94,14 @@ def test_pareto_front_uses_generic_plot_coordinates():
     assert [row["slug"] for row in plot_pareto.pareto_front(rows)] == ["cheap", "better"]
 
 
+def test_plot_pareto_price_axis_preserves_sub_dollar_labels():
+    assert plot_pareto.format_axis_value(0, True) == "$0"
+    assert plot_pareto.format_axis_value(0.25, True) == "$0.25"
+    assert plot_pareto.format_axis_value(1, True) == "$1"
+    assert plot_pareto.format_axis_value(2500, True) == "$2.5k"
+    assert plot_pareto.format_axis_value(2500, False) == "2500"
+
+
 def test_shorten_preserves_reasoning_effort():
     assert (
         plot_pareto.shorten("DeepSeek V4 Pro (Reasoning, High Effort)")

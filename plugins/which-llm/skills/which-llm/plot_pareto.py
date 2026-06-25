@@ -63,6 +63,18 @@ FIELD_LABELS = {
 }
 
 
+def format_axis_value(value: float, is_usd: bool) -> str:
+    if not is_usd:
+        return f"{value:g}"
+    if value >= 1000:
+        return f"${value/1000:.1f}k".replace(".0k", "k")
+    if value == 0:
+        return "$0"
+    if 0 < abs(value) < 1:
+        return f"${value:.2f}"
+    return f"${value:.0f}"
+
+
 def _float(v):
     if v is None or v == "":
         return None
@@ -340,11 +352,7 @@ def main() -> int:
     x_is_usd = "cost" in args.x_field or "price" in args.x_field
 
     def fmt_x(x, _pos):
-        if not x_is_usd:
-            return f"{x:g}"
-        if x >= 1000:
-            return f"${x/1000:.1f}k".replace(".0k", "k")
-        return f"${x:.0f}"
+        return format_axis_value(x, x_is_usd)
     ax.xaxis.set_major_formatter(FuncFormatter(fmt_x))
 
     x_label = field_label(args.x_field)

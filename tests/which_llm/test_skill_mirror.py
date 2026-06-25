@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "skills" / "which-llm"
 TARGET = ROOT / "plugins" / "which-llm" / "skills" / "which-llm"
+IGNORED_DIRS = {"__pycache__", ".pytest_cache", "build", "dist", "wheels"}
 
 
 def _runtime_files(root: Path) -> list[Path]:
@@ -13,8 +14,7 @@ def _runtime_files(root: Path) -> list[Path]:
         path.relative_to(root)
         for path in root.rglob("*")
         if path.is_file()
-        and "__pycache__" not in path.parts
-        and ".pytest_cache" not in path.parts
+        and not any(part in IGNORED_DIRS for part in path.parts)
         and not any(part.endswith(".egg-info") for part in path.parts)
     )
 
