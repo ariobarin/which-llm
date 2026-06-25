@@ -129,12 +129,16 @@ def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
             lim=250,
         )
 
-    ax.set_xscale("log", base=2)
     x_min = min(row["_x"] for row in rows)
     x_max = max(row["_x"] for row in rows)
     y_min = min(row["_y"] for row in rows)
     y_max = max(row["_y"] for row in rows)
-    ax.set_xlim(x_min / 1.4, x_max * 1.4)
+    if x_min > 0:
+        ax.set_xscale("log", base=2)
+        ax.set_xlim(x_min / 1.4, x_max * 1.4)
+    else:
+        x_pad = (x_max - x_min) * 0.05 or 1
+        ax.set_xlim(max(0, x_min - x_pad), x_max + x_pad)
     ax.set_ylim(y_min - 2, y_max + 4)
     x_is_usd = "cost" in x_field or "price" in x_field
 

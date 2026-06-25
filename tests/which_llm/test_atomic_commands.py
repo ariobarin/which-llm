@@ -418,6 +418,35 @@ def test_nearest_relaxations_label_relaxed_constraints(tmp_path, monkeypatch):
     assert "drop --min-intel" in labels
 
 
+def test_nearest_relaxations_can_drop_min_coding(tmp_path, monkeypatch):
+    csv_path = tmp_path / "models.csv"
+    _write_rows(
+        csv_path,
+        [
+            {
+                "slug": "code-model",
+                "name": "Code Model",
+                "creator_name": "Lab",
+                "deprecated": "false",
+                "input_modality_text": "true",
+                "openrouter_has_free": "false",
+                "coding_index": "50",
+            },
+        ],
+    )
+    monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
+    monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
+
+    relaxations = core.nearest_relaxations(
+        _args(coding_min=999),
+        preset="coding",
+        sort="coding",
+        top=5,
+    )
+
+    assert [item["relaxation"] for item in relaxations] == ["drop --min-coding"]
+
+
 def test_context_frontier_maximizes_x():
     rows = core.metric_rows(
         [
@@ -435,6 +464,23 @@ def test_context_frontier_maximizes_x():
     front = core.pareto_front(rows, "max")
 
     assert [row["slug"] for row in front] == ["smart", "long"]
+
+
+def test_price_frontier_keeps_zero_price_rows():
+    rows = core.metric_rows(
+        [
+            {"slug": "zero", "price_1m_input_tokens": "0", "intelligence_index": "30"},
+            {"slug": "paid", "price_1m_input_tokens": "1", "intelligence_index": "40"},
+        ],
+        "price_1m_input_tokens",
+        "intelligence_index",
+        0,
+        float("inf"),
+    )
+
+    front = core.pareto_front(rows, "min")
+
+    assert [row["slug"] for row in front] == ["zero", "paid"]
 
 
 def test_endpoint_record_marks_free_slug_as_caveated():

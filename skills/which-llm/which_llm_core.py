@@ -708,6 +708,8 @@ def nearest_relaxations(args, *, preset: str | None, sort: str,
         variants.append(("drop --max-run-cost", _clone_args(args, max_cost=None), preset))
     if getattr(args, "context_min", None) is not None:
         variants.append(("drop --min-context", _clone_args(args, context_min=None), preset))
+    if getattr(args, "coding_min", None) is not None:
+        variants.append(("drop --min-coding", _clone_args(args, coding_min=None), preset))
     if getattr(args, "max_latency", None) is not None:
         variants.append(("drop --max-latency", _clone_args(args, max_latency=None), preset))
     if getattr(args, "reasoning", None) is not None:
@@ -917,7 +919,7 @@ def field_label(field: str) -> str:
 
 def _metric_value(row: dict, field: str) -> float | None:
     value = query._f(row.get(field))
-    if value is None or value <= 0:
+    if value is None or value < 0:
         return None
     return value
 
