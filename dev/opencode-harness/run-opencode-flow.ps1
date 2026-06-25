@@ -54,7 +54,7 @@ try {
 
         $Text = Get-Content -LiteralPath $OutPath -Raw
         if ($Text -match "ProviderAuthError|API key is missing|401|authentication") {
-            Write-Warning "$Name failed before tool use because opencode provider auth is not configured"
+            Write-Warning "$Name failed before tool use because opencode provider auth is not visible to this shell"
             $HadFailure = $true
             continue
         }

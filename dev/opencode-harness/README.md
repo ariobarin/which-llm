@@ -18,5 +18,7 @@ Each case runs:
 - `--dangerously-skip-permissions`
 
 Outputs are written to `dev\opencode-harness\outputs`. If opencode reports a
-missing provider key, configure credentials with `opencode providers login` or
-set the provider key expected by your local config, then rerun the harness.
+missing provider key, the current shell cannot see the key expected by your
+local config. This checkout's observed config uses `{env:BIGMODEL_API_KEY}` for
+the BigModel provider, so run the harness from an environment where that
+variable is set, then rerun it.
