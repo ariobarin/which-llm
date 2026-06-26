@@ -117,6 +117,11 @@ Tracked runtime data:
 |---|---|
 | `skills/which-llm/artifacts/models_enriched.csv` | The compact AA plus OpenRouter snapshot used by the commands. |
 | `skills/which-llm/artifacts/provider_endpoints.csv` | AA provider endpoint rows with provider-specific price and capability fields. |
+| `skills/which-llm/artifacts/benchmark_token_counts.csv` | Per-model, per-benchmark token accounting from AA. |
+| `skills/which-llm/artifacts/index_cost_by_evaluation.csv` | Per-model weighted cost contributions by Intelligence Index evaluation. |
+| `skills/which-llm/artifacts/prompt_performance.csv` | Per-model prompt-length speed and latency rows. |
+| `skills/which-llm/artifacts/multilingual_scores.csv` | Per-model multilingual score and token rows. |
+| `skills/which-llm/artifacts/omniscience_breakdown.csv` | Per-model Omniscience category and subcategory rows. |
 | `skills/which-llm/artifacts/unmatched.txt` | Non-deprecated AA models without OpenRouter matches. |
 
 Regenerable refresh intermediates such as `models.html`, `models.rsc`, `models.csv`, `models.json`, and `openrouter.json` are ignored to keep skill installs small.

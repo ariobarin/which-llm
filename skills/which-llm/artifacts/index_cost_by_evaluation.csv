@@ -1,0 +1,505 @@
+model_slug,model_name,model_creator_slug,evaluation_slug,weighted_cost_per_task_usd
+gpt-oss-120b,gpt-oss-120b (high),openai,gdpval-aa,0.017541052499999998
+gpt-oss-120b,gpt-oss-120b (high),openai,tau3-banking,0.017490443685567014
+gpt-oss-120b,gpt-oss-120b (high),openai,terminalbench-v2-1,0.02094808426966292
+gpt-oss-120b,gpt-oss-120b (high),openai,scicode,0.0003163763020833333
+gpt-oss-120b,gpt-oss-120b (high),openai,humanitys-last-exam,0.001699512111909175
+gpt-oss-120b,gpt-oss-120b (high),openai,gpqa-diamond,0.00041149266098484846
+gpt-oss-120b,gpt-oss-120b (high),openai,critpt,0.0011567745535714285
+gpt-oss-120b,gpt-oss-120b (high),openai,omniscience,0.00014592798124999997
+gpt-oss-120b,gpt-oss-120b (high),openai,artificial-analysis-long-context-reasoning,0.0009619801875000001
+gpt-oss-20b,gpt-oss-20B (high),openai,gdpval-aa,0.010216165113636363
+gpt-oss-20b,gpt-oss-20B (high),openai,tau3-banking,0.0030964631443298972
+gpt-oss-20b,gpt-oss-20B (high),openai,terminalbench-v2-1,0.0030528154494382023
+gpt-oss-20b,gpt-oss-20B (high),openai,scicode,7.313619791666667e-05
+gpt-oss-20b,gpt-oss-20B (high),openai,humanitys-last-exam,0.0003929568610982391
+gpt-oss-20b,gpt-oss-20B (high),openai,gpqa-diamond,0.0001418271464646465
+gpt-oss-20b,gpt-oss-20B (high),openai,critpt,0.0004809708482142858
+gpt-oss-20b,gpt-oss-20B (high),openai,omniscience,5.400070208333333e-05
+gpt-oss-20b,gpt-oss-20B (high),openai,artificial-analysis-long-context-reasoning,0.000334442875
+gpt-5-5-non-reasoning,GPT-5.5 (Non-reasoning),openai,gdpval-aa,0.023946177918184517
+gpt-5-5-non-reasoning,GPT-5.5 (Non-reasoning),openai,tau3-banking,0.03920665010735901
+gpt-5-5-non-reasoning,GPT-5.5 (Non-reasoning),openai,terminalbench-v2-1,0.04931140742282715
+gpt-5-5-non-reasoning,GPT-5.5 (Non-reasoning),openai,scicode,0.0022828023726851852
+gpt-5-5-non-reasoning,GPT-5.5 (Non-reasoning),openai,humanitys-last-exam,0.0012158642261353107
+gpt-5-5-non-reasoning,GPT-5.5 (Non-reasoning),openai,gpqa-diamond,0.00047332228535353543
+gpt-5-5-non-reasoning,GPT-5.5 (Non-reasoning),openai,critpt,0.005172491071428571
+gpt-5-5-non-reasoning,GPT-5.5 (Non-reasoning),openai,omniscience,0.00011613145833333334
+gpt-5-5-non-reasoning,GPT-5.5 (Non-reasoning),openai,artificial-analysis-long-context-reasoning,0.029741568750000003
+gpt-5-5-high,GPT-5.5 (high),openai,gdpval-aa,0.19907988955952322
+gpt-5-5-high,GPT-5.5 (high),openai,tau3-banking,0.12569539702430974
+gpt-5-5-high,GPT-5.5 (high),openai,terminalbench-v2-1,0.14147101191034198
+gpt-5-5-high,GPT-5.5 (high),openai,scicode,0.00941989583333333
+gpt-5-5-high,GPT-5.5 (high),openai,humanitys-last-exam,0.02833371901065802
+gpt-5-5-high,GPT-5.5 (high),openai,gpqa-diamond,0.0056100631313131324
+gpt-5-5-high,GPT-5.5 (high),openai,critpt,0.05750148214285715
+gpt-5-5-high,GPT-5.5 (high),openai,omniscience,0.010735052708333331
+gpt-5-5-high,GPT-5.5 (high),openai,artificial-analysis-long-context-reasoning,0.03173883125
+gpt-5-5-low,GPT-5.5 (low),openai,gdpval-aa,0.030223592294206476
+gpt-5-5-low,GPT-5.5 (low),openai,tau3-banking,0.05951196348584903
+gpt-5-5-low,GPT-5.5 (low),openai,terminalbench-v2-1,0.05512474761798142
+gpt-5-5-low,GPT-5.5 (low),openai,scicode,0.00261470630787037
+gpt-5-5-low,GPT-5.5 (low),openai,humanitys-last-exam,0.004794213681649675
+gpt-5-5-low,GPT-5.5 (low),openai,gpqa-diamond,0.001337299558080808
+gpt-5-5-low,GPT-5.5 (low),openai,critpt,0.007844736607142857
+gpt-5-5-low,GPT-5.5 (low),openai,omniscience,0.0013847014583333334
+gpt-5-5-low,GPT-5.5 (low),openai,artificial-analysis-long-context-reasoning,0.03017188125
+gpt-5-4-mini,GPT-5.4 mini (xhigh),openai,gdpval-aa,0.09484043811159472
+gpt-5-4-mini,GPT-5.4 mini (xhigh),openai,tau3-banking,0.048350124626727685
+gpt-5-4-mini,GPT-5.4 mini (xhigh),openai,terminalbench-v2-1,0.21332069690493696
+gpt-5-4-mini,GPT-5.4 mini (xhigh),openai,scicode,0.017140938151041663
+gpt-5-4-mini,GPT-5.4 mini (xhigh),openai,humanitys-last-exam,0.018887208816033365
+gpt-5-4-mini,GPT-5.4 mini (xhigh),openai,gpqa-diamond,0.004821155776515152
+gpt-5-4-mini,GPT-5.4 mini (xhigh),openai,critpt,0.03498214419642857
+gpt-5-4-mini,GPT-5.4 mini (xhigh),openai,omniscience,0.00713899971875
+gpt-5-4-mini,GPT-5.4 mini (xhigh),openai,artificial-analysis-long-context-reasoning,0.0061063753125
+gpt-5-5-medium,GPT-5.5 (medium),openai,gdpval-aa,0.10673988393921155
+gpt-5-5-medium,GPT-5.5 (medium),openai,tau3-banking,0.07856767417894843
+gpt-5-5-medium,GPT-5.5 (medium),openai,terminalbench-v2-1,0.08074725635695658
+gpt-5-5-medium,GPT-5.5 (medium),openai,scicode,0.005184007523148148
+gpt-5-5-medium,GPT-5.5 (medium),openai,humanitys-last-exam,0.015782593547265987
+gpt-5-5-medium,GPT-5.5 (medium),openai,gpqa-diamond,0.0032756423611111115
+gpt-5-5-medium,GPT-5.5 (medium),openai,critpt,0.018349776785714287
+gpt-5-5-medium,GPT-5.5 (medium),openai,omniscience,0.004662834166666667
+gpt-5-5-medium,GPT-5.5 (medium),openai,artificial-analysis-long-context-reasoning,0.030816000000000003
+gpt-5-4-nano,GPT-5.4 nano (xhigh),openai,gdpval-aa,0.034864727158883446
+gpt-5-4-nano,GPT-5.4 nano (xhigh),openai,tau3-banking,0.015689885204575107
+gpt-5-4-nano,GPT-5.4 nano (xhigh),openai,terminalbench-v2-1,0.05232121247428569
+gpt-5-4-nano,GPT-5.4 nano (xhigh),openai,scicode,0.0016463993778935183
+gpt-5-4-nano,GPT-5.4 nano (xhigh),openai,humanitys-last-exam,0.005360651995481928
+gpt-5-4-nano,GPT-5.4 nano (xhigh),openai,gpqa-diamond,0.001331692361111111
+gpt-5-4-nano,GPT-5.4 nano (xhigh),openai,critpt,0.008891175803571428
+gpt-5-4-nano,GPT-5.4 nano (xhigh),openai,omniscience,0.0012436362708333334
+gpt-5-4-nano,GPT-5.4 nano (xhigh),openai,artificial-analysis-long-context-reasoning,0.00147793321875
+gpt-5-5,GPT-5.5 (xhigh),openai,gdpval-aa,0.2835885311034458
+gpt-5-5,GPT-5.5 (xhigh),openai,tau3-banking,0.15037980640831328
+gpt-5-5,GPT-5.5 (xhigh),openai,terminalbench-v2-1,0.20612035647962126
+gpt-5-5,GPT-5.5 (xhigh),openai,scicode,0.013206209490740741
+gpt-5-5,GPT-5.5 (xhigh),openai,humanitys-last-exam,0.04750378562326228
+gpt-5-5,GPT-5.5 (xhigh),openai,gpqa-diamond,0.009626583017676769
+gpt-5-5,GPT-5.5 (xhigh),openai,critpt,0.10083758035714287
+gpt-5-5,GPT-5.5 (xhigh),openai,omniscience,0.01894610125
+gpt-5-5,GPT-5.5 (xhigh),openai,artificial-analysis-long-context-reasoning,0.0324975
+llama-4-maverick,Llama 4 Maverick,meta,gdpval-aa,0.016819790577263793
+llama-4-maverick,Llama 4 Maverick,meta,tau3-banking,0.004530217634045039
+llama-4-maverick,Llama 4 Maverick,meta,terminalbench-v2-1,0.007785084002630161
+llama-4-maverick,Llama 4 Maverick,meta,scicode,8.977180266203702e-05
+llama-4-maverick,Llama 4 Maverick,meta,humanitys-last-exam,0.00012983371466635774
+llama-4-maverick,Llama 4 Maverick,meta,gpqa-diamond,5.5139094065656565e-05
+llama-4-maverick,Llama 4 Maverick,meta,critpt,0.00017049580357142855
+llama-4-maverick,Llama 4 Maverick,meta,omniscience,8.504922916666666e-06
+llama-4-maverick,Llama 4 Maverick,meta,artificial-analysis-long-context-reasoning,0.0021041423749999996
+llama-4-scout,Llama 4 Scout,meta,gdpval-aa,0.0030227390151515154
+llama-4-scout,Llama 4 Scout,meta,tau3-banking,0.0014591576288659792
+llama-4-scout,Llama 4 Scout,meta,terminalbench-v2-1,0.0026663013857677904
+llama-4-scout,Llama 4 Scout,meta,scicode,7.207049768518518e-05
+llama-4-scout,Llama 4 Scout,meta,humanitys-last-exam,0.00010906062615848008
+llama-4-scout,Llama 4 Scout,meta,gpqa-diamond,3.884900252525253e-05
+llama-4-scout,Llama 4 Scout,meta,critpt,0.00011322097321428573
+llama-4-scout,Llama 4 Scout,meta,omniscience,5.453666458333335e-06
+llama-4-scout,Llama 4 Scout,meta,artificial-analysis-long-context-reasoning,0.0010195446625
+gemini-3-1-pro-preview,Gemini 3.1 Pro Preview,google,gdpval-aa,0.04544787932103789
+gemini-3-1-pro-preview,Gemini 3.1 Pro Preview,google,tau3-banking,0.0677771088361332
+gemini-3-1-pro-preview,Gemini 3.1 Pro Preview,google,terminalbench-v2-1,0.09632816012017663
+gemini-3-1-pro-preview,Gemini 3.1 Pro Preview,google,scicode,0.0073936215277777785
+gemini-3-1-pro-preview,Gemini 3.1 Pro Preview,google,humanitys-last-exam,0.024594324953660797
+gemini-3-1-pro-preview,Gemini 3.1 Pro Preview,google,gpqa-diamond,0.004471650252525253
+gemini-3-1-pro-preview,Gemini 3.1 Pro Preview,google,critpt,0.029619801785714283
+gemini-3-1-pro-preview,Gemini 3.1 Pro Preview,google,omniscience,0.0022089280833333335
+gemini-3-1-pro-preview,Gemini 3.1 Pro Preview,google,artificial-analysis-long-context-reasoning,0.013294954999999999
+gemma-4-26b-a4b,Gemma 4 26B A4B (Reasoning),google,gdpval-aa,0.010873431911098661
+gemma-4-26b-a4b,Gemma 4 26B A4B (Reasoning),google,tau3-banking,0.006139825590926791
+gemma-4-26b-a4b,Gemma 4 26B A4B (Reasoning),google,terminalbench-v2-1,0.010919404049896303
+gemma-4-26b-a4b,Gemma 4 26B A4B (Reasoning),google,scicode,0.0002616901070601852
+gemma-4-26b-a4b,Gemma 4 26B A4B (Reasoning),google,humanitys-last-exam,0.0008500965077618167
+gemma-4-26b-a4b,Gemma 4 26B A4B (Reasoning),google,gpqa-diamond,0.000306783952020202
+gemma-4-26b-a4b,Gemma 4 26B A4B (Reasoning),google,critpt,0.0015352380892857146
+gemma-4-26b-a4b,Gemma 4 26B A4B (Reasoning),google,omniscience,0.00015495299791666668
+gemma-4-26b-a4b,Gemma 4 26B A4B (Reasoning),google,artificial-analysis-long-context-reasoning,0.0008964843687500001
+gemini-3-1-flash-lite-preview,Gemini 3.1 Flash-Lite,google,gdpval-aa,0.002767301865547517
+gemini-3-1-flash-lite-preview,Gemini 3.1 Flash-Lite,google,tau3-banking,0.003540987381456292
+gemini-3-1-flash-lite-preview,Gemini 3.1 Flash-Lite,google,terminalbench-v2-1,0.023911548803943965
+gemini-3-1-flash-lite-preview,Gemini 3.1 Flash-Lite,google,scicode,0.0015175426793981477
+gemini-3-1-flash-lite-preview,Gemini 3.1 Flash-Lite,google,humanitys-last-exam,0.0028062979465940685
+gemini-3-1-flash-lite-preview,Gemini 3.1 Flash-Lite,google,gpqa-diamond,0.0008104060921717172
+gemini-3-1-flash-lite-preview,Gemini 3.1 Flash-Lite,google,critpt,0.004320935044642857
+gemini-3-1-flash-lite-preview,Gemini 3.1 Flash-Lite,google,omniscience,0.00019489022916666668
+gemini-3-1-flash-lite-preview,Gemini 3.1 Flash-Lite,google,artificial-analysis-long-context-reasoning,0.0017017103125
+gemini-3-5-flash,Gemini 3.5 Flash (high),google,gdpval-aa,0.2900476835987163
+gemini-3-5-flash,Gemini 3.5 Flash (high),google,tau3-banking,0.08252448572942059
+gemini-3-5-flash,Gemini 3.5 Flash (high),google,terminalbench-v2-1,0.1444751391494575
+gemini-3-5-flash,Gemini 3.5 Flash (high),google,scicode,0.005681971354166666
+gemini-3-5-flash,Gemini 3.5 Flash (high),google,humanitys-last-exam,0.018470218721037997
+gemini-3-5-flash,Gemini 3.5 Flash (high),google,gpqa-diamond,0.0031407864583333344
+gemini-3-5-flash,Gemini 3.5 Flash (high),google,critpt,0.02749599107142857
+gemini-3-5-flash,Gemini 3.5 Flash (high),google,omniscience,0.0018021611250000002
+gemini-3-5-flash,Gemini 3.5 Flash (high),google,artificial-analysis-long-context-reasoning,0.011906805000000001
+gemini-2-5-pro,Gemini 2.5 Pro,google,gdpval-aa,0.0397729736600636
+gemini-2-5-pro,Gemini 2.5 Pro,google,tau3-banking,0.022131476424317804
+gemini-2-5-pro,Gemini 2.5 Pro,google,terminalbench-v2-1,0.07882223794096672
+gemini-2-5-pro,Gemini 2.5 Pro,google,scicode,0.0064932316984953695
+gemini-2-5-pro,Gemini 2.5 Pro,google,humanitys-last-exam,0.018255465419369787
+gemini-2-5-pro,Gemini 2.5 Pro,google,gpqa-diamond,0.004979567155934344
+gemini-2-5-pro,Gemini 2.5 Pro,google,critpt,0.016679016741071428
+gemini-2-5-pro,Gemini 2.5 Pro,google,omniscience,0.00215844140625
+gemini-2-5-pro,Gemini 2.5 Pro,google,artificial-analysis-long-context-reasoning,0.0085328984375
+claude-fable-5,"Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback)",anthropic,gdpval-aa,1.290998358737847
+claude-fable-5,"Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback)",anthropic,tau3-banking,0.27643911355639467
+claude-fable-5,"Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback)",anthropic,terminalbench-v2-1,0.5600661388411131
+claude-fable-5,"Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback)",anthropic,scicode,0.024086402378472222
+claude-fable-5,"Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback)",anthropic,humanitys-last-exam,0.12590305647358666
+claude-fable-5,"Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback)",anthropic,gpqa-diamond,0.014055648271780305
+claude-fable-5,"Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback)",anthropic,critpt,0.35130120724999997
+claude-fable-5,"Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback)",anthropic,omniscience,0.009103232650520833
+claude-fable-5,"Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback)",anthropic,artificial-analysis-long-context-reasoning,0.09787074375
+claude-sonnet-4-6-adaptive,"Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort)",anthropic,gdpval-aa,0.3228937169982244
+claude-sonnet-4-6-adaptive,"Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort)",anthropic,tau3-banking,0.07139628081569996
+claude-sonnet-4-6-adaptive,"Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort)",anthropic,terminalbench-v2-1,0.333949808669228
+claude-sonnet-4-6-adaptive,"Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort)",anthropic,scicode,0.01881645746527778
+claude-sonnet-4-6-adaptive,"Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort)",anthropic,humanitys-last-exam,0.11432665680027804
+claude-sonnet-4-6-adaptive,"Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort)",anthropic,gpqa-diamond,0.025861985795454547
+claude-sonnet-4-6-adaptive,"Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort)",anthropic,critpt,0.2187486857142857
+claude-sonnet-4-6-adaptive,"Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort)",anthropic,omniscience,0.00549986725
+claude-sonnet-4-6-adaptive,"Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort)",anthropic,artificial-analysis-long-context-reasoning,0.024068557499999997
+claude-4-5-haiku-reasoning,Claude 4.5 Haiku (Reasoning),anthropic,gdpval-aa,0.03610975046033978
+claude-4-5-haiku-reasoning,Claude 4.5 Haiku (Reasoning),anthropic,tau3-banking,0.01797169438884642
+claude-4-5-haiku-reasoning,Claude 4.5 Haiku (Reasoning),anthropic,terminalbench-v2-1,0.13949826503581345
+claude-4-5-haiku-reasoning,Claude 4.5 Haiku (Reasoning),anthropic,scicode,0.004220961805555556
+claude-4-5-haiku-reasoning,Claude 4.5 Haiku (Reasoning),anthropic,humanitys-last-exam,0.015560394925857276
+claude-4-5-haiku-reasoning,Claude 4.5 Haiku (Reasoning),anthropic,gpqa-diamond,0.004681968434343434
+claude-4-5-haiku-reasoning,Claude 4.5 Haiku (Reasoning),anthropic,critpt,0.010299601785714286
+claude-4-5-haiku-reasoning,Claude 4.5 Haiku (Reasoning),anthropic,omniscience,0.0015466872916666664
+claude-4-5-haiku-reasoning,Claude 4.5 Haiku (Reasoning),anthropic,artificial-analysis-long-context-reasoning,0.0075841862500000004
+claude-opus-4-7,"Claude Opus 4.7 (Adaptive Reasoning, Max Effort)",anthropic,gdpval-aa,0.8168694598914165
+claude-opus-4-7,"Claude Opus 4.7 (Adaptive Reasoning, Max Effort)",anthropic,tau3-banking,0.18211703890154657
+claude-opus-4-7,"Claude Opus 4.7 (Adaptive Reasoning, Max Effort)",anthropic,terminalbench-v2-1,0.6927487782033731
+claude-opus-4-7,"Claude Opus 4.7 (Adaptive Reasoning, Max Effort)",anthropic,scicode,0.0195271412037037
+claude-opus-4-7,"Claude Opus 4.7 (Adaptive Reasoning, Max Effort)",anthropic,humanitys-last-exam,0.08938369439295644
+claude-opus-4-7,"Claude Opus 4.7 (Adaptive Reasoning, Max Effort)",anthropic,gpqa-diamond,0.020504326073232326
+claude-opus-4-7,"Claude Opus 4.7 (Adaptive Reasoning, Max Effort)",anthropic,critpt,0.09888403571428571
+claude-opus-4-7,"Claude Opus 4.7 (Adaptive Reasoning, Max Effort)",anthropic,omniscience,0.0044414709375
+claude-opus-4-7,"Claude Opus 4.7 (Adaptive Reasoning, Max Effort)",anthropic,artificial-analysis-long-context-reasoning,0.048833715624999996
+claude-opus-4-8,"Claude Opus 4.8 (Adaptive Reasoning, Max Effort)",anthropic,gdpval-aa,0.723487981207303
+claude-opus-4-8,"Claude Opus 4.8 (Adaptive Reasoning, Max Effort)",anthropic,tau3-banking,0.18453373887271307
+claude-opus-4-8,"Claude Opus 4.8 (Adaptive Reasoning, Max Effort)",anthropic,terminalbench-v2-1,0.5705707363935402
+claude-opus-4-8,"Claude Opus 4.8 (Adaptive Reasoning, Max Effort)",anthropic,scicode,0.02220321759259259
+claude-opus-4-8,"Claude Opus 4.8 (Adaptive Reasoning, Max Effort)",anthropic,humanitys-last-exam,0.1028802939643188
+claude-opus-4-8,"Claude Opus 4.8 (Adaptive Reasoning, Max Effort)",anthropic,gpqa-diamond,0.01951797348484849
+claude-opus-4-8,"Claude Opus 4.8 (Adaptive Reasoning, Max Effort)",anthropic,critpt,0.12108069196428571
+claude-opus-4-8,"Claude Opus 4.8 (Adaptive Reasoning, Max Effort)",anthropic,omniscience,0.003082801770833333
+claude-opus-4-8,"Claude Opus 4.8 (Adaptive Reasoning, Max Effort)",anthropic,artificial-analysis-long-context-reasoning,0.049864090625
+ministral-3-8b,Ministral 3 8B,mistral,gdpval-aa,0.011470351136363636
+ministral-3-8b,Ministral 3 8B,mistral,tau3-banking,0.004945307989690721
+ministral-3-8b,Ministral 3 8B,mistral,terminalbench-v2-1,0.16722497415730334
+ministral-3-8b,Ministral 3 8B,mistral,scicode,4.603368055555555e-05
+ministral-3-8b,Ministral 3 8B,mistral,humanitys-last-exam,7.718245481927711e-05
+ministral-3-8b,Ministral 3 8B,mistral,gpqa-diamond,1.1853314393939396e-05
+ministral-3-8b,Ministral 3 8B,mistral,critpt,0.00015666348214285713
+ministral-3-8b,Ministral 3 8B,mistral,omniscience,3.246509375e-06
+ministral-3-8b,Ministral 3 8B,mistral,artificial-analysis-long-context-reasoning,0.0008888075625
+mistral-large-3,Mistral Large 3,mistral,gdpval-aa,0.017707708333333336
+mistral-large-3,Mistral Large 3,mistral,tau3-banking,0.026005658505154638
+mistral-large-3,Mistral Large 3,mistral,terminalbench-v2-1,0.012160508426966291
+mistral-large-3,Mistral Large 3,mistral,scicode,0.00016087282986111112
+mistral-large-3,Mistral Large 3,mistral,humanitys-last-exam,0.0002448593025949954
+mistral-large-3,Mistral Large 3,mistral,gpqa-diamond,8.003140782828283e-05
+mistral-large-3,Mistral Large 3,mistral,critpt,0.0005486763392857142
+mistral-large-3,Mistral Large 3,mistral,omniscience,1.0326302083333333e-05
+mistral-large-3,Mistral Large 3,mistral,artificial-analysis-long-context-reasoning,0.002970688125
+mistral-medium-3-5,Mistral Medium 3.5,mistral,gdpval-aa,0.09947028737500001
+mistral-medium-3-5,Mistral Medium 3.5,mistral,tau3-banking,0.07396033599226805
+mistral-medium-3-5,Mistral Medium 3.5,mistral,terminalbench-v2-1,0.3432640948033707
+mistral-medium-3-5,Mistral Medium 3.5,mistral,scicode,0.006624554253472221
+mistral-medium-3-5,Mistral Medium 3.5,mistral,humanitys-last-exam,0.025282815396200184
+mistral-medium-3-5,Mistral Medium 3.5,mistral,gpqa-diamond,0.004542096590909091
+mistral-medium-3-5,Mistral Medium 3.5,mistral,critpt,0.03018673392857143
+mistral-medium-3-5,Mistral Medium 3.5,mistral,omniscience,0.0018108431875000002
+mistral-medium-3-5,Mistral Medium 3.5,mistral,artificial-analysis-long-context-reasoning,0.01196831625
+ministral-3-3b,Ministral 3 3B,mistral,gdpval-aa,0.025314971212121208
+ministral-3-3b,Ministral 3 3B,mistral,tau3-banking,0.003709938402061856
+ministral-3-3b,Ministral 3 3B,mistral,terminalbench-v2-1,0.09607976329588015
+ministral-3-3b,Ministral 3 3B,mistral,scicode,3.7646759259259256e-05
+ministral-3-3b,Ministral 3 3B,mistral,humanitys-last-exam,6.086507182576461e-05
+ministral-3-3b,Ministral 3 3B,mistral,gpqa-diamond,9.963478535353537e-06
+ministral-3-3b,Ministral 3 3B,mistral,critpt,0.0001686874107142857
+ministral-3-3b,Ministral 3 3B,mistral,omniscience,2.3587125e-06
+ministral-3-3b,Ministral 3 3B,mistral,artificial-analysis-long-context-reasoning,0.0005921792500000001
+ministral-3-14b,Ministral 3 14B,mistral,gdpval-aa,0.03717255439393939
+ministral-3-14b,Ministral 3 14B,mistral,tau3-banking,0.008567567182130585
+ministral-3-14b,Ministral 3 14B,mistral,terminalbench-v2-1,0.0992497808988764
+ministral-3-14b,Ministral 3 14B,mistral,scicode,6.229079861111111e-05
+ministral-3-14b,Ministral 3 14B,mistral,humanitys-last-exam,8.348225208526415e-05
+ministral-3-14b,Ministral 3 14B,mistral,gpqa-diamond,1.602241161616162e-05
+ministral-3-14b,Ministral 3 14B,mistral,critpt,0.00015496785714285715
+ministral-3-14b,Ministral 3 14B,mistral,omniscience,4.2514791666666665e-06
+ministral-3-14b,Ministral 3 14B,mistral,artificial-analysis-long-context-reasoning,0.0011821315000000003
+devstral-2,Devstral 2,mistral,gdpval-aa,0
+devstral-2,Devstral 2,mistral,tau3-banking,0
+devstral-2,Devstral 2,mistral,terminalbench-v2-1,0
+devstral-2,Devstral 2,mistral,scicode,0
+devstral-2,Devstral 2,mistral,humanitys-last-exam,0
+devstral-2,Devstral 2,mistral,gpqa-diamond,0
+devstral-2,Devstral 2,mistral,critpt,0
+devstral-2,Devstral 2,mistral,omniscience,0
+devstral-2,Devstral 2,mistral,artificial-analysis-long-context-reasoning,0
+deepseek-v4-pro,"DeepSeek V4 Pro (Reasoning, Max Effort)",deepseek,gdpval-aa,0.008813995842727273
+deepseek-v4-pro,"DeepSeek V4 Pro (Reasoning, Max Effort)",deepseek,tau3-banking,0.0032855209814432987
+deepseek-v4-pro,"DeepSeek V4 Pro (Reasoning, Max Effort)",deepseek,terminalbench-v2-1,0.015023615651685394
+deepseek-v4-pro,"DeepSeek V4 Pro (Reasoning, Max Effort)",deepseek,scicode,0.0009467102864583332
+deepseek-v4-pro,"DeepSeek V4 Pro (Reasoning, Max Effort)",deepseek,humanitys-last-exam,0.005793920490326692
+deepseek-v4-pro,"DeepSeek V4 Pro (Reasoning, Max Effort)",deepseek,gpqa-diamond,0.001577533678977273
+deepseek-v4-pro,"DeepSeek V4 Pro (Reasoning, Max Effort)",deepseek,critpt,0.005805499513392858
+deepseek-v4-pro,"DeepSeek V4 Pro (Reasoning, Max Effort)",deepseek,omniscience,0.00069622435125
+deepseek-v4-pro,"DeepSeek V4 Pro (Reasoning, Max Effort)",deepseek,artificial-analysis-long-context-reasoning,0.0029007126750000005
+deepseek-v4-flash,"DeepSeek V4 Flash (Reasoning, Max Effort)",deepseek,gdpval-aa,0.00295358765969697
+deepseek-v4-flash,"DeepSeek V4 Flash (Reasoning, Max Effort)",deepseek,tau3-banking,0.0013424094749140895
+deepseek-v4-flash,"DeepSeek V4 Flash (Reasoning, Max Effort)",deepseek,terminalbench-v2-1,0.007339884134831461
+deepseek-v4-flash,"DeepSeek V4 Flash (Reasoning, Max Effort)",deepseek,scicode,0.0003072323090277778
+deepseek-v4-flash,"DeepSeek V4 Flash (Reasoning, Max Effort)",deepseek,humanitys-last-exam,0.0025005785518999075
+deepseek-v4-flash,"DeepSeek V4 Flash (Reasoning, Max Effort)",deepseek,gpqa-diamond,0.000516052152777778
+deepseek-v4-flash,"DeepSeek V4 Flash (Reasoning, Max Effort)",deepseek,critpt,0.0035603702500000005
+deepseek-v4-flash,"DeepSeek V4 Flash (Reasoning, Max Effort)",deepseek,omniscience,0.00024296123541666666
+deepseek-v4-flash,"DeepSeek V4 Flash (Reasoning, Max Effort)",deepseek,artificial-analysis-long-context-reasoning,0.0009526311375
+grok-4-3,Grok 4.3 (high),xai,gdpval-aa,0.017654553648564938
+grok-4-3,Grok 4.3 (high),xai,tau3-banking,0.013697952829573075
+grok-4-3,Grok 4.3 (high),xai,terminalbench-v2-1,0.09908984945902982
+grok-4-3,Grok 4.3 (high),xai,scicode,0.0010846252893518516
+grok-4-3,Grok 4.3 (high),xai,humanitys-last-exam,0.007716486547150139
+grok-4-3,Grok 4.3 (high),xai,gpqa-diamond,0.0014861288667929295
+grok-4-3,Grok 4.3 (high),xai,critpt,0.007964401785714285
+grok-4-3,Grok 4.3 (high),xai,omniscience,0.0009333187239583334
+grok-4-3,Grok 4.3 (high),xai,artificial-analysis-long-context-reasoning,0.007759942187500001
+grok-4-3-non-reasoning,Grok 4.3 (Non-reasoning),xai,gdpval-aa,0.02931718408134702
+grok-4-3-non-reasoning,Grok 4.3 (Non-reasoning),xai,tau3-banking,0.009608450686865772
+grok-4-3-non-reasoning,Grok 4.3 (Non-reasoning),xai,terminalbench-v2-1,0.265384690484532
+grok-4-3-non-reasoning,Grok 4.3 (Non-reasoning),xai,scicode,0.00032437717013888886
+grok-4-3-non-reasoning,Grok 4.3 (Non-reasoning),xai,humanitys-last-exam,0.0003269673887859129
+grok-4-3-non-reasoning,Grok 4.3 (Non-reasoning),xai,gpqa-diamond,0.00010230863320707073
+grok-4-3-non-reasoning,Grok 4.3 (Non-reasoning),xai,critpt,0.0005832767857142857
+grok-4-3-non-reasoning,Grok 4.3 (Non-reasoning),xai,omniscience,3.96959375e-05
+grok-4-3-non-reasoning,Grok 4.3 (Non-reasoning),xai,artificial-analysis-long-context-reasoning,0.00726379921875
+grok-build-0-1-06-16,Grok Build 0.1 0616,xai,gdpval-aa,0.023776779141019506
+grok-build-0-1-06-16,Grok Build 0.1 0616,xai,tau3-banking,0.018682867790116246
+grok-build-0-1-06-16,Grok Build 0.1 0616,xai,terminalbench-v2-1,0.14236086803376272
+grok-build-0-1-06-16,Grok Build 0.1 0616,xai,scicode,0.0010687777777777777
+grok-build-0-1-06-16,Grok Build 0.1 0616,xai,humanitys-last-exam,0.007814724281742354
+grok-build-0-1-06-16,Grok Build 0.1 0616,xai,gpqa-diamond,0.001439031881313131
+grok-build-0-1-06-16,Grok Build 0.1 0616,xai,critpt,0.008627033035714285
+grok-build-0-1-06-16,Grok Build 0.1 0616,xai,omniscience,0.0017241252708333334
+grok-build-0-1-06-16,Grok Build 0.1 0616,xai,artificial-analysis-long-context-reasoning,0.006417138125
+nova-2-0-pro,Nova 2.0 Pro Preview (Non-reasoning),aws,gdpval-aa,0.02967590435606061
+nova-2-0-pro,Nova 2.0 Pro Preview (Non-reasoning),aws,tau3-banking,0.022159272981099657
+nova-2-0-pro,Nova 2.0 Pro Preview (Non-reasoning),aws,terminalbench-v2-1,0.1799511329588015
+nova-2-0-pro,Nova 2.0 Pro Preview (Non-reasoning),aws,scicode,0.0007967849392361111
+nova-2-0-pro,Nova 2.0 Pro Preview (Non-reasoning),aws,humanitys-last-exam,0.0010081011787534753
+nova-2-0-pro,Nova 2.0 Pro Preview (Non-reasoning),aws,gpqa-diamond,0.000841036931818182
+nova-2-0-pro,Nova 2.0 Pro Preview (Non-reasoning),aws,critpt,0.0017927243303571428
+nova-2-0-pro,Nova 2.0 Pro Preview (Non-reasoning),aws,omniscience,0.0001302903645833333
+nova-2-0-pro,Nova 2.0 Pro Preview (Non-reasoning),aws,artificial-analysis-long-context-reasoning,0.00749778515625
+nova-2-0-pro-reasoning-medium,Nova 2.0 Pro Preview (medium),aws,gdpval-aa,0.029723459348303026
+nova-2-0-pro-reasoning-medium,Nova 2.0 Pro Preview (medium),aws,tau3-banking,0.014457227104948454
+nova-2-0-pro-reasoning-medium,Nova 2.0 Pro Preview (medium),aws,terminalbench-v2-1,0.09253358978426966
+nova-2-0-pro-reasoning-medium,Nova 2.0 Pro Preview (medium),aws,scicode,0.0028877481192129627
+nova-2-0-pro-reasoning-medium,Nova 2.0 Pro Preview (medium),aws,humanitys-last-exam,0.0093762687528962
+nova-2-0-pro-reasoning-medium,Nova 2.0 Pro Preview (medium),aws,gpqa-diamond,0.004181210542929294
+nova-2-0-pro-reasoning-medium,Nova 2.0 Pro Preview (medium),aws,critpt,0.009118541294642858
+nova-2-0-pro-reasoning-medium,Nova 2.0 Pro Preview (medium),aws,omniscience,0.0019202201562499997
+nova-2-0-pro-reasoning-medium,Nova 2.0 Pro Preview (medium),aws,artificial-analysis-long-context-reasoning,0.00863879375
+nova-2-0-pro-reasoning-low,Nova 2.0 Pro Preview (low),aws,gdpval-aa,0.017813631628787876
+nova-2-0-pro-reasoning-low,Nova 2.0 Pro Preview (low),aws,tau3-banking,0.02535051009450172
+nova-2-0-pro-reasoning-low,Nova 2.0 Pro Preview (low),aws,terminalbench-v2-1,0.151910702247191
+nova-2-0-pro-reasoning-low,Nova 2.0 Pro Preview (low),aws,scicode,0.0013523777488425926
+nova-2-0-pro-reasoning-low,Nova 2.0 Pro Preview (low),aws,humanitys-last-exam,0.0021082601801436516
+nova-2-0-pro-reasoning-low,Nova 2.0 Pro Preview (low),aws,gpqa-diamond,0.0017640640782828287
+nova-2-0-pro-reasoning-low,Nova 2.0 Pro Preview (low),aws,critpt,0.0028858761160714284
+nova-2-0-pro-reasoning-low,Nova 2.0 Pro Preview (low),aws,omniscience,0.0009542549479166668
+nova-2-0-pro-reasoning-low,Nova 2.0 Pro Preview (low),aws,artificial-analysis-long-context-reasoning,0.0086329328125
+minimax-m3,MiniMax-M3,minimax,gdpval-aa,0.058050754688591756
+minimax-m3,MiniMax-M3,minimax,tau3-banking,0.005311196200909725
+minimax-m3,MiniMax-M3,minimax,terminalbench-v2-1,0.04690039269564482
+minimax-m3,MiniMax-M3,minimax,scicode,0.0021619684027777775
+minimax-m3,MiniMax-M3,minimax,humanitys-last-exam,0.003240098111677479
+minimax-m3,MiniMax-M3,minimax,gpqa-diamond,0.0006179965909090909
+minimax-m3,MiniMax-M3,minimax,critpt,0.005971537232142857
+minimax-m3,MiniMax-M3,minimax,omniscience,0.00043695076875
+minimax-m3,MiniMax-M3,minimax,artificial-analysis-long-context-reasoning,0.0018597045000000002
+minimax-m2-7,MiniMax-M2.7,minimax,gdpval-aa,0.014221820986566502
+minimax-m2-7,MiniMax-M2.7,minimax,tau3-banking,0.004980959395987016
+minimax-m2-7,MiniMax-M2.7,minimax,terminalbench-v2-1,0.03634950630598648
+minimax-m2-7,MiniMax-M2.7,minimax,scicode,0.0005808676215277776
+minimax-m2-7,MiniMax-M2.7,minimax,humanitys-last-exam,0.0037764906742354036
+minimax-m2-7,MiniMax-M2.7,minimax,gpqa-diamond,0.0008114458333333334
+minimax-m2-7,MiniMax-M2.7,minimax,critpt,0.002987836607142857
+minimax-m2-7,MiniMax-M2.7,minimax,omniscience,0.0003623609625
+minimax-m2-7,MiniMax-M2.7,minimax,artificial-analysis-long-context-reasoning,0.00185063325
+nvidia-nemotron-3-ultra-550b-a55b,Nemotron 3 Ultra 550B A55B (Reasoning),nvidia,gdpval-aa,0.058882267227163824
+nvidia-nemotron-3-ultra-550b-a55b,Nemotron 3 Ultra 550B A55B (Reasoning),nvidia,tau3-banking,0.02435817953835217
+nvidia-nemotron-3-ultra-550b-a55b,Nemotron 3 Ultra 550B A55B (Reasoning),nvidia,terminalbench-v2-1,0.1250958280110638
+nvidia-nemotron-3-ultra-550b-a55b,Nemotron 3 Ultra 550B A55B (Reasoning),nvidia,scicode,0.0010322995008680556
+nvidia-nemotron-3-ultra-550b-a55b,Nemotron 3 Ultra 550B A55B (Reasoning),nvidia,humanitys-last-exam,0.01245460079500695
+nvidia-nemotron-3-ultra-550b-a55b,Nemotron 3 Ultra 550B A55B (Reasoning),nvidia,gpqa-diamond,0.002474031881313131
+nvidia-nemotron-3-ultra-550b-a55b,Nemotron 3 Ultra 550B A55B (Reasoning),nvidia,critpt,0.013911199999999999
+nvidia-nemotron-3-ultra-550b-a55b,Nemotron 3 Ultra 550B A55B (Reasoning),nvidia,omniscience,0.0004111307182291666
+nvidia-nemotron-3-ultra-550b-a55b,Nemotron 3 Ultra 550B A55B (Reasoning),nvidia,artificial-analysis-long-context-reasoning,0.0052836291562500005
+nvidia-nemotron-3-super-120b-a12b,NVIDIA Nemotron 3 Super 120B A12B (Reasoning),nvidia,gdpval-aa,0.07879375861524468
+nvidia-nemotron-3-super-120b-a12b,NVIDIA Nemotron 3 Super 120B A12B (Reasoning),nvidia,tau3-banking,0.0459296954023512
+nvidia-nemotron-3-super-120b-a12b,NVIDIA Nemotron 3 Super 120B A12B (Reasoning),nvidia,terminalbench-v2-1,0.11772637702631392
+nvidia-nemotron-3-super-120b-a12b,NVIDIA Nemotron 3 Super 120B A12B (Reasoning),nvidia,scicode,0.00019918854166666664
+nvidia-nemotron-3-super-120b-a12b,NVIDIA Nemotron 3 Super 120B A12B (Reasoning),nvidia,humanitys-last-exam,0.0030644183705977757
+nvidia-nemotron-3-super-120b-a12b,NVIDIA Nemotron 3 Super 120B A12B (Reasoning),nvidia,gpqa-diamond,0.0010932475852272728
+nvidia-nemotron-3-super-120b-a12b,NVIDIA Nemotron 3 Super 120B A12B (Reasoning),nvidia,critpt,0.0028755887946428564
+nvidia-nemotron-3-super-120b-a12b,NVIDIA Nemotron 3 Super 120B A12B (Reasoning),nvidia,omniscience,0.00021764996874999997
+nvidia-nemotron-3-super-120b-a12b,NVIDIA Nemotron 3 Super 120B A12B (Reasoning),nvidia,artificial-analysis-long-context-reasoning,0.0021905872500000002
+nvidia-nemotron-3-nano-30b-a3b-reasoning,NVIDIA Nemotron 3 Nano 30B A3B (Reasoning),nvidia,gdpval-aa,0.005040587458333334
+nvidia-nemotron-3-nano-30b-a3b-reasoning,NVIDIA Nemotron 3 Nano 30B A3B (Reasoning),nvidia,tau3-banking,0.008876921610824743
+nvidia-nemotron-3-nano-30b-a3b-reasoning,NVIDIA Nemotron 3 Nano 30B A3B (Reasoning),nvidia,terminalbench-v2-1,0.003809467780898876
+nvidia-nemotron-3-nano-30b-a3b-reasoning,NVIDIA Nemotron 3 Nano 30B A3B (Reasoning),nvidia,scicode,0.00011263016493055555
+nvidia-nemotron-3-nano-30b-a3b-reasoning,NVIDIA Nemotron 3 Nano 30B A3B (Reasoning),nvidia,humanitys-last-exam,0.0008416758031163114
+nvidia-nemotron-3-nano-30b-a3b-reasoning,NVIDIA Nemotron 3 Nano 30B A3B (Reasoning),nvidia,gpqa-diamond,0.00027390472222222224
+nvidia-nemotron-3-nano-30b-a3b-reasoning,NVIDIA Nemotron 3 Nano 30B A3B (Reasoning),nvidia,critpt,0.0006210216473214286
+nvidia-nemotron-3-nano-30b-a3b-reasoning,NVIDIA Nemotron 3 Nano 30B A3B (Reasoning),nvidia,omniscience,0.000138206179375
+nvidia-nemotron-3-nano-30b-a3b-reasoning,NVIDIA Nemotron 3 Nano 30B A3B (Reasoning),nvidia,artificial-analysis-long-context-reasoning,0.0003839166375
+kimi-k2-6,Kimi K2.6,kimi,gdpval-aa,0.07207693673316552
+kimi-k2-6,Kimi K2.6,kimi,tau3-banking,0.023833737661140733
+kimi-k2-6,Kimi K2.6,kimi,terminalbench-v2-1,0.07738205601072287
+kimi-k2-6,Kimi K2.6,kimi,scicode,0.0038632766493055548
+kimi-k2-6,Kimi K2.6,kimi,humanitys-last-exam,0.0215131765205051
+kimi-k2-6,Kimi K2.6,kimi,gpqa-diamond,0.005364700568181819
+kimi-k2-6,Kimi K2.6,kimi,critpt,0.04582329633928571
+kimi-k2-6,Kimi K2.6,kimi,omniscience,0.0032125399635416665
+kimi-k2-6,Kimi K2.6,kimi,artificial-analysis-long-context-reasoning,0.006406355968749999
+kimi-k2-7-code,Kimi K2.7 Code,kimi,gdpval-aa,0.05701005767424243
+kimi-k2-7-code,Kimi K2.7 Code,kimi,tau3-banking,0.018669265257731955
+kimi-k2-7-code,Kimi K2.7 Code,kimi,terminalbench-v2-1,0.05977746024344569
+kimi-k2-7-code,Kimi K2.7 Code,kimi,scicode,0.0019855123263888886
+kimi-k2-7-code,Kimi K2.7 Code,kimi,humanitys-last-exam,0.013087821385542169
+kimi-k2-7-code,Kimi K2.7 Code,kimi,gpqa-diamond,0.002475086868686869
+kimi-k2-7-code,Kimi K2.7 Code,kimi,critpt,0.016018989732142858
+kimi-k2-7-code,Kimi K2.7 Code,kimi,omniscience,0.002654034042708333
+kimi-k2-7-code,Kimi K2.7 Code,kimi,artificial-analysis-long-context-reasoning,0.00604281246875
+step-3-7-flash,Step 3.7 Flash,stepfun,gdpval-aa,0.011943663607387921
+step-3-7-flash,Step 3.7 Flash,stepfun,tau3-banking,0.005862754306304257
+step-3-7-flash,Step 3.7 Flash,stepfun,terminalbench-v2-1,0.03487591888937413
+step-3-7-flash,Step 3.7 Flash,stepfun,scicode,0.0022195009982638888
+step-3-7-flash,Step 3.7 Flash,stepfun,humanitys-last-exam,0.01119825609070899
+step-3-7-flash,Step 3.7 Flash,stepfun,gpqa-diamond,0.0021809588857323236
+step-3-7-flash,Step 3.7 Flash,stepfun,critpt,0.017183766919642855
+step-3-7-flash,Step 3.7 Flash,stepfun,omniscience,0.0010233516166666666
+step-3-7-flash,Step 3.7 Flash,stepfun,artificial-analysis-long-context-reasoning,0.00160928165625
+mimo-v2-5-pro,MiMo-V2.5-Pro,xiaomi,gdpval-aa,0.006620279709545454
+mimo-v2-5-pro,MiMo-V2.5-Pro,xiaomi,tau3-banking,0.0022842764701030928
+mimo-v2-5-pro,MiMo-V2.5-Pro,xiaomi,terminalbench-v2-1,0.011427574816853931
+mimo-v2-5-pro,MiMo-V2.5-Pro,xiaomi,scicode,0.00041103598090277776
+mimo-v2-5-pro,MiMo-V2.5-Pro,xiaomi,humanitys-last-exam,0.002979155906510658
+mimo-v2-5-pro,MiMo-V2.5-Pro,xiaomi,gpqa-diamond,0.0007511285606060608
+mimo-v2-5-pro,MiMo-V2.5-Pro,xiaomi,critpt,0.0035784913794642856
+mimo-v2-5-pro,MiMo-V2.5-Pro,xiaomi,omniscience,0.00035297336406249995
+mimo-v2-5-pro,MiMo-V2.5-Pro,xiaomi,artificial-analysis-long-context-reasoning,0.002990370796875
+kat-coder-pro-v1,KAT-Coder-Pro V1,kwaikat,gdpval-aa,0.0139922334248916
+kat-coder-pro-v1,KAT-Coder-Pro V1,kwaikat,tau3-banking,0.003940401623260839
+kat-coder-pro-v1,KAT-Coder-Pro V1,kwaikat,terminalbench-v2-1,0.0211780354793512
+kat-coder-pro-v1,KAT-Coder-Pro V1,kwaikat,scicode,0.00011606302083333331
+kat-coder-pro-v1,KAT-Coder-Pro V1,kwaikat,humanitys-last-exam,3.991840245597775e-05
+kat-coder-pro-v1,KAT-Coder-Pro V1,kwaikat,gpqa-diamond,4.464734848484848e-05
+kat-coder-pro-v1,KAT-Coder-Pro V1,kwaikat,critpt,0.00028335214285714284
+kat-coder-pro-v1,KAT-Coder-Pro V1,kwaikat,omniscience,7.475856249999999e-06
+kat-coder-pro-v1,KAT-Coder-Pro V1,kwaikat,artificial-analysis-long-context-reasoning,0.0017716717499999999
+glm-5-1,GLM-5.1 (Reasoning),zai,gdpval-aa,0.07377471434611665
+glm-5-1,GLM-5.1 (Reasoning),zai,tau3-banking,0.032144372669721435
+glm-5-1,GLM-5.1 (Reasoning),zai,terminalbench-v2-1,0.06632097354545317
+glm-5-1,GLM-5.1 (Reasoning),zai,scicode,0.006756276736111111
+glm-5-1,GLM-5.1 (Reasoning),zai,humanitys-last-exam,0.02085486585959222
+glm-5-1,GLM-5.1 (Reasoning),zai,gpqa-diamond,0.004896159217171719
+glm-5-1,GLM-5.1 (Reasoning),zai,critpt,0.024431968750000005
+glm-5-1,GLM-5.1 (Reasoning),zai,omniscience,0.0012831099458333335
+glm-5-1,GLM-5.1 (Reasoning),zai,artificial-analysis-long-context-reasoning,0.009957067125
+glm-5-2,GLM-5.2 (max),zai,gdpval-aa,0.23242118352422847
+glm-5-2,GLM-5.2 (max),zai,tau3-banking,0.06301619889358569
+glm-5-2,GLM-5.2 (max),zai,terminalbench-v2-1,0.15429607302496315
+glm-5-2,GLM-5.2 (max),zai,scicode,0.004614115914351852
+glm-5-2,GLM-5.2 (max),zai,humanitys-last-exam,0.022379358677015758
+glm-5-2,GLM-5.2 (max),zai,gpqa-diamond,0.005472933648989901
+glm-5-2,GLM-5.2 (max),zai,critpt,0.03014941392857143
+glm-5-2,GLM-5.2 (max),zai,omniscience,0.0010737395416666668
+glm-5-2,GLM-5.2 (max),zai,artificial-analysis-long-context-reasoning,0.009632238875
+qwen3-6-35b-a3b,Qwen3.6 35B A3B (Reasoning),alibaba,gdpval-aa,0.04729324984469697
+qwen3-6-35b-a3b,Qwen3.6 35B A3B (Reasoning),alibaba,tau3-banking,0.01526484214089347
+qwen3-6-35b-a3b,Qwen3.6 35B A3B (Reasoning),alibaba,terminalbench-v2-1,0.09930098815543069
+qwen3-6-35b-a3b,Qwen3.6 35B A3B (Reasoning),alibaba,scicode,0.0010612749606481481
+qwen3-6-35b-a3b,Qwen3.6 35B A3B (Reasoning),alibaba,humanitys-last-exam,0.009735403304158945
+qwen3-6-35b-a3b,Qwen3.6 35B A3B (Reasoning),alibaba,gpqa-diamond,0.0009271880669191922
+qwen3-6-35b-a3b,Qwen3.6 35B A3B (Reasoning),alibaba,critpt,0.002937672883035714
+qwen3-6-35b-a3b,Qwen3.6 35B A3B (Reasoning),alibaba,omniscience,0.00040240557052083337
+qwen3-6-35b-a3b,Qwen3.6 35B A3B (Reasoning),alibaba,artificial-analysis-long-context-reasoning,0.001866925854375
+qwen3-7-max,Qwen3.7 Max,alibaba,gdpval-aa,0.11167306517992424
+qwen3-7-max,Qwen3.7 Max,alibaba,tau3-banking,0.1461330213273196
+qwen3-7-max,Qwen3.7 Max,alibaba,terminalbench-v2-1,0.19098817474250934
+qwen3-7-max,Qwen3.7 Max,alibaba,scicode,0.004866382378472222
+qwen3-7-max,Qwen3.7 Max,alibaba,humanitys-last-exam,0.03118987995250232
+qwen3-7-max,Qwen3.7 Max,alibaba,gpqa-diamond,0.005116905776515151
+qwen3-7-max,Qwen3.7 Max,alibaba,critpt,0.05098561160714286
+qwen3-7-max,Qwen3.7 Max,alibaba,omniscience,0.0017244765104166664
+qwen3-7-max,Qwen3.7 Max,alibaba,artificial-analysis-long-context-reasoning,0.01741056875
+qwen3-5-397b-a17b,Qwen3.5 397B A17B (Reasoning),alibaba,gdpval-aa,0.0619163259090909
+qwen3-5-397b-a17b,Qwen3.5 397B A17B (Reasoning),alibaba,tau3-banking,0.03330484948453608
+qwen3-5-397b-a17b,Qwen3.5 397B A17B (Reasoning),alibaba,terminalbench-v2-1,0.20746836629213478
+qwen3-5-397b-a17b,Qwen3.5 397B A17B (Reasoning),alibaba,scicode,0.002095584201388889
+qwen3-5-397b-a17b,Qwen3.5 397B A17B (Reasoning),alibaba,humanitys-last-exam,0.010065809951343837
+qwen3-5-397b-a17b,Qwen3.5 397B A17B (Reasoning),alibaba,gpqa-diamond,0.001574916666666667
+qwen3-5-397b-a17b,Qwen3.5 397B A17B (Reasoning),alibaba,critpt,0.01024905
+qwen3-5-397b-a17b,Qwen3.5 397B A17B (Reasoning),alibaba,omniscience,0.0019179866375
+qwen3-5-397b-a17b,Qwen3.5 397B A17B (Reasoning),alibaba,artificial-analysis-long-context-reasoning,0.004512885
+qwen3-6-27b,Qwen3.6 27B (Reasoning),alibaba,gdpval-aa,0.07361866136363636
+qwen3-6-27b,Qwen3.6 27B (Reasoning),alibaba,tau3-banking,0.028321644845360826
+qwen3-6-27b,Qwen3.6 27B (Reasoning),alibaba,terminalbench-v2-1,0.12585472134831457
+qwen3-6-27b,Qwen3.6 27B (Reasoning),alibaba,scicode,0.001677878125
+qwen3-6-27b,Qwen3.6 27B (Reasoning),alibaba,humanitys-last-exam,0.013502192863762743
+qwen3-6-27b,Qwen3.6 27B (Reasoning),alibaba,gpqa-diamond,0.0026341541666666675
+qwen3-6-27b,Qwen3.6 27B (Reasoning),alibaba,critpt,0.010913961964285714
+qwen3-6-27b,Qwen3.6 27B (Reasoning),alibaba,omniscience,0.004251175975
+qwen3-6-27b,Qwen3.6 27B (Reasoning),alibaba,artificial-analysis-long-context-reasoning,0.0045013545
+qwen3-5-122b-a10b,Qwen3.5 122B A10B (Reasoning),alibaba,gdpval-aa,0.03998594030303031
+qwen3-5-122b-a10b,Qwen3.5 122B A10B (Reasoning),alibaba,tau3-banking,0.02231645429553265
+qwen3-5-122b-a10b,Qwen3.5 122B A10B (Reasoning),alibaba,terminalbench-v2-1,0.1528428756554307
+qwen3-5-122b-a10b,Qwen3.5 122B A10B (Reasoning),alibaba,scicode,0.0013824890046296296
+qwen3-5-122b-a10b,Qwen3.5 122B A10B (Reasoning),alibaba,humanitys-last-exam,0.010523745481927712
+qwen3-5-122b-a10b,Qwen3.5 122B A10B (Reasoning),alibaba,gpqa-diamond,0.001422858080808081
+qwen3-5-122b-a10b,Qwen3.5 122B A10B (Reasoning),alibaba,critpt,0.007697965357142856
+qwen3-5-122b-a10b,Qwen3.5 122B A10B (Reasoning),alibaba,omniscience,0.0017040734583333335
+qwen3-5-122b-a10b,Qwen3.5 122B A10B (Reasoning),alibaba,artificial-analysis-long-context-reasoning,0.0033198039999999996
+qwen3-6-plus,Qwen3.6 Plus,alibaba,gdpval-aa,0.08580120263900257
+qwen3-6-plus,Qwen3.6 Plus,alibaba,tau3-banking,0.04869537152745481
+qwen3-6-plus,Qwen3.6 Plus,alibaba,terminalbench-v2-1,0.15058359225304283
+qwen3-6-plus,Qwen3.6 Plus,alibaba,scicode,0.0012452022569444444
+qwen3-6-plus,Qwen3.6 Plus,alibaba,humanitys-last-exam,0.011715738357275254
+qwen3-6-plus,Qwen3.6 Plus,alibaba,gpqa-diamond,0.001913736426767677
+qwen3-6-plus,Qwen3.6 Plus,alibaba,critpt,0.009550649107142858
+qwen3-6-plus,Qwen3.6 Plus,alibaba,omniscience,0.0009692556249999998
+qwen3-6-plus,Qwen3.6 Plus,alibaba,artificial-analysis-long-context-reasoning,0.003360723125
+qwen3-7-plus,Qwen3.7 Plus,alibaba,gdpval-aa,0.004881939283190114
+qwen3-7-plus,Qwen3.7 Plus,alibaba,tau3-banking,0.004417425820825462
+qwen3-7-plus,Qwen3.7 Plus,alibaba,terminalbench-v2-1,0.0200501257172216
+qwen3-7-plus,Qwen3.7 Plus,alibaba,scicode,0.0008657804861111109
+qwen3-7-plus,Qwen3.7 Plus,alibaba,humanitys-last-exam,0.005571252613531048
+qwen3-7-plus,Qwen3.7 Plus,alibaba,gpqa-diamond,0.0009442924621212121
+qwen3-7-plus,Qwen3.7 Plus,alibaba,critpt,0.00939328267857143
+qwen3-7-plus,Qwen3.7 Plus,alibaba,omniscience,0.00026480317083333324
+qwen3-7-plus,Qwen3.7 Plus,alibaba,artificial-analysis-long-context-reasoning,0.00278494925
+ring-2-6-1t,Ring-2.6-1T,inclusionai,gdpval-aa,0.04772180553030303
+ring-2-6-1t,Ring-2.6-1T,inclusionai,tau3-banking,0.03171169501718213
+ring-2-6-1t,Ring-2.6-1T,inclusionai,terminalbench-v2-1,0.23236232902621723
+ring-2-6-1t,Ring-2.6-1T,inclusionai,scicode,0.0016307303530092594
+ring-2-6-1t,Ring-2.6-1T,inclusionai,humanitys-last-exam,0.010049283653846153
+ring-2-6-1t,Ring-2.6-1T,inclusionai,gpqa-diamond,0.001283403061868687
+ring-2-6-1t,Ring-2.6-1T,inclusionai,critpt,0.017453729821428572
+ring-2-6-1t,Ring-2.6-1T,inclusionai,omniscience,0.0006065123041666667
+ring-2-6-1t,Ring-2.6-1T,inclusionai,artificial-analysis-long-context-reasoning,0.002223241375
+gpt-5-4,GPT-5.4 (xhigh),openai,gdpval-aa,0.32943853624619635
+gpt-5-4,GPT-5.4 (xhigh),openai,tau3-banking,0.16495218559778185
+gpt-5-4,GPT-5.4 (xhigh),openai,terminalbench-v2-1,0.2317642437543334
+gpt-5-4,GPT-5.4 (xhigh),openai,scicode,0.016931007667824072
+gpt-5-4,GPT-5.4 (xhigh),openai,humanitys-last-exam,0.031158365529425396
+gpt-5-4,GPT-5.4 (xhigh),openai,gpqa-diamond,0.005732763573232324
+gpt-5-4,GPT-5.4 (xhigh),openai,critpt,0.07644399107142856
+gpt-5-4,GPT-5.4 (xhigh),openai,omniscience,0.013626633541666665
+gpt-5-4,GPT-5.4 (xhigh),openai,artificial-analysis-long-context-reasoning,0.016782128125

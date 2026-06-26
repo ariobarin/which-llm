@@ -54,9 +54,19 @@ jobs:
             git switch -C "$REFRESH_BRANCH" "$GITHUB_SHA"
             git add skills/which-llm/artifacts/models_enriched.csv \
                     skills/which-llm/artifacts/provider_endpoints.csv \
+                    skills/which-llm/artifacts/benchmark_token_counts.csv \
+                    skills/which-llm/artifacts/index_cost_by_evaluation.csv \
+                    skills/which-llm/artifacts/prompt_performance.csv \
+                    skills/which-llm/artifacts/multilingual_scores.csv \
+                    skills/which-llm/artifacts/omniscience_breakdown.csv \
                     skills/which-llm/artifacts/unmatched.txt \
                     plugins/which-llm/skills/which-llm/artifacts/models_enriched.csv \
                     plugins/which-llm/skills/which-llm/artifacts/provider_endpoints.csv \
+                    plugins/which-llm/skills/which-llm/artifacts/benchmark_token_counts.csv \
+                    plugins/which-llm/skills/which-llm/artifacts/index_cost_by_evaluation.csv \
+                    plugins/which-llm/skills/which-llm/artifacts/prompt_performance.csv \
+                    plugins/which-llm/skills/which-llm/artifacts/multilingual_scores.csv \
+                    plugins/which-llm/skills/which-llm/artifacts/omniscience_breakdown.csv \
                     plugins/which-llm/skills/which-llm/artifacts/unmatched.txt
             if git diff --cached --quiet; then
               echo "No artifact changes; nothing to commit."

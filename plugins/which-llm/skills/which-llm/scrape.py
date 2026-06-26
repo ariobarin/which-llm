@@ -9,6 +9,16 @@ payload, locates the full model array (the `defaultData` prop), and dumps:
   artifacts/models.csv           local flat rows for enrichment
   artifacts/provider_endpoints.csv
                                  provider-specific endpoint rows
+  artifacts/benchmark_token_counts.csv
+                                 per-benchmark token accounting
+  artifacts/index_cost_by_evaluation.csv
+                                 per-evaluation weighted index costs
+  artifacts/prompt_performance.csv
+                                 prompt-length performance rows
+  artifacts/multilingual_scores.csv
+                                 multilingual score and token rows
+  artifacts/omniscience_breakdown.csv
+                                 Omniscience category rows
 
 Run:
   python scrape.py            use cached RSC or HTML if present
@@ -40,6 +50,11 @@ RSC_PATH = ART / "models.rsc"
 JSON_PATH = ART / "models.json"
 CSV_PATH = ART / "models.csv"
 HOST_CSV_PATH = ART / "provider_endpoints.csv"
+BENCHMARK_TOKENS_CSV_PATH = ART / "benchmark_token_counts.csv"
+INDEX_COST_CSV_PATH = ART / "index_cost_by_evaluation.csv"
+PROMPT_PERFORMANCE_CSV_PATH = ART / "prompt_performance.csv"
+MULTILINGUAL_CSV_PATH = ART / "multilingual_scores.csv"
+OMNISCIENCE_CSV_PATH = ART / "omniscience_breakdown.csv"
 ENRICHED_CSV_PATH = ART / "models_enriched.csv"
 
 # Minimum sanity bounds on a parse. If we come back below these the page
@@ -199,9 +214,12 @@ CSV_FIELDS = [
     "model_family_slug",
     "creator_name",
     "creator_slug",
+    "model_creator_id",
     "release_date",
     "knowledge_cutoff_date",
     "deprecated",
+    "deleted",
+    "deprecated_to",
     # The two chart axes
     "intelligence_index",
     "intelligence_index_cost_usd",
@@ -257,6 +275,11 @@ CSV_FIELDS = [
     "cache_write_price",
     "cache_hit_rate",
     "cache_hit_discount_percent",
+    "price_per_1k_1mp_images",
+    "fallback_price_input",
+    "fallback_price_output",
+    "fallback_price_cache_hit",
+    "fallback_price_cache_write",
     # Capability flags
     "reasoning_model",
     "reasoning_style",
@@ -276,14 +299,22 @@ CSV_FIELDS = [
     "output_modality_video",
     # Size & context
     "context_window_tokens",
+    "context_window_formatted",
     "parameters_billions",
     "active_parameters_billions",
+    "inference_parameters_active_billions",
     "size_class",
     "output_tokens",
     "model_id",
+    "tokenizer_id",
     "display_order",
     "model_url",
     "hosts_url",
+    "computed_performance_host_model_id",
+    "performance_data_source_type",
+    "performance_data_source_provider_name",
+    "performance_data_source_provider_url",
+    "show_host_model_evals",
     "open_source_categorization",
     "license_name",
     "license_url",
@@ -300,6 +331,8 @@ CSV_FIELDS = [
     # For reasoning models both include thinking time, so they read slower.
     "ttft_seconds",
     "e2e_response_seconds",
+    "intelligence_index_time_per_task_seconds",
+    "index_compute",
     "output_speed_median_tokens_per_second",
     "output_speed_p05_tokens_per_second",
     "output_speed_p25_tokens_per_second",
@@ -341,6 +374,14 @@ CSV_FIELDS = [
     "briefcase_avg_turns_per_task",
     "briefcase_total_tool_calls",
     "briefcase_total_tool_ms",
+    "briefcase_cost_total_usd",
+    "briefcase_cost_input_usd",
+    "briefcase_cost_non_cache_input_usd",
+    "briefcase_cost_cache_read_usd",
+    "briefcase_cost_cache_write_usd",
+    "briefcase_cost_output_usd",
+    "briefcase_cost_reasoning_usd",
+    "briefcase_cost_answer_usd",
     "multilingual_average",
     "multilingual_average_global_mmlu_lite",
     "multilingual_average_mgsm",
@@ -360,6 +401,7 @@ CSV_FIELDS = [
     "representative_output_tokens",
     "representative_reasoning_tokens",
     "representative_tokens_updated_at",
+    "additional_text",
     # Prompt-length performance slices.
     "prompt_100k_output_speed_tokens_per_second",
     "prompt_100k_ttfc_seconds",
@@ -408,9 +450,87 @@ HOST_CSV_FIELDS = [
     "supports_images_input_note",
     "cache_pricing_notes",
     "image_input_pricing_notes",
+    "gpqa_16x_min",
+    "gpqa_16x_max",
+    "gpqa_16x_quartile_25",
     "gpqa_16x_median",
+    "gpqa_16x_quartile_75",
+    "aime25_32x_min",
+    "aime25_32x_max",
+    "aime25_32x_quartile_25",
     "aime25_32x_median",
+    "aime25_32x_quartile_75",
+    "ifbench_8x_min",
+    "ifbench_8x_max",
+    "ifbench_8x_quartile_25",
     "ifbench_8x_median",
+    "ifbench_8x_quartile_75",
+]
+
+BENCHMARK_TOKENS_CSV_FIELDS = [
+    "model_slug",
+    "model_name",
+    "model_creator_slug",
+    "benchmark",
+    "input_tokens",
+    "answer_tokens",
+    "reasoning_tokens",
+    "cacheable_input_tokens",
+]
+
+INDEX_COST_CSV_FIELDS = [
+    "model_slug",
+    "model_name",
+    "model_creator_slug",
+    "evaluation_slug",
+    "weighted_cost_per_task_usd",
+]
+
+PROMPT_PERFORMANCE_CSV_FIELDS = [
+    "model_slug",
+    "model_name",
+    "model_creator_slug",
+    "prompt_length_type",
+    "median_output_speed_tokens_per_second",
+    "median_time_to_first_chunk_seconds",
+    "median_time_to_first_reasoning_chunk_seconds",
+    "median_estimated_total_seconds_for_100_output_tokens",
+    "median_time_to_first_answer_token_seconds",
+    "median_end_to_end_response_time_seconds",
+]
+
+MULTILINGUAL_CSV_FIELDS = [
+    "model_slug",
+    "model_name",
+    "model_creator_slug",
+    "language",
+    "score",
+    "input_tokens",
+    "answer_tokens",
+    "output_tokens",
+    "reasoning_tokens",
+    "total_input_tokens_api",
+    "total_answer_tokens_api",
+    "total_reasoning_tokens_api",
+]
+
+OMNISCIENCE_CSV_FIELDS = [
+    "model_slug",
+    "model_name",
+    "model_creator_slug",
+    "category",
+    "subcategory",
+    "split",
+    "accuracy",
+    "omniscience",
+    "attempt_rate",
+    "hallucination_rate",
+    "non_hallucination_rate",
+    "num_correct",
+    "num_incorrect",
+    "total_questions",
+    "num_not_attempted",
+    "num_partial_answer",
 ]
 
 PROMPT_LENGTH_TYPES = [
@@ -453,6 +573,15 @@ def _d(v) -> dict:
     return v if isinstance(v, dict) else {}
 
 
+def _identity(m: dict) -> dict:
+    creators = _d(m.get("model_creators"))
+    return {
+        "model_slug": _f(m, "slug"),
+        "model_name": _f(m, "name"),
+        "model_creator_slug": _clean(creators.get("slug")),
+    }
+
+
 def _prompt_metrics(m: dict) -> dict:
     by_type = {
         item.get("prompt_length_type"): item
@@ -477,11 +606,14 @@ def extra_fields(m: dict) -> dict:
     briefcase_analytical = _d(briefcase.get("analyticalQuality"))
     briefcase_presentation = _d(briefcase.get("presentation"))
     briefcase_turns = _d(briefcase.get("turns"))
+    briefcase_cost = _d(m.get("briefcaseCost"))
     multilingual = _d(m.get("multilingual_aa"))
     openness = _d(m.get("openness"))
     training = _d(m.get("training_information"))
     reasoning = _d(m.get("reasoning_properties"))
     representative = _d(m.get("representative_query_token_counts"))
+    performance_source = _d(m.get("performanceDataSource"))
+    fallback_price = _d(m.get("fallbackPrice"))
 
     return {
         "gdpval_v2": _f(m, "gdpval_v2"),
@@ -493,6 +625,11 @@ def extra_fields(m: dict) -> dict:
         "cache_write_price": _f(m, "cacheWritePrice"),
         "cache_hit_rate": _f(m, "cacheHitRate"),
         "cache_hit_discount_percent": _f(m, "cache_hit_discount_percent"),
+        "price_per_1k_1mp_images": _f(m, "price_per_1k_1mp_images"),
+        "fallback_price_input": _clean(fallback_price.get("input")),
+        "fallback_price_output": _clean(fallback_price.get("output")),
+        "fallback_price_cache_hit": _clean(fallback_price.get("cacheHit")),
+        "fallback_price_cache_write": _clean(fallback_price.get("cacheWrite")),
         "reasoning_style": _clean(reasoning.get("style")),
         "reasoning_varied": _clean(reasoning.get("varied_reasoning")),
         "reasoning_starts_thinking_by_default": _clean(
@@ -501,9 +638,19 @@ def extra_fields(m: dict) -> dict:
         "reasoning_pass_back_reasoning": _clean(reasoning.get("pass_back_reasoning")),
         "output_tokens": _f(m, "output_tokens"),
         "model_id": _f(m, "id"),
+        "tokenizer_id": _f(m, "tokenizer_id"),
         "display_order": _f(m, "display_order"),
         "model_url": _f(m, "model_url"),
         "hosts_url": _f(m, "hosts_url"),
+        "computed_performance_host_model_id": _f(m, "computed_performance_host_model_id"),
+        "performance_data_source_type": _clean(performance_source.get("type")),
+        "performance_data_source_provider_name": _clean(
+            performance_source.get("providerName")
+        ),
+        "performance_data_source_provider_url": _clean(
+            performance_source.get("providerUrl")
+        ),
+        "show_host_model_evals": _f(m, "show_host_model_evals"),
         "open_source_categorization": _f(m, "open_source_categorization"),
         "license_name": _f(m, "license_name"),
         "license_url": _f(m, "license_url"),
@@ -516,6 +663,8 @@ def extra_fields(m: dict) -> dict:
         "openness_data_posttrain_access": _clean(openness.get("dataPosttrainAccess")),
         "openness_data_posttrain_license": _clean(openness.get("dataPosttrainLicense")),
         "training_tokens_trillions": _clean(training.get("training_tokens_trillions")),
+        "intelligence_index_time_per_task_seconds": _f(m, "intelligenceIndexTimePerTask"),
+        "index_compute": _f(m, "indexCompute"),
         "output_speed_median_tokens_per_second": _clean(timescale.get("median_output_speed")),
         "output_speed_p05_tokens_per_second": _clean(timescale.get("percentile_05_output_speed")),
         "output_speed_p25_tokens_per_second": _clean(timescale.get("quartile_25_output_speed")),
@@ -559,6 +708,14 @@ def extra_fields(m: dict) -> dict:
         "briefcase_avg_turns_per_task": _clean(briefcase_turns.get("avgPerTask")),
         "briefcase_total_tool_calls": _clean(briefcase.get("totalToolCalls")),
         "briefcase_total_tool_ms": _clean(briefcase.get("totalToolMs")),
+        "briefcase_cost_total_usd": _clean(briefcase_cost.get("total")),
+        "briefcase_cost_input_usd": _clean(briefcase_cost.get("input")),
+        "briefcase_cost_non_cache_input_usd": _clean(briefcase_cost.get("nonCacheInput")),
+        "briefcase_cost_cache_read_usd": _clean(briefcase_cost.get("cacheRead")),
+        "briefcase_cost_cache_write_usd": _clean(briefcase_cost.get("cacheWrite")),
+        "briefcase_cost_output_usd": _clean(briefcase_cost.get("output")),
+        "briefcase_cost_reasoning_usd": _clean(briefcase_cost.get("reasoning")),
+        "briefcase_cost_answer_usd": _clean(briefcase_cost.get("answer")),
         "multilingual_average": _clean(multilingual.get("average")),
         "multilingual_average_global_mmlu_lite": _clean(
             multilingual.get("average_global_mmlu_lite")
@@ -578,6 +735,7 @@ def extra_fields(m: dict) -> dict:
         "representative_output_tokens": _clean(representative.get("output_tokens")),
         "representative_reasoning_tokens": _clean(representative.get("reasoning_tokens")),
         "representative_tokens_updated_at": _clean(representative.get("updated_at")),
+        "additional_text": _f(m, "additional_text"),
         **_prompt_metrics(m),
     }
 
@@ -625,9 +783,12 @@ def flatten(m: dict) -> dict:
         "model_family_slug": _f(m, "model_family_slug"),
         "creator_name": _clean(creators.get("name")),
         "creator_slug": _clean(creators.get("slug")),
+        "model_creator_id": _f(m, "model_creator_id"),
         "release_date": _f(m, "release_date"),
         "knowledge_cutoff_date": _f(m, "knowledge_cutoff_date"),
         "deprecated": _f(m, "deprecated"),
+        "deleted": _f(m, "deleted"),
+        "deprecated_to": _f(m, "deprecated_to"),
 
         "intelligence_index": _f(m, "intelligence_index"),
         "intelligence_index_cost_usd": _clean(cost.get("total_cost")),
@@ -685,8 +846,13 @@ def flatten(m: dict) -> dict:
         "output_modality_video": _f(m, "output_modality_video"),
 
         "context_window_tokens": _f(m, "context_window_tokens"),
+        "context_window_formatted": _f(m, "contextWindowFormatted"),
         "parameters_billions": _f(m, "parameters"),
         "active_parameters_billions": _f(m, "activeParams"),
+        "inference_parameters_active_billions": _f(
+            m,
+            "inference_parameters_active_billions",
+        ),
         "size_class": _f(m, "size_class"),
 
         "ttft_seconds": _pos(ttft.get("total_time")),
@@ -736,11 +902,170 @@ def flatten_host_models(models: list[dict]) -> list[dict]:
                 "supports_images_input_note": _f(h, "supports_images_input_note"),
                 "cache_pricing_notes": _f(h, "cache_pricing_notes"),
                 "image_input_pricing_notes": _f(h, "image_input_pricing_notes"),
+                "gpqa_16x_min": _clean(gpqa.get("min")),
+                "gpqa_16x_max": _clean(gpqa.get("max")),
+                "gpqa_16x_quartile_25": _clean(gpqa.get("quartile_25")),
                 "gpqa_16x_median": _clean(gpqa.get("median")),
+                "gpqa_16x_quartile_75": _clean(gpqa.get("quartile_75")),
+                "aime25_32x_min": _clean(aime25.get("min")),
+                "aime25_32x_max": _clean(aime25.get("max")),
+                "aime25_32x_quartile_25": _clean(aime25.get("quartile_25")),
                 "aime25_32x_median": _clean(aime25.get("median")),
+                "aime25_32x_quartile_75": _clean(aime25.get("quartile_75")),
+                "ifbench_8x_min": _clean(ifbench.get("min")),
+                "ifbench_8x_max": _clean(ifbench.get("max")),
+                "ifbench_8x_quartile_25": _clean(ifbench.get("quartile_25")),
                 "ifbench_8x_median": _clean(ifbench.get("median")),
+                "ifbench_8x_quartile_75": _clean(ifbench.get("quartile_75")),
             })
     return rows
+
+
+def flatten_benchmark_token_counts(models: list[dict]) -> list[dict]:
+    rows = []
+    for m in models:
+        identity = _identity(m)
+        counts = _d(m.get("canonical_eval_token_counts"))
+        for benchmark, values in sorted(counts.items()):
+            values = _d(values)
+            rows.append({
+                **identity,
+                "benchmark": benchmark,
+                "input_tokens": _clean(values.get("input")),
+                "answer_tokens": _clean(values.get("answer")),
+                "reasoning_tokens": _clean(values.get("reasoning")),
+                "cacheable_input_tokens": _clean(values.get("cacheable_input")),
+            })
+    return rows
+
+
+def flatten_index_costs(models: list[dict]) -> list[dict]:
+    rows = []
+    for m in models:
+        identity = _identity(m)
+        costs = _d(m.get("intelligenceIndexCostPerTask"))
+        for item in costs.get("evaluations") or []:
+            if not isinstance(item, dict):
+                continue
+            rows.append({
+                **identity,
+                "evaluation_slug": _clean(item.get("slug")),
+                "weighted_cost_per_task_usd": _clean(
+                    item.get("weightedCostPerTask")
+                ),
+            })
+    return rows
+
+
+def flatten_prompt_performance(models: list[dict]) -> list[dict]:
+    rows = []
+    for m in models:
+        identity = _identity(m)
+        for item in _clean(m.get("performanceByPromptLength")) or []:
+            if not isinstance(item, dict):
+                continue
+            rows.append({
+                **identity,
+                "prompt_length_type": _clean(item.get("prompt_length_type")),
+                "median_output_speed_tokens_per_second": _clean(
+                    item.get("median_output_speed")
+                ),
+                "median_time_to_first_chunk_seconds": _clean(
+                    item.get("median_time_to_first_chunk")
+                ),
+                "median_time_to_first_reasoning_chunk_seconds": _clean(
+                    item.get("median_time_to_first_reasoning_chunk")
+                ),
+                "median_estimated_total_seconds_for_100_output_tokens": _clean(
+                    item.get("median_estimated_total_seconds_for_100_output_tokens")
+                ),
+                "median_time_to_first_answer_token_seconds": _clean(
+                    item.get("median_time_to_first_answer_token")
+                ),
+                "median_end_to_end_response_time_seconds": _clean(
+                    item.get("median_end_to_end_response_time")
+                ),
+            })
+    return rows
+
+
+def flatten_multilingual_scores(models: list[dict]) -> list[dict]:
+    rows = []
+    for m in models:
+        identity = _identity(m)
+        multilingual = _d(m.get("multilingual_aa"))
+        for language, values in sorted(multilingual.items()):
+            values = _d(values)
+            if "score" not in values:
+                continue
+            rows.append({
+                **identity,
+                "language": language,
+                "score": _clean(values.get("score")),
+                "input_tokens": _clean(values.get("input_tokens")),
+                "answer_tokens": _clean(values.get("answer_tokens")),
+                "output_tokens": _clean(values.get("output_tokens")),
+                "reasoning_tokens": _clean(values.get("reasoning_tokens")),
+                "total_input_tokens_api": _clean(values.get("total_input_tokens_api")),
+                "total_answer_tokens_api": _clean(values.get("total_answer_tokens_api")),
+                "total_reasoning_tokens_api": _clean(
+                    values.get("total_reasoning_tokens_api")
+                ),
+            })
+    return rows
+
+
+def _omniscience_metric_row(identity: dict, path: list[str], split: str, values: dict):
+    return {
+        **identity,
+        "category": path[0] if path else "",
+        "subcategory": "/".join(path[1:]),
+        "split": split,
+        "accuracy": _clean(values.get("accuracy")),
+        "omniscience": _clean(values.get("omniscience")),
+        "attempt_rate": _clean(values.get("attempt_rate")),
+        "hallucination_rate": _clean(values.get("hallucination_rate")),
+        "non_hallucination_rate": _clean(values.get("non_hallucination_rate")),
+        "num_correct": _clean(values.get("num_correct")),
+        "num_incorrect": _clean(values.get("num_incorrect")),
+        "total_questions": _clean(values.get("total_questions")),
+        "num_not_attempted": _clean(values.get("num_not_attempted")),
+        "num_partial_answer": _clean(values.get("num_partial_answer")),
+    }
+
+
+def _collect_omniscience_rows(identity: dict, path: list[str], node, rows: list[dict]):
+    node = _clean(node)
+    if not isinstance(node, dict):
+        return
+    if "accuracy" in node:
+        rows.append(_omniscience_metric_row(identity, path, "", node))
+        return
+    total = node.get("total")
+    if isinstance(total, dict) and "accuracy" in total:
+        rows.append(_omniscience_metric_row(identity, path, "total", total))
+    for key, value in sorted(node.items()):
+        if key == "total":
+            continue
+        _collect_omniscience_rows(identity, [*path, key], value, rows)
+
+
+def flatten_omniscience_breakdown(models: list[dict]) -> list[dict]:
+    rows = []
+    for m in models:
+        identity = _identity(m)
+        breakdown = _d(m.get("omniscience_breakdown"))
+        for category, values in sorted(breakdown.items()):
+            _collect_omniscience_rows(identity, [category], values, rows)
+    return rows
+
+
+def write_csv(path: Path, fieldnames: list[str], rows: list[dict]) -> None:
+    with path.open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+    print(f"  wrote {path} ({path.stat().st_size:,} bytes)")
 
 
 def main() -> int:
@@ -769,22 +1094,32 @@ def main() -> int:
 
     ART.mkdir(parents=True, exist_ok=True)
 
-    JSON_PATH.write_text(json.dumps(models, indent=2), encoding="utf-8")
+    JSON_PATH.write_text(
+        json.dumps(models, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
     print(f"  wrote {JSON_PATH} ({JSON_PATH.stat().st_size:,} bytes)")
 
     rows = [flatten(m) for m in models]
-    with CSV_PATH.open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=CSV_FIELDS, lineterminator="\n")
-        w.writeheader()
-        w.writerows(rows)
-    print(f"  wrote {CSV_PATH} ({CSV_PATH.stat().st_size:,} bytes)")
-
-    host_rows = flatten_host_models(models)
-    with HOST_CSV_PATH.open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=HOST_CSV_FIELDS, lineterminator="\n")
-        w.writeheader()
-        w.writerows(host_rows)
-    print(f"  wrote {HOST_CSV_PATH} ({HOST_CSV_PATH.stat().st_size:,} bytes)")
+    write_csv(CSV_PATH, CSV_FIELDS, rows)
+    write_csv(HOST_CSV_PATH, HOST_CSV_FIELDS, flatten_host_models(models))
+    write_csv(
+        BENCHMARK_TOKENS_CSV_PATH,
+        BENCHMARK_TOKENS_CSV_FIELDS,
+        flatten_benchmark_token_counts(models),
+    )
+    write_csv(INDEX_COST_CSV_PATH, INDEX_COST_CSV_FIELDS, flatten_index_costs(models))
+    write_csv(
+        PROMPT_PERFORMANCE_CSV_PATH,
+        PROMPT_PERFORMANCE_CSV_FIELDS,
+        flatten_prompt_performance(models),
+    )
+    write_csv(MULTILINGUAL_CSV_PATH, MULTILINGUAL_CSV_FIELDS, flatten_multilingual_scores(models))
+    write_csv(
+        OMNISCIENCE_CSV_PATH,
+        OMNISCIENCE_CSV_FIELDS,
+        flatten_omniscience_breakdown(models),
+    )
 
     # Spot-check a few chart-visible models against the screenshot.
     print("\n--- Spot checks against the Intelligence-vs-Cost chart ---")

@@ -101,6 +101,7 @@ def test_flatten_extracts_core_fields():
         "slug": "claude-test",
         "model_family_slug": "claude",
         "model_creators": {"name": "Anthropic", "slug": "anthropic"},
+        "model_creator_id": "creator-1",
         "intelligence_index": 55.123456,
         "intelligence_index_cost": {"total_cost": 1234.5, "input_cost": 800,
                                      "output_cost": 400, "reasoning_cost": 34.5},
@@ -113,8 +114,13 @@ def test_flatten_extracts_core_fields():
         "parameters": 175,
         "activeParams": 175,
         "release_date": "2026-01-01",
+        "deleted": False,
+        "deprecated_to": "claude-next",
+        "contextWindowFormatted": "200k",
         "price_1m_input_tokens": 5.0,
         "price_1m_output_tokens": 25.0,
+        "price_per_1k_1mp_images": 1.2,
+        "fallbackPrice": {"input": 5, "output": 25, "cacheHit": 0.5},
         "gpqa": 0.91,
         "hle": 0.39,
         "intelligence_index_v4_1": 57.2,
@@ -163,6 +169,10 @@ def test_flatten_extracts_core_fields():
         },
         "openness": {"opennessIndex": 38.8, "modelAvailability": 6},
         "training_information": {"training_tokens_trillions": 15},
+        "performanceDataSource": {"type": "median", "providerName": "Provider"},
+        "intelligenceIndexTimePerTask": 12.5,
+        "indexCompute": 99.0,
+        "computed_performance_host_model_id": "host-model-1",
         "reasoning_properties": {
             "style": "in_chunk",
             "varied_reasoning": True,
@@ -171,10 +181,16 @@ def test_flatten_extracts_core_fields():
     flat = scrape.flatten(m)
     assert flat["name"] == "Claude Test"
     assert flat["creator_name"] == "Anthropic"
+    assert flat["model_creator_id"] == "creator-1"
     assert flat["intelligence_index"] == 55.123456
     assert flat["intelligence_index_cost_usd"] == 1234.5
     assert flat["indexTokensTotal"] == 123456789
     assert flat["reasoning_model"] is True
+    assert flat["deleted"] is False
+    assert flat["deprecated_to"] == "claude-next"
+    assert flat["context_window_formatted"] == "200k"
+    assert flat["price_per_1k_1mp_images"] == 1.2
+    assert flat["fallback_price_input"] == 5
     assert flat["gpqa"] == 0.91
     assert flat["intelligence_index_v4_1"] == 57.2
     assert flat["index_input_tokens"] == 1000
@@ -185,6 +201,11 @@ def test_flatten_extracts_core_fields():
     assert flat["briefcase_rubric_elo"] == 1100
     assert flat["openness_index"] == 38.8
     assert flat["training_tokens_trillions"] == 15
+    assert flat["performance_data_source_type"] == "median"
+    assert flat["performance_data_source_provider_name"] == "Provider"
+    assert flat["intelligence_index_time_per_task_seconds"] == 12.5
+    assert flat["index_compute"] == 99.0
+    assert flat["computed_performance_host_model_id"] == "host-model-1"
     assert flat["reasoning_style"] == "in_chunk"
     assert flat["reasoning_varied"] is True
 
@@ -211,6 +232,7 @@ def test_flatten_host_models_extracts_provider_endpoint_rows():
                     "json_mode": True,
                     "function_calling": False,
                     "gpqa_16x": {"median": 0.8},
+                    "aime25_32x": {"max": 0.9, "median": 0.7},
                 },
                 {
                     "id": "hm-2",
@@ -232,6 +254,88 @@ def test_flatten_host_models_extracts_provider_endpoint_rows():
     assert rows[0]["json_mode"] is True
     assert rows[0]["function_calling"] is False
     assert rows[0]["gpqa_16x_median"] == 0.8
+    assert rows[0]["aime25_32x_max"] == 0.9
+    assert rows[0]["aime25_32x_median"] == 0.7
+
+
+def test_flatten_detail_tables_extract_nested_aa_rows():
+    models = [
+        {
+            "slug": "model",
+            "name": "Model",
+            "model_creators": {"slug": "lab"},
+            "canonical_eval_token_counts": {
+                "gpqa": {
+                    "input": 10,
+                    "answer": 2,
+                    "reasoning": 8,
+                    "cacheable_input": 5,
+                }
+            },
+            "intelligenceIndexCostPerTask": {
+                "evaluations": [
+                    {"slug": "gpqa-diamond", "weightedCostPerTask": 0.25}
+                ]
+            },
+            "performanceByPromptLength": [
+                {
+                    "prompt_length_type": "long",
+                    "median_output_speed": 40,
+                    "median_time_to_first_chunk": 0.5,
+                    "median_time_to_first_reasoning_chunk": 0.6,
+                    "median_estimated_total_seconds_for_100_output_tokens": 3.0,
+                    "median_time_to_first_answer_token": 0.7,
+                    "median_end_to_end_response_time": 4.0,
+                }
+            ],
+            "multilingual_aa": {
+                "en": {
+                    "score": 0.9,
+                    "input_tokens": 100,
+                    "answer_tokens": 20,
+                    "output_tokens": 50,
+                    "reasoning_tokens": 30,
+                    "total_input_tokens_api": 110,
+                    "total_answer_tokens_api": 60,
+                    "total_reasoning_tokens_api": 0,
+                }
+            },
+            "omniscience_breakdown": {
+                "Law": {
+                    "total": {
+                        "accuracy": 0.1,
+                        "omniscience": -50,
+                        "attempt_rate": 0.8,
+                        "hallucination_rate": 0.2,
+                        "non_hallucination_rate": 0.8,
+                        "num_correct": 1,
+                        "num_incorrect": 8,
+                        "total_questions": 10,
+                        "num_not_attempted": 1,
+                        "num_partial_answer": 0,
+                    }
+                }
+            },
+        }
+    ]
+
+    token_rows = scrape.flatten_benchmark_token_counts(models)
+    cost_rows = scrape.flatten_index_costs(models)
+    prompt_rows = scrape.flatten_prompt_performance(models)
+    multilingual_rows = scrape.flatten_multilingual_scores(models)
+    omniscience_rows = scrape.flatten_omniscience_breakdown(models)
+
+    assert token_rows[0]["benchmark"] == "gpqa"
+    assert token_rows[0]["input_tokens"] == 10
+    assert cost_rows[0]["evaluation_slug"] == "gpqa-diamond"
+    assert cost_rows[0]["weighted_cost_per_task_usd"] == 0.25
+    assert prompt_rows[0]["prompt_length_type"] == "long"
+    assert prompt_rows[0]["median_end_to_end_response_time_seconds"] == 4.0
+    assert multilingual_rows[0]["language"] == "en"
+    assert multilingual_rows[0]["score"] == 0.9
+    assert omniscience_rows[0]["category"] == "Law"
+    assert omniscience_rows[0]["split"] == "total"
+    assert omniscience_rows[0]["accuracy"] == 0.1
 
 
 def test_flatten_extracts_latency_metrics():
