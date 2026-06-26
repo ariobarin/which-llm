@@ -17,4 +17,7 @@ wheels/
 **/artifacts/openrouter.json
 **/artifacts/pareto.png
 **/artifacts/pareto_free.png
+**/artifacts/exports/
+**/artifacts/which-llm-frontier-*.csv
+**/artifacts/which-llm-frontier-*.png
 .claude/

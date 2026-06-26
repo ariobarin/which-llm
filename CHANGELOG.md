@@ -5,6 +5,28 @@ loosely follows [SemVer](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- Atomic command scripts for pick, compare, profile, slug, frontier, and export
+  flows.
+- A shared command core for hidden snapshot readiness, presets, filters,
+  formatting, frontier calculation, and artifact writing.
+- Composable export field groups, including pricing plus context CSV output.
+- `resolve.py` for natural model name resolution with selected slugs and
+  alternates.
+- API price filters separate from benchmark-run cost filters.
+- Generic coding quality and API price filters for composable price-aware
+  picks.
+- Documented argument composition patterns for price-aware modality, coding,
+  and context shortlists.
+- Labeled nearest-result summaries for empty pick filters and opt-in export
+  recovery.
+- Exact `export.py --columns` selection plus a focused coding field group.
+- Snapshot metadata in human-readable command output and artifact summaries.
+
+### Changed
+- Skill and README docs now present neutral capabilities instead of a
+  status-first workflow.
+
 ## [0.4.0] - 2026-06-22
 
 ### Added

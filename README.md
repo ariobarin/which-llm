@@ -41,31 +41,68 @@ codex plugin add which-llm@which-llm
 
 The plugin wrapper exists only for Codex plugin marketplace discovery and install UX. The underlying package is the same `which-llm` skill.
 
-## Commands
+## Atomic Commands
 
 Run commands from `skills/which-llm`.
 
-| Command | Use |
+| Command | Produces |
 |---|---|
-| `python query.py models [pattern] [filters]` | List or rank models. |
-| `python query.py compare <model>...` | Compare named models. |
-| `python query.py slug <model>` | Return paid and free OpenRouter slugs. |
-| `python query.py show <model>` | Inspect one model before recommending it. |
-| `python query.py data status` | Check snapshot age and model count. |
-| `python query.py data refresh` | Rebuild local AA and OpenRouter data. |
+| `python pick.py [preset] [filters]` | Ranked shortlist. |
+| `python compare.py <model>...` | Side-by-side table. |
+| `python profile.py <model>` | Model profile. |
+| `python resolve.py <model>...` | Selected slugs plus alternates. |
+| `python slug.py <model>` | Provider endpoint record. |
+| `python frontier.py [preset] [filters]` | PNG chart plus CSV data. |
+| `python export.py [preset] [filters]` | CSV or JSON file. |
 
-Common filters: `--top N`, `--sort intel|cost|ctx|speed|tokens`, `--intel-min N`, `--max-cost N`, `--context-min N`, `--max-latency N`, `--modality text,image`, `--reasoning`, `--open-weights`, `--free`, `--json`.
+Data readiness is handled inside each command. `query.py` and `plot_pareto.py`
+remain available for compatibility.
+
+Pick presets: `best`, `vision`, `long-context`, `open-weights`, `free`, and
+`coding`.
+
+Frontier presets: `cost-intel`, `speed-intel`, `tokens-intel`, `context-intel`,
+`input-price-intel`, and `output-price-intel`.
+
+Common filters: `--min-intel N`, `--max-run-cost N`, `--max-input-price N`,
+`--max-output-price N`, `--min-context N`, `--max-latency N`,
+`--modality text,image`, `--reasoning`, `--open-weights`, and `--free`.
+`--max-cost` remains an alias for benchmark-run cost, not API price.
+`pick.py` and `export.py` also accept `--top N` and
+`--sort intel|cost|ctx|speed|tokens|coding|agentic|input-price|output-price`.
+`pick.py` shows labeled nearest relaxations when no rows match; use
+`--if-empty error` for strict empty-result failure.
+
+Common behavior is built by composing presets, filters, and sorts:
+
+```text
+python pick.py best --min-intel 50 --sort cost --top 5
+python pick.py best --min-intel 30 --sort speed --top 5
+python pick.py vision --min-intel 40 --sort input-price --top 5
+python pick.py coding --min-coding 45 --sort input-price --top 5
+python pick.py long-context --min-intel 40 --sort input-price --top 5
+python pick.py long-context --min-intel 40 --max-input-price N --sort input-price --top 5
+```
+
+Replace `N` with a price ceiling in USD per million input tokens.
+
+Export field groups: `core`, `pricing`, `context`, `benchmarks`, `coding`,
+`slugs`, and `full`. Groups can be combined with commas, such as
+`--fields pricing,context`. Exact CSV columns can be selected with
+`--columns name,openrouter_slug,coding_index`.
+The `coding` group includes API prices, context, OpenRouter slugs, coding
+scores, and coding benchmarks.
 
 ## Example
 
 ```text
-$ python query.py models --intel-min 50 --reasoning --sort tokens --top 3
+$ python pick.py best --min-intel 50 --reasoning --sort tokens --top 3
 
-slug                    name                    creator  intel  idx-run$  idx-tok  in$/1m  out$/1m  ctx      e2e_s  free  openrouter
-----------------------  ----------------------  -------  -----  --------  -------  ------  -------  -------  -----  ----  -----------------------------
-gpt-5-5-low             GPT-5.5 (low)           OpenAI   50.8   $500.67   65.1M    $5.00   $30.00   922000   12.1         openai/gpt-5.5
-gpt-5-5-medium          GPT-5.5 (medium)        OpenAI   56.7   $1,199    127.5M   $5.00   $30.00   922000   18.7         openai/gpt-5.5
-gemini-3-1-pro-preview  Gemini 3.1 Pro Preview  Google   57.2   $892.28   159.7M   $2.00   $12.00   1000000  26.3         google/gemini-3.1-pro-preview
+| rank | model | slug | creator | intel | idx-run$ | idx-tok | in$/1m | out$/1m | ctx | e2e_s | openrouter |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | GPT-5.5 (medium) | gpt-5-5-medium | OpenAI | 50.4 | $869.91 | 127.5M | $5.00 | $30.00 | 922.0K | 20.5 | openai/gpt-5.5 |
+| 2 | GPT-5.5 (high) | gpt-5-5-high | OpenAI | 53.1 | $1,655 | 209.3M | $5.00 | $30.00 | 922.0K | 39.2 | openai/gpt-5.5 |
+| 3 | GPT-5.5 (xhigh) | gpt-5-5 | OpenAI | 54.8 | $2,630 | 295.5M | $5.00 | $30.00 | 922.0K | 115.9 | openai/gpt-5.5 |
 ```
 
 `idx-run$` and `idx-tok` are benchmark-run proxies from Artificial Analysis, not per-call API pricing. For API pricing, use `in$/1m` and `out$/1m`.
@@ -78,7 +115,7 @@ Tracked runtime data:
 
 | File | Contents |
 |---|---|
-| `skills/which-llm/artifacts/models_enriched.csv` | The compact AA plus OpenRouter snapshot used by `query.py`. |
+| `skills/which-llm/artifacts/models_enriched.csv` | The compact AA plus OpenRouter snapshot used by the commands. |
 | `skills/which-llm/artifacts/unmatched.txt` | Non-deprecated AA models without OpenRouter matches. |
 
 Regenerable refresh intermediates such as `models.html`, `models.csv`, `models.json`, and `openrouter.json` are ignored to keep skill installs small.
@@ -90,7 +127,7 @@ git clone https://github.com/ariobarin/which-llm
 cd which-llm
 python -m pip install -e "skills/which-llm[test]"
 python -m pytest tests -v
-python skills/which-llm/query.py models --top 3
+python skills/which-llm/pick.py best --top 3
 ```
 
 Edit `skills/which-llm` first, then run `python scripts/sync_plugin_wrapper.py` to refresh the optional plugin wrapper. The mirror test fails if the wrapper drifts.

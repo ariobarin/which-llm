@@ -35,7 +35,7 @@ integration wrappers and install docs.
 2. Make runtime changes inside `skills/which-llm/`.
 3. Run `python scripts/sync_plugin_wrapper.py`.
 4. Run `python -m pytest tests -v`; all tests must pass.
-5. If you changed `query.py`, run `python skills/which-llm/query.py models --top 3`.
+5. If you changed command behavior, run `python skills/which-llm/pick.py best --top 3`.
 6. Open a PR. Describe what changed and why.
 
 ## Parser changes

@@ -17,4 +17,17 @@ test = [
 ]
 
 [tool.setuptools]
-py-modules = ["query", "scrape", "enrich", "plot_pareto"]
+py-modules = [
+    "compare",
+    "enrich",
+    "export",
+    "frontier",
+    "pick",
+    "plot_pareto",
+    "profile",
+    "query",
+    "resolve",
+    "scrape",
+    "slug",
+    "which_llm_core",
+]
