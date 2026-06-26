@@ -24,7 +24,7 @@ if _RUN_STDLIB_PROFILE:
         if not name.startswith("__")
     )
     if __name__ == "__main__":
-        raise SystemExit(module.main())
+        module.main()
 else:
     import argparse
     import json
