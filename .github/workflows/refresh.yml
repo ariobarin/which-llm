@@ -53,8 +53,10 @@ jobs:
             git fetch origin "$REFRESH_BRANCH:refs/remotes/origin/$REFRESH_BRANCH" || true
             git switch -C "$REFRESH_BRANCH" "$GITHUB_SHA"
             git add skills/which-llm/artifacts/models_enriched.csv \
+                    skills/which-llm/artifacts/provider_endpoints.csv \
                     skills/which-llm/artifacts/unmatched.txt \
                     plugins/which-llm/skills/which-llm/artifacts/models_enriched.csv \
+                    plugins/which-llm/skills/which-llm/artifacts/provider_endpoints.csv \
                     plugins/which-llm/skills/which-llm/artifacts/unmatched.txt
             if git diff --cached --quiet; then
               echo "No artifact changes; nothing to commit."

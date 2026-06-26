@@ -525,6 +525,9 @@ def test_write_json_export_uses_selected_fields(tmp_path):
             "coding_index": "62.5",
             "gpqa": "0.734",
             "terminalbench_hard": "41",
+            "index_input_tokens": "1000",
+            "index_cost_per_task_usd": "1.25",
+            "reasoning_varied": "True",
             "reasoning_model": "True",
             "is_open_weights": "False",
             "input_modality_text": "true",
@@ -541,6 +544,9 @@ def test_write_json_export_uses_selected_fields(tmp_path):
             "coding_index",
             "gpqa",
             "terminalbench_hard",
+            "index_input_tokens",
+            "index_cost_per_task_usd",
+            "reasoning_varied",
             "reasoning_model",
             "is_open_weights",
             "input_modality_text",
@@ -555,6 +561,9 @@ def test_write_json_export_uses_selected_fields(tmp_path):
             "coding_index": 62.5,
             "gpqa": 0.734,
             "terminalbench_hard": 41.0,
+            "index_input_tokens": 1000,
+            "index_cost_per_task_usd": 1.25,
+            "reasoning_varied": True,
             "reasoning_model": True,
             "is_open_weights": False,
             "input_modality_text": True,
@@ -602,6 +611,17 @@ def test_selected_fields_combines_export_groups():
     assert "price_1m_output_tokens" in fields
     assert "context_window_tokens" in fields
     assert "input_modality_image" in fields
+
+
+def test_new_export_groups_include_scraped_aa_fields():
+    fields = core.selected_fields([], "performance,tokens,openness")
+
+    assert "output_speed_median_tokens_per_second" in fields
+    assert "prompt_medium_coding_e2e_response_seconds" in fields
+    assert "index_input_tokens" in fields
+    assert "index_cost_per_task_usd" in fields
+    assert "openness_index" in fields
+    assert "model_weights_source_url" in fields
 
 
 def test_coding_export_group_is_focused():

@@ -4,16 +4,21 @@ Fetches https://artificialanalysis.ai/models, extracts the embedded RSC
 payload, locates the full model array (the `defaultData` prop), and dumps:
 
   artifacts/models.html          raw HTML (cached for re-runs)
+  artifacts/models.rsc           raw RSC payload (cached for re-runs)
+  artifacts/models.json          raw model objects
   artifacts/models.csv           local flat rows for enrichment
+  artifacts/provider_endpoints.csv
+                                 provider-specific endpoint rows
 
 Run:
-  python scrape.py            use cached HTML if present
-  python scrape.py --refresh  re-download HTML
+  python scrape.py            use cached RSC or HTML if present
+  python scrape.py --refresh  re-download RSC, with HTML fallback
 """
 from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import json
 import re
 import sys
@@ -23,6 +28,7 @@ import urllib.request
 from pathlib import Path
 
 URL = "https://artificialanalysis.ai/models"
+RSC_URL = f"{URL}?_rsc=1"
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
@@ -30,7 +36,10 @@ UA = (
 
 ART = Path(__file__).parent / "artifacts"
 HTML_PATH = ART / "models.html"
+RSC_PATH = ART / "models.rsc"
+JSON_PATH = ART / "models.json"
 CSV_PATH = ART / "models.csv"
+HOST_CSV_PATH = ART / "provider_endpoints.csv"
 ENRICHED_CSV_PATH = ART / "models_enriched.csv"
 
 # Minimum sanity bounds on a parse. If we come back below these the page
@@ -39,15 +48,36 @@ MIN_MODELS = 400
 REQUIRED_KEYS = ("name", "slug", "intelligence_index", "model_creator_id")
 
 
-def _get_text(url: str, timeout: int = 60) -> str:
+def _decode_text(payload: bytes, content_encoding: str | None) -> str:
+    if content_encoding == "gzip":
+        payload = gzip.decompress(payload)
+    elif content_encoding not in (None, "", "identity"):
+        raise RuntimeError(f"unsupported response encoding {content_encoding!r}")
+    return payload.decode("utf-8")
+
+
+def _get_text(
+    url: str,
+    timeout: int = 60,
+    headers: dict[str, str] | None = None,
+) -> str:
     """Fetch text with a small retry loop for transient upstream failures."""
     transient_status = {502, 503, 504, 520, 521, 522, 524}
     last_error: Exception | None = None
+    request_headers = {
+        "User-Agent": UA,
+        "Accept-Encoding": "gzip",
+    }
+    if headers:
+        request_headers.update(headers)
     for attempt in range(4):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            req = urllib.request.Request(url, headers=request_headers)
             with urllib.request.urlopen(req, timeout=timeout) as response:
-                return response.read().decode("utf-8")
+                return _decode_text(
+                    response.read(),
+                    response.headers.get("Content-Encoding"),
+                )
         except urllib.error.HTTPError as exc:
             if exc.code not in transient_status:
                 raise
@@ -70,6 +100,37 @@ def fetch_html(refresh: bool) -> str:
     HTML_PATH.write_text(text, encoding="utf-8")
     print(f"  saved {len(text):,} chars -> {HTML_PATH}")
     return text
+
+
+def fetch_rsc_stream(refresh: bool) -> str:
+    if RSC_PATH.exists() and not refresh:
+        return RSC_PATH.read_text(encoding="utf-8")
+    if HTML_PATH.exists() and not refresh:
+        return extract_rsc_stream(HTML_PATH.read_text(encoding="utf-8"))
+
+    ART.mkdir(parents=True, exist_ok=True)
+    try:
+        print(f"GET {RSC_URL}")
+        stream = _get_text(
+            RSC_URL,
+            headers={
+                "Accept": "text/x-component",
+                "Next-Router-Prefetch": "1",
+                "RSC": "1",
+            },
+        )
+        if _DEFAULT_DATA_RE.search(stream) is None:
+            raise RuntimeError("direct RSC response did not contain defaultData")
+    except Exception as exc:
+        print(
+            f"direct RSC fetch failed: {exc}; falling back to HTML",
+            file=sys.stderr,
+        )
+        stream = extract_rsc_stream(fetch_html(refresh=True))
+
+    RSC_PATH.write_text(stream, encoding="utf-8")
+    print(f"  saved {len(stream):,} chars -> {RSC_PATH}")
+    return stream
 
 
 _CHUNK_RE = re.compile(r'self\.__next_f\.push\(\[(\d+),\s*"((?:[^"\\]|\\.)*)"\]\)', re.DOTALL)
@@ -176,7 +237,13 @@ CSV_FIELDS = [
     "lcr",
     "critpt",
     "gdpval",
+    "gdpval_v2",
+    "gdpval_normalized",
     "omniscience",
+    "tau_banking",
+    "terminalbench_v2_1",
+    "it_bench_sre",
+    "briefcase_normalized",
     # Pricing per 1M tokens, USD. AA publishes several blends; the
     # "_X_Y_1" names are AA-internal ratio identifiers, see their site.
     "price_1m_input_tokens",
@@ -187,8 +254,15 @@ CSV_FIELDS = [
     "price_1m_blended_100_1_1",
     "price_1m_blended_7_2_1",
     "cache_hit_price",
+    "cache_write_price",
+    "cache_hit_rate",
+    "cache_hit_discount_percent",
     # Capability flags
     "reasoning_model",
+    "reasoning_style",
+    "reasoning_varied",
+    "reasoning_starts_thinking_by_default",
+    "reasoning_pass_back_reasoning",
     "frontier_model",
     "is_open_weights",
     "commercial_allowed",
@@ -205,11 +279,154 @@ CSV_FIELDS = [
     "parameters_billions",
     "active_parameters_billions",
     "size_class",
+    "output_tokens",
+    "model_id",
+    "display_order",
+    "model_url",
+    "hosts_url",
+    "open_source_categorization",
+    "license_name",
+    "license_url",
+    "model_weights_source_url",
+    "openness_index",
+    "openness_model_availability",
+    "openness_model_transparency",
+    "openness_data_pretrain_access",
+    "openness_data_pretrain_license",
+    "openness_data_posttrain_access",
+    "openness_data_posttrain_license",
+    "training_tokens_trillions",
     # Measured response latency, seconds (AA's standardized run). Lower = faster.
     # For reasoning models both include thinking time, so they read slower.
     "ttft_seconds",
     "e2e_response_seconds",
+    "output_speed_median_tokens_per_second",
+    "output_speed_p05_tokens_per_second",
+    "output_speed_p25_tokens_per_second",
+    "output_speed_p75_tokens_per_second",
+    "output_speed_p95_tokens_per_second",
+    "ttfc_median_seconds",
+    "ttfc_p05_seconds",
+    "ttfc_p25_seconds",
+    "ttfc_p75_seconds",
+    "ttfc_p95_seconds",
+    "ttfrc_median_seconds",
+    "estimated_seconds_for_100_output_tokens_median",
+    "canonical_answer_output_speed_median_tokens_per_second",
+    # Intelligence Index v4.1 and detailed benchmark-run accounting.
+    "intelligence_index_v4_1",
+    "estimated_intelligence_index_v4_1",
+    "index_input_tokens",
+    "index_output_tokens",
+    "index_answer_tokens",
+    "index_reasoning_tokens",
+    "index_answer_tokens_per_task",
+    "index_reasoning_tokens_per_task",
+    "index_output_tokens_per_task",
+    "index_cost_per_task_usd",
+    "index_input_cost_per_task_usd",
+    "index_output_cost_per_task_usd",
+    "index_cache_read_cost_per_task_usd",
+    "index_cache_write_cost_per_task_usd",
+    "index_reasoning_cost_per_task_usd",
+    "index_answer_cost_per_task_usd",
+    # Long-horizon and multilingual aggregates.
+    "briefcase_elo",
+    "briefcase_lower_95ci",
+    "briefcase_upper_95ci",
+    "briefcase_rubric_elo",
+    "briefcase_analytical_quality_elo",
+    "briefcase_presentation_elo",
+    "briefcase_rubric_pass_rate",
+    "briefcase_avg_turns_per_task",
+    "briefcase_total_tool_calls",
+    "briefcase_total_tool_ms",
+    "multilingual_average",
+    "multilingual_average_global_mmlu_lite",
+    "multilingual_average_mgsm",
+    "multilingual_average_mmlu",
+    # Lab-claimed scores are not AA-run benchmark results.
+    "lab_claimed_gpqa",
+    "lab_claimed_hle",
+    "lab_claimed_mmlu_pro",
+    "lab_claimed_math_500",
+    "lab_claimed_livecodebench",
+    "lab_claimed_aime",
+    "lab_claimed_humaneval",
+    # Representative non-index query accounting when AA publishes it.
+    "representative_query_count",
+    "representative_input_tokens",
+    "representative_answer_tokens",
+    "representative_output_tokens",
+    "representative_reasoning_tokens",
+    "representative_tokens_updated_at",
+    # Prompt-length performance slices.
+    "prompt_100k_output_speed_tokens_per_second",
+    "prompt_100k_ttfc_seconds",
+    "prompt_100k_ttft_seconds",
+    "prompt_100k_e2e_response_seconds",
+    "prompt_long_output_speed_tokens_per_second",
+    "prompt_long_ttfc_seconds",
+    "prompt_long_ttft_seconds",
+    "prompt_long_e2e_response_seconds",
+    "prompt_medium_output_speed_tokens_per_second",
+    "prompt_medium_ttfc_seconds",
+    "prompt_medium_ttft_seconds",
+    "prompt_medium_e2e_response_seconds",
+    "prompt_medium_coding_output_speed_tokens_per_second",
+    "prompt_medium_coding_ttfc_seconds",
+    "prompt_medium_coding_ttft_seconds",
+    "prompt_medium_coding_e2e_response_seconds",
+    "prompt_vision_single_image_output_speed_tokens_per_second",
+    "prompt_vision_single_image_ttfc_seconds",
+    "prompt_vision_single_image_ttft_seconds",
+    "prompt_vision_single_image_e2e_response_seconds",
 ]
+
+
+HOST_CSV_FIELDS = [
+    "model_slug",
+    "model_name",
+    "model_creator_slug",
+    "host_model_slug",
+    "host_model_id",
+    "host_api_id",
+    "host_id",
+    "host_model_string",
+    "model_name_appendage",
+    "price_1m_input_tokens",
+    "price_1m_output_tokens",
+    "cache_hit_price",
+    "cache_write_price",
+    "cache_storage_price_per_hour_per_1m_tokens",
+    "host_cache_hit_rate",
+    "price_per_1k_1mp_images",
+    "context_window_if_different_to_model",
+    "json_mode",
+    "function_calling",
+    "override_supports_images_input",
+    "supports_images_input_note",
+    "cache_pricing_notes",
+    "image_input_pricing_notes",
+    "gpqa_16x_median",
+    "aime25_32x_median",
+    "ifbench_8x_median",
+]
+
+PROMPT_LENGTH_TYPES = [
+    "100k",
+    "long",
+    "medium",
+    "medium_coding",
+    "vision_single_image",
+]
+
+PROMPT_LENGTH_METRICS = {
+    "median_output_speed": "output_speed_tokens_per_second",
+    "median_time_to_first_chunk": "ttfc_seconds",
+    "median_time_to_first_answer_token": "ttft_seconds",
+    "median_end_to_end_response_time": "e2e_response_seconds",
+}
 
 
 def _clean(v):
@@ -219,13 +436,150 @@ def _clean(v):
     references and '$undefined'/'$null' for missing values. None of our target
     fields legitimately start with '$', so this is safe.
     """
-    if isinstance(v, str) and v.startswith("$"):
-        return None
+    if isinstance(v, str):
+        if v.startswith("$"):
+            return None
+        if "\n" in v or "\r" in v:
+            return " ".join(v.splitlines())
     return v
 
 
 def _f(m: dict, key: str):
     return _clean(m.get(key))
+
+
+def _d(v) -> dict:
+    v = _clean(v)
+    return v if isinstance(v, dict) else {}
+
+
+def _prompt_metrics(m: dict) -> dict:
+    by_type = {
+        item.get("prompt_length_type"): item
+        for item in (_clean(m.get("performanceByPromptLength")) or [])
+        if isinstance(item, dict)
+    }
+    out = {}
+    for prompt_type in PROMPT_LENGTH_TYPES:
+        item = _d(by_type.get(prompt_type))
+        for raw_key, suffix in PROMPT_LENGTH_METRICS.items():
+            out[f"prompt_{prompt_type}_{suffix}"] = _clean(item.get(raw_key))
+    return out
+
+
+def extra_fields(m: dict) -> dict:
+    timescale = _d(m.get("timescaleData"))
+    index_token_count = _d(m.get("canonicalIntelligenceIndexTokenCount"))
+    index_tokens_per_task = _d(m.get("intelligenceIndexOutputTokensPerTask"))
+    index_cost_per_task = _d(_d(m.get("intelligenceIndexCostPerTask")).get("cost"))
+    briefcase = _d(m.get("briefcase"))
+    briefcase_rubric = _d(briefcase.get("rubric"))
+    briefcase_analytical = _d(briefcase.get("analyticalQuality"))
+    briefcase_presentation = _d(briefcase.get("presentation"))
+    briefcase_turns = _d(briefcase.get("turns"))
+    multilingual = _d(m.get("multilingual_aa"))
+    openness = _d(m.get("openness"))
+    training = _d(m.get("training_information"))
+    reasoning = _d(m.get("reasoning_properties"))
+    representative = _d(m.get("representative_query_token_counts"))
+
+    return {
+        "gdpval_v2": _f(m, "gdpval_v2"),
+        "gdpval_normalized": _f(m, "gdpval_normalized"),
+        "tau_banking": _f(m, "tau_banking"),
+        "terminalbench_v2_1": _f(m, "terminalbench_v2_1"),
+        "it_bench_sre": _f(m, "it_bench_sre"),
+        "briefcase_normalized": _f(m, "briefcase_normalized"),
+        "cache_write_price": _f(m, "cacheWritePrice"),
+        "cache_hit_rate": _f(m, "cacheHitRate"),
+        "cache_hit_discount_percent": _f(m, "cache_hit_discount_percent"),
+        "reasoning_style": _clean(reasoning.get("style")),
+        "reasoning_varied": _clean(reasoning.get("varied_reasoning")),
+        "reasoning_starts_thinking_by_default": _clean(
+            reasoning.get("starts_thinking_by_default")
+        ),
+        "reasoning_pass_back_reasoning": _clean(reasoning.get("pass_back_reasoning")),
+        "output_tokens": _f(m, "output_tokens"),
+        "model_id": _f(m, "id"),
+        "display_order": _f(m, "display_order"),
+        "model_url": _f(m, "model_url"),
+        "hosts_url": _f(m, "hosts_url"),
+        "open_source_categorization": _f(m, "open_source_categorization"),
+        "license_name": _f(m, "license_name"),
+        "license_url": _f(m, "license_url"),
+        "model_weights_source_url": _f(m, "model_weights_source_url"),
+        "openness_index": _clean(openness.get("opennessIndex")),
+        "openness_model_availability": _clean(openness.get("modelAvailability")),
+        "openness_model_transparency": _clean(openness.get("modelTransparency")),
+        "openness_data_pretrain_access": _clean(openness.get("dataPretrainAccess")),
+        "openness_data_pretrain_license": _clean(openness.get("dataPretrainLicense")),
+        "openness_data_posttrain_access": _clean(openness.get("dataPosttrainAccess")),
+        "openness_data_posttrain_license": _clean(openness.get("dataPosttrainLicense")),
+        "training_tokens_trillions": _clean(training.get("training_tokens_trillions")),
+        "output_speed_median_tokens_per_second": _clean(timescale.get("median_output_speed")),
+        "output_speed_p05_tokens_per_second": _clean(timescale.get("percentile_05_output_speed")),
+        "output_speed_p25_tokens_per_second": _clean(timescale.get("quartile_25_output_speed")),
+        "output_speed_p75_tokens_per_second": _clean(timescale.get("quartile_75_output_speed")),
+        "output_speed_p95_tokens_per_second": _clean(timescale.get("percentile_95_output_speed")),
+        "ttfc_median_seconds": _clean(timescale.get("median_time_to_first_chunk")),
+        "ttfc_p05_seconds": _clean(timescale.get("percentile_05_time_to_first_chunk")),
+        "ttfc_p25_seconds": _clean(timescale.get("quartile_25_time_to_first_chunk")),
+        "ttfc_p75_seconds": _clean(timescale.get("quartile_75_time_to_first_chunk")),
+        "ttfc_p95_seconds": _clean(timescale.get("percentile_95_time_to_first_chunk")),
+        "ttfrc_median_seconds": _clean(timescale.get("median_time_to_first_reasoning_chunk")),
+        "estimated_seconds_for_100_output_tokens_median": _clean(
+            timescale.get("median_estimated_total_seconds_for_100_output_tokens")
+        ),
+        "canonical_answer_output_speed_median_tokens_per_second": _clean(
+            timescale.get("median_canonical_answer_output_speed")
+        ),
+        "intelligence_index_v4_1": _f(m, "intelligence_index_v4_1"),
+        "estimated_intelligence_index_v4_1": _f(m, "estimated_intelligence_index_v4_1"),
+        "index_input_tokens": _clean(index_token_count.get("input")),
+        "index_output_tokens": _clean(index_token_count.get("output")),
+        "index_answer_tokens": _clean(index_token_count.get("answer")),
+        "index_reasoning_tokens": _clean(index_token_count.get("reasoning")),
+        "index_answer_tokens_per_task": _clean(index_tokens_per_task.get("answer")),
+        "index_reasoning_tokens_per_task": _clean(index_tokens_per_task.get("reasoning")),
+        "index_output_tokens_per_task": _clean(index_tokens_per_task.get("output")),
+        "index_cost_per_task_usd": _clean(index_cost_per_task.get("total")),
+        "index_input_cost_per_task_usd": _clean(index_cost_per_task.get("input")),
+        "index_output_cost_per_task_usd": _clean(index_cost_per_task.get("output")),
+        "index_cache_read_cost_per_task_usd": _clean(index_cost_per_task.get("cacheRead")),
+        "index_cache_write_cost_per_task_usd": _clean(index_cost_per_task.get("cacheWrite")),
+        "index_reasoning_cost_per_task_usd": _clean(index_cost_per_task.get("reasoning")),
+        "index_answer_cost_per_task_usd": _clean(index_cost_per_task.get("answer")),
+        "briefcase_elo": _clean(briefcase.get("elo")),
+        "briefcase_lower_95ci": _clean(briefcase.get("lower95ci")),
+        "briefcase_upper_95ci": _clean(briefcase.get("upper95ci")),
+        "briefcase_rubric_elo": _clean(briefcase_rubric.get("elo")),
+        "briefcase_analytical_quality_elo": _clean(briefcase_analytical.get("elo")),
+        "briefcase_presentation_elo": _clean(briefcase_presentation.get("elo")),
+        "briefcase_rubric_pass_rate": _clean(briefcase.get("rubricPassRate")),
+        "briefcase_avg_turns_per_task": _clean(briefcase_turns.get("avgPerTask")),
+        "briefcase_total_tool_calls": _clean(briefcase.get("totalToolCalls")),
+        "briefcase_total_tool_ms": _clean(briefcase.get("totalToolMs")),
+        "multilingual_average": _clean(multilingual.get("average")),
+        "multilingual_average_global_mmlu_lite": _clean(
+            multilingual.get("average_global_mmlu_lite")
+        ),
+        "multilingual_average_mgsm": _clean(multilingual.get("average_mgsm")),
+        "multilingual_average_mmlu": _clean(multilingual.get("average_mmlu")),
+        "lab_claimed_gpqa": _f(m, "lab_claimed_gpqa"),
+        "lab_claimed_hle": _f(m, "lab_claimed_hle"),
+        "lab_claimed_mmlu_pro": _f(m, "lab_claimed_mmlu_pro"),
+        "lab_claimed_math_500": _f(m, "lab_claimed_math_500"),
+        "lab_claimed_livecodebench": _f(m, "lab_claimed_livecodebench"),
+        "lab_claimed_aime": _f(m, "lab_claimed_aime"),
+        "lab_claimed_humaneval": _f(m, "lab_claimed_humaneval"),
+        "representative_query_count": _clean(representative.get("n_queries")),
+        "representative_input_tokens": _clean(representative.get("input_tokens")),
+        "representative_answer_tokens": _clean(representative.get("answer_tokens")),
+        "representative_output_tokens": _clean(representative.get("output_tokens")),
+        "representative_reasoning_tokens": _clean(representative.get("reasoning_tokens")),
+        "representative_tokens_updated_at": _clean(representative.get("updated_at")),
+        **_prompt_metrics(m),
+    }
 
 
 def _pos(v):
@@ -337,16 +691,64 @@ def flatten(m: dict) -> dict:
 
         "ttft_seconds": _pos(ttft.get("total_time")),
         "e2e_response_seconds": _pos(e2e.get("total_time")),
+        **extra_fields(m),
     }
+
+
+def flatten_host_models(models: list[dict]) -> list[dict]:
+    rows = []
+    for m in models:
+        creators = _d(m.get("model_creators"))
+        for h in _clean(m.get("host_models")) or []:
+            if not isinstance(h, dict) or h.get("deleted"):
+                continue
+            host_cache = _d(h.get("host_model_cache_hit_rate"))
+            gpqa = _d(h.get("gpqa_16x"))
+            aime25 = _d(h.get("aime25_32x"))
+            ifbench = _d(h.get("ifbench_8x"))
+            rows.append({
+                "model_slug": _f(m, "slug"),
+                "model_name": _f(m, "name"),
+                "model_creator_slug": _clean(creators.get("slug")),
+                "host_model_slug": _f(h, "slug"),
+                "host_model_id": _f(h, "id"),
+                "host_api_id": _f(h, "host_api_id"),
+                "host_id": _f(h, "host_id"),
+                "host_model_string": _f(h, "host_model_string"),
+                "model_name_appendage": _f(h, "model_name_appendage"),
+                "price_1m_input_tokens": _f(h, "price_1m_input_tokens"),
+                "price_1m_output_tokens": _f(h, "price_1m_output_tokens"),
+                "cache_hit_price": _f(h, "cache_hit_price"),
+                "cache_write_price": _f(h, "cache_write_price"),
+                "cache_storage_price_per_hour_per_1m_tokens": _f(
+                    h,
+                    "cache_storage_price_per_hour_per_1m_tokens",
+                ),
+                "host_cache_hit_rate": _clean(host_cache.get("cache_hit_rate")),
+                "price_per_1k_1mp_images": _f(h, "price_per_1k_1mp_images"),
+                "context_window_if_different_to_model": _f(
+                    h,
+                    "context_window_if_different_to_model",
+                ),
+                "json_mode": _f(h, "json_mode"),
+                "function_calling": _f(h, "function_calling"),
+                "override_supports_images_input": _f(h, "override_supports_images_input"),
+                "supports_images_input_note": _f(h, "supports_images_input_note"),
+                "cache_pricing_notes": _f(h, "cache_pricing_notes"),
+                "image_input_pricing_notes": _f(h, "image_input_pricing_notes"),
+                "gpqa_16x_median": _clean(gpqa.get("median")),
+                "aime25_32x_median": _clean(aime25.get("median")),
+                "ifbench_8x_median": _clean(ifbench.get("median")),
+            })
+    return rows
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--refresh", action="store_true", help="re-fetch the HTML")
+    ap.add_argument("--refresh", action="store_true", help="re-fetch the AA payload")
     args = ap.parse_args()
 
-    html = fetch_html(args.refresh)
-    stream = extract_rsc_stream(html)
+    stream = fetch_rsc_stream(args.refresh)
     models = find_default_data(stream)
     print(f"Parsed {len(models)} models from defaultData")
 
@@ -367,12 +769,22 @@ def main() -> int:
 
     ART.mkdir(parents=True, exist_ok=True)
 
+    JSON_PATH.write_text(json.dumps(models, indent=2), encoding="utf-8")
+    print(f"  wrote {JSON_PATH} ({JSON_PATH.stat().st_size:,} bytes)")
+
     rows = [flatten(m) for m in models]
     with CSV_PATH.open("w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=CSV_FIELDS, lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
     print(f"  wrote {CSV_PATH} ({CSV_PATH.stat().st_size:,} bytes)")
+
+    host_rows = flatten_host_models(models)
+    with HOST_CSV_PATH.open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=HOST_CSV_FIELDS, lineterminator="\n")
+        w.writeheader()
+        w.writerows(host_rows)
+    print(f"  wrote {HOST_CSV_PATH} ({HOST_CSV_PATH.stat().st_size:,} bytes)")
 
     # Spot-check a few chart-visible models against the screenshot.
     print("\n--- Spot checks against the Intelligence-vs-Cost chart ---")

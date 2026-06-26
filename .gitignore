@@ -12,6 +12,7 @@ wheels/
 # Regenerable artifacts. The enriched runtime CSV stays tracked so the skill
 # works instantly; refresh intermediates and plot output rebuild locally.
 **/artifacts/models.html
+**/artifacts/models.rsc
 **/artifacts/models.csv
 **/artifacts/models.json
 **/artifacts/openrouter.json

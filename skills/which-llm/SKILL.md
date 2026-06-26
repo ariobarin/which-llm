@@ -91,9 +91,9 @@ data file.
 selecting the strongest ambiguous match and listing alternates is acceptable.
 
 `export.py` accepts `--fields core`, `pricing`, `context`, `benchmarks`,
-`coding`, `slugs`, or `full`. Field groups can be combined with commas, such
-as `--fields pricing,context`. Exact columns can be selected with
-`--columns name,openrouter_slug,coding_index`.
+`coding`, `performance`, `tokens`, `openness`, `slugs`, or `full`. Field
+groups can be combined with commas, such as `--fields pricing,context`. Exact
+columns can be selected with `--columns name,openrouter_slug,coding_index`.
 
 ## Useful Argument Compositions
 
@@ -122,6 +122,9 @@ Replace `N` with a price ceiling in USD per million input tokens.
 | `context` | Context window, modalities, reasoning, open weights, and slug. |
 | `coding` | API prices, context, OpenRouter slugs, coding scores, and coding benchmarks. |
 | `benchmarks` | Intelligence, coding, agentic, math, and benchmark scores. |
+| `performance` | Speed percentiles and prompt-length performance slices. |
+| `tokens` | Benchmark-run token and cost accounting details. |
+| `openness` | License, weight-source, openness, and training-token fields. |
 | `slugs` | Internal slug, OpenRouter production slug, and free slug. |
 | `full` | All tracked columns. |
 

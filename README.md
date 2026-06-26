@@ -87,7 +87,7 @@ python pick.py long-context --min-intel 40 --max-input-price N --sort input-pric
 Replace `N` with a price ceiling in USD per million input tokens.
 
 Export field groups: `core`, `pricing`, `context`, `benchmarks`, `coding`,
-`slugs`, and `full`. Groups can be combined with commas, such as
+`performance`, `tokens`, `openness`, `slugs`, and `full`. Groups can be combined with commas, such as
 `--fields pricing,context`. Exact CSV columns can be selected with
 `--columns name,openrouter_slug,coding_index`.
 The `coding` group includes API prices, context, OpenRouter slugs, coding
@@ -116,9 +116,10 @@ Tracked runtime data:
 | File | Contents |
 |---|---|
 | `skills/which-llm/artifacts/models_enriched.csv` | The compact AA plus OpenRouter snapshot used by the commands. |
+| `skills/which-llm/artifacts/provider_endpoints.csv` | AA provider endpoint rows with provider-specific price and capability fields. |
 | `skills/which-llm/artifacts/unmatched.txt` | Non-deprecated AA models without OpenRouter matches. |
 
-Regenerable refresh intermediates such as `models.html`, `models.csv`, `models.json`, and `openrouter.json` are ignored to keep skill installs small.
+Regenerable refresh intermediates such as `models.html`, `models.rsc`, `models.csv`, `models.json`, and `openrouter.json` are ignored to keep skill installs small.
 
 ## Development
 

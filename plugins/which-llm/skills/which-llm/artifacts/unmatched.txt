@@ -1,4 +1,4 @@
-# Unmatched non-deprecated AA models (126 total)
+# Unmatched non-deprecated AA models (127 total)
 # Run: python enrich.py  (regenerates this file)
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
@@ -34,6 +34,7 @@ granite-4-0-h-small                            Granite 4.0 H Small
 granite-4-0-nano-1b                            Granite 4.0 1B
 granite-4-1-30b                                Granite 4.1 30B
 granite-4-1-3b                                 Granite 4.1 3B
+grok-build-0-1-06-16                           Grok Build 0.1 0616
 hermes-4-llama-3-1-405b                        Hermes 4 - Llama-3.1 405B (Non-reasoning)
 hermes-4-llama-3-1-405b-reasoning              Hermes 4 - Llama-3.1 405B (Reasoning)
 hermes-4-llama-3-1-70b                         Hermes 4 - Llama-3.1 70B (Non-reasoning)
