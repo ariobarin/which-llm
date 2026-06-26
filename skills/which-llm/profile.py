@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-if __name__ == "profile":
+_spec = globals().get("__spec__")
+_RUN_STDLIB_PROFILE = __name__ == "profile" or (
+    __name__ == "__main__"
+    and _spec is not None
+    and getattr(_spec, "name", None) == "profile"
+)
+
+if _RUN_STDLIB_PROFILE:
     import importlib.util
     import sysconfig
     from pathlib import Path
@@ -16,6 +23,8 @@ if __name__ == "profile":
         for name in dir(module)
         if not name.startswith("__")
     )
+    if __name__ == "__main__":
+        raise SystemExit(module.main())
 else:
     import argparse
     import json

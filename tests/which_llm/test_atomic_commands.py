@@ -760,3 +760,17 @@ def test_profile_script_does_not_break_cprofile(tmp_path):
 
     assert result.returncode == 0, result.stderr
     assert stats_path.exists()
+
+
+def test_profile_script_preserves_stdlib_profile_module_help():
+    result = subprocess.run(
+        [sys.executable, "-m", "profile", "-h"],
+        cwd=core.HERE,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "--outfile" in result.stdout
+    assert "--format" not in result.stdout
