@@ -1,6 +1,7 @@
 import argparse
 import csv
 import json
+import subprocess
 import sys
 
 import export as export_cmd
@@ -734,3 +735,28 @@ def test_frontier_price_axis_preserves_sub_dollar_labels():
     assert frontier_cmd._format_axis_value(1, True) == "$1"
     assert frontier_cmd._format_axis_value(2500, True) == "$2.5k"
     assert frontier_cmd._format_axis_value(2500, False) == "2.5K"
+
+
+def test_profile_script_does_not_break_cprofile(tmp_path):
+    stats_path = tmp_path / "pick.prof"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "cProfile",
+            "-o",
+            str(stats_path),
+            "pick.py",
+            "best",
+            "--top",
+            "1",
+        ],
+        cwd=core.HERE,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert stats_path.exists()
