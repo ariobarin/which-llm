@@ -5,7 +5,6 @@ payload, locates the full model array (the `defaultData` prop), and dumps:
 
   artifacts/models.html          raw HTML (cached for re-runs)
   artifacts/models.rsc           raw RSC payload (cached for re-runs)
-  artifacts/models.json          raw model objects
   artifacts/models.csv           local flat rows for enrichment
   artifacts/provider_endpoints.csv
                                  provider-specific endpoint rows
@@ -23,6 +22,7 @@ payload, locates the full model array (the `defaultData` prop), and dumps:
 Run:
   python scrape.py            use cached RSC or HTML if present
   python scrape.py --refresh  re-download RSC, with HTML fallback
+  python scrape.py --raw-json write ignored raw model objects for inspection
 """
 from __future__ import annotations
 
@@ -1071,6 +1071,11 @@ def write_csv(path: Path, fieldnames: list[str], rows: list[dict]) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--refresh", action="store_true", help="re-fetch the AA payload")
+    ap.add_argument(
+        "--raw-json",
+        action="store_true",
+        help="write ignored artifacts/models.json for deep local inspection",
+    )
     args = ap.parse_args()
 
     stream = fetch_rsc_stream(args.refresh)
@@ -1094,11 +1099,12 @@ def main() -> int:
 
     ART.mkdir(parents=True, exist_ok=True)
 
-    JSON_PATH.write_text(
-        json.dumps(models, separators=(",", ":")) + "\n",
-        encoding="utf-8",
-    )
-    print(f"  wrote {JSON_PATH} ({JSON_PATH.stat().st_size:,} bytes)")
+    if args.raw_json:
+        JSON_PATH.write_text(
+            json.dumps(models, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
+        print(f"  wrote {JSON_PATH} ({JSON_PATH.stat().st_size:,} bytes)")
 
     rows = [flatten(m) for m in models]
     write_csv(CSV_PATH, CSV_FIELDS, rows)

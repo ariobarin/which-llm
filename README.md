@@ -124,7 +124,7 @@ Tracked runtime data:
 | `skills/which-llm/artifacts/omniscience_breakdown.csv` | Per-model Omniscience category and subcategory rows. |
 | `skills/which-llm/artifacts/unmatched.txt` | Non-deprecated AA models without OpenRouter matches. |
 
-Regenerable refresh intermediates such as `models.html`, `models.rsc`, `models.csv`, `models.json`, and `openrouter.json` are ignored to keep skill installs small.
+Regenerable refresh intermediates such as `models.html`, `models.rsc`, `models.csv`, optional `models.json`, and `openrouter.json` are ignored to keep skill installs small.
 
 ## Development
 
