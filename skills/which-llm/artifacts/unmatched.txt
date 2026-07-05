@@ -1,4 +1,4 @@
-# Unmatched non-deprecated AA models (126 total)
+# Unmatched non-deprecated AA models (129 total)
 # Run: python enrich.py  (regenerates this file)
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
@@ -8,6 +8,7 @@ deephermes-3-llama-3-1-8b-preview              DeepHermes 3 - Llama-3.1 8B Previ
 deephermes-3-mistral-24b-preview               DeepHermes 3 - Mistral 24B Preview (Non-reasoning)
 devstral-2                                     Devstral 2
 devstral-small-2                               Devstral Small 2
+diffusiongemma-26b-a4b                         DiffusionGemma 26B A4B
 doubao-seed-code                               Doubao Seed Code
 ernie-4-5-300b-a47b                            ERNIE 4.5 300B A47B
 ernie-5-0-thinking-preview                     ERNIE 5.0 Thinking Preview
@@ -26,7 +27,7 @@ gemma-4-e2b                                    Gemma 4 E2B (Reasoning)
 gemma-4-e2b-non-reasoning                      Gemma 4 E2B (Non-reasoning)
 gemma-4-e4b                                    Gemma 4 E4B (Reasoning)
 gemma-4-e4b-non-reasoning                      Gemma 4 E4B (Non-reasoning)
-gpt-5-5-instant-05-26                          GPT-5.5 Instant (May 2026)
+gpt-5-5-instant-06-26                          GPT-5.5 Instant (June 2026)
 granite-4-0-350m                               Granite 4.0 350M
 granite-4-0-h-350m                             Granite 4.0 H 350M
 granite-4-0-h-nano-1b                          Granite 4.0 H 1B
@@ -34,6 +35,7 @@ granite-4-0-h-small                            Granite 4.0 H Small
 granite-4-0-nano-1b                            Granite 4.0 1B
 granite-4-1-30b                                Granite 4.1 30B
 granite-4-1-3b                                 Granite 4.1 3B
+grok-build-0-1-06-16                           Grok Build 0.1 0616
 hermes-4-llama-3-1-405b                        Hermes 4 - Llama-3.1 405B (Non-reasoning)
 hermes-4-llama-3-1-405b-reasoning              Hermes 4 - Llama-3.1 405B (Reasoning)
 hermes-4-llama-3-1-70b                         Hermes 4 - Llama-3.1 70B (Non-reasoning)
@@ -103,6 +105,7 @@ olmo-3-1-32b-instruct                          Olmo 3.1 32B Instruct
 olmo-3-1-32b-think                             Olmo 3.1 32B Think
 olmo-3-7b-instruct                             Olmo 3 7B Instruct
 olmo-3-7b-think                                Olmo 3 7B Think
+phi-4-mini                                     Phi-4 Mini Instruct
 phi-4-multimodal                               Phi-4 Multimodal Instruct
 qwen3-5-0-8b                                   Qwen3.5 0.8B (Reasoning)
 qwen3-5-0-8b-non-reasoning                     Qwen3.5 0.8B (Non-reasoning)
