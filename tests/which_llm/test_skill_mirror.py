@@ -1,21 +1,38 @@
 import ast
 import re
+import subprocess
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "skills" / "which-llm"
 TARGET = ROOT / "plugins" / "which-llm" / "skills" / "which-llm"
-IGNORED_DIRS = {"__pycache__", ".pytest_cache", "build", "dist", "wheels"}
+IGNORED_DIRS = {"__pycache__", ".pytest_cache", ".venv", "build", "dist", "wheels"}
 
 
 def _runtime_files(root: Path) -> list[Path]:
-    return sorted(
-        path.relative_to(root)
+    candidates = [
+        (path.relative_to(root), path.relative_to(ROOT).as_posix())
         for path in root.rglob("*")
         if path.is_file()
         and not any(part in IGNORED_DIRS for part in path.parts)
         and not any(part.endswith(".egg-info") for part in path.parts)
+    ]
+    ignored = subprocess.run(
+        ["git", "check-ignore", "-z", "--stdin"],
+        cwd=ROOT,
+        input=("\0".join(repo_path for _, repo_path in candidates) + "\0").encode(),
+        capture_output=True,
+        check=False,
+    )
+    assert ignored.returncode in {0, 1}, ignored.stderr.decode(errors="replace")
+    ignored_paths = {
+        path for path in ignored.stdout.decode().split("\0") if path
+    }
+    return sorted(
+        relative_path
+        for relative_path, repo_path in candidates
+        if repo_path not in ignored_paths
     )
 
 
