@@ -23,7 +23,7 @@ import re
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 ART = Path(__file__).parent / "artifacts"
@@ -209,36 +209,48 @@ def load_aa_rows() -> list[dict]:
 
 
 def _timestamp(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise RuntimeError(f"invalid snapshot source timestamp: {value!r}") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise RuntimeError(f"snapshot source timestamp must include a timezone: {value!r}")
+    return parsed.astimezone(timezone.utc)
+
+
+def _rows_by_slug(rows: list[dict]) -> dict[str, dict]:
+    by_slug = {row.get("slug"): row for row in rows}
+    if any(not row.get("slug") for row in rows) or len(by_slug) != len(rows):
+        raise RuntimeError("snapshot rows must have unique slugs")
+    return by_slug
+
+
+def _source_timestamp(rows: list[dict]) -> tuple[str, datetime]:
+    stamps = {row.get(TIMESTAMP_FIELD) or "" for row in rows}
+    if len(stamps) != 1:
+        raise RuntimeError("snapshot rows must carry one consistent source timestamp")
+    stamp = stamps.pop()
+    if not stamp:
+        raise RuntimeError("snapshot source timestamp is missing")
+    return stamp, _timestamp(stamp)
 
 
 def enforce_snapshot_monotonicity(enriched: list[dict], previous: list[dict]) -> bool:
     """Keep a newer tracked timestamp when a stale edge returns identical data."""
-    if not enriched or not previous:
+    if not enriched:
         return False
-    current_stamps = {row.get(TIMESTAMP_FIELD) or "" for row in enriched}
-    previous_stamps = {row.get(TIMESTAMP_FIELD) or "" for row in previous}
-    if len(current_stamps) != 1 or len(previous_stamps) != 1:
-        raise RuntimeError("snapshot rows must carry one consistent source timestamp")
-    current_stamp = current_stamps.pop()
-    previous_stamp = previous_stamps.pop()
-    if not current_stamp or not previous_stamp:
-        raise RuntimeError("snapshot source timestamp is missing")
-    if _timestamp(current_stamp) >= _timestamp(previous_stamp):
+    current_by_slug = _rows_by_slug(enriched)
+    current_stamp, current_time = _source_timestamp(enriched)
+    if not previous:
+        return False
+    previous_by_slug = _rows_by_slug(previous)
+    previous_stamp, previous_time = _source_timestamp(previous)
+    if current_time >= previous_time:
         return False
 
     def without_timestamp(row: dict) -> dict:
         return {key: value for key, value in row.items() if key != TIMESTAMP_FIELD}
 
-    current_by_slug = {row.get("slug"): row for row in enriched}
-    previous_by_slug = {row.get("slug"): row for row in previous}
-    if (
-        any(not row.get("slug") for row in enriched)
-        or any(not row.get("slug") for row in previous)
-        or len(current_by_slug) != len(enriched)
-        or len(previous_by_slug) != len(previous)
-    ):
-        raise RuntimeError("snapshot rows must have unique slugs")
     unchanged = (
         current_by_slug.keys() == previous_by_slug.keys()
         and all(

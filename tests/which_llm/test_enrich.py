@@ -65,3 +65,35 @@ def test_older_snapshot_rejects_blank_or_duplicate_slugs(current):
 
     with pytest.raises(RuntimeError, match="unique slugs"):
         enrich.enforce_snapshot_monotonicity(current, previous)
+
+
+def test_newer_snapshot_rejects_duplicate_slugs():
+    current = [
+        _row("2026-07-12T03:55:00Z", slug="duplicate"),
+        _row("2026-07-12T03:55:00Z", slug="duplicate"),
+    ]
+    previous = [_row("2026-07-12T03:54:10Z")]
+
+    with pytest.raises(RuntimeError, match="unique slugs"):
+        enrich.enforce_snapshot_monotonicity(current, previous)
+
+
+def test_first_snapshot_rejects_blank_slug():
+    with pytest.raises(RuntimeError, match="unique slugs"):
+        enrich.enforce_snapshot_monotonicity(
+            [_row("2026-07-12T03:55:00Z", slug="")],
+            [],
+        )
+
+
+@pytest.mark.parametrize("timestamp", ["not-a-time", "2026-07-12T03:55:00"])
+def test_snapshot_rejects_invalid_or_naive_timestamp(timestamp):
+    with pytest.raises(RuntimeError, match="snapshot source timestamp"):
+        enrich.enforce_snapshot_monotonicity([_row(timestamp)], [])
+
+
+def test_equivalent_timezone_offsets_compare_as_the_same_instant():
+    current = [_row("2026-07-11T23:54:10-04:00")]
+    previous = [_row("2026-07-12T03:54:10Z")]
+
+    assert enrich.enforce_snapshot_monotonicity(current, previous) is False
