@@ -47,7 +47,7 @@ Run commands from `skills/which-llm`.
 
 | Command | Produces |
 |---|---|
-| `python pick.py [preset] [filters]` | Ranked shortlist. |
+| `python pick.py [preset] [filters]` | Ranked evidence table. |
 | `python compare.py <model>...` | Side-by-side table. |
 | `python profile.py <model>` | Model profile. |
 | `python resolve.py <model>...` | Selected slugs plus alternates. |
@@ -57,6 +57,10 @@ Run commands from `skills/which-llm`.
 
 Data readiness is handled inside each command. `query.py` and `plot_pareto.py`
 remain available for compatibility.
+
+Command output is evidence, not a model decision. Default ordering reflects the
+selected sort only. Recommendations should start from the user's objective and
+state the tradeoffs and uncertainty that produced the conclusion.
 
 Pick presets: `best`, `vision`, `long-context`, `open-weights`, `free`, and
 `coding`.
@@ -110,8 +114,13 @@ $ python pick.py best --min-intel 50 --reasoning --sort tokens --top 3
 `intel-task$` and `agent-task$` are matching weighted benchmark costs per task.
 `idx-run$` and `idx-tok` are full benchmark-run proxies from Artificial Analysis,
 not per-call API pricing. For API pricing, use `in$/1m` and `out$/1m`.
-Blended token price is never assumed. Workload cost requires explicit input,
-output, cache, tool, and retry assumptions.
+Token prices are rates, not workload costs. Workload cost requires explicit
+input and output volumes plus cache, tool, reasoning, and retry assumptions.
+Blended token price is not used as workload evidence because it assumes a token
+mix that may not match the workload. Benchmark task-cost fields are useful
+evidence for those benchmarks, but they are not application spend estimates.
+Default profiles omit legacy blended-rate fields; explicit full exports retain
+the source columns for inspection.
 
 OpenRouter `:free` slugs are prototype options. They can have rate limits, daily caps, weaker availability, or different serving details than paid endpoints.
 

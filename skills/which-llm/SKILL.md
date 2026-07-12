@@ -1,6 +1,6 @@
 ---
 name: which-llm
-description: Choose current LLMs by quality, price, speed, context, modality, or OpenRouter slug. Use for model recommendations, model comparisons, pricing checks, and code changes that add or swap an LLM.
+description: Inspect current LLM tradeoffs across quality, price, speed, context, modality, and OpenRouter availability. Use for model recommendations, comparisons, pricing checks, and code changes that add or swap an LLM.
 ---
 
 # which-llm
@@ -17,7 +17,7 @@ with `${CLAUDE_SKILL_DIR}` in Claude Code.
 
 | Capability | Command | Produces |
 |---|---|---|
-| Pick ranked models from constraints | `python pick.py [preset] [filters]` | Ranked shortlist |
+| Inspect ranked models under constraints | `python pick.py [preset] [filters]` | Ranked evidence table |
 | Compare named models | `python compare.py <model>...` | Side-by-side table |
 | Inspect one model | `python profile.py <model>` | Model profile |
 | Resolve natural names | `python resolve.py <model>...` | Selected slugs plus alternates |
@@ -27,6 +27,36 @@ with `${CLAUDE_SKILL_DIR}` in Claude Code.
 
 `query.py` and `plot_pareto.py` remain available for compatibility, but the
 atomic commands above are the fastest surface for normal use.
+
+## Evidence, Not Conclusions
+
+The commands organize current evidence. They do not choose a model for the
+agent or user. A default sort order is not a recommendation.
+
+- Start with the user's stated constraints and objective.
+- Present relevant tradeoffs, scope, and uncertainty before a conclusion.
+- Recommend a model only when the user asks for a recommendation. State the
+  objective that produced it.
+- If the user requests a different metric or weighting, show that view without
+  treating the earlier view as universally correct.
+
+## Cost Context
+
+Token prices are rates. They do not establish workload or task cost without the
+input and output token volumes. Caching, tool calls, reasoning tokens, retries,
+and model behavior can materially change total spend.
+
+- Do not use a blended token price as workload-cost evidence. A blend assumes a
+  token mix that may have no relationship to the user's workload.
+- `intel-task$` and `agent-task$` are benchmark-specific task-cost evidence.
+  They are not estimates of the user's application spend.
+- `idx-run$` is the cost of a full benchmark run. It is not a per-call price.
+- When useful, show benchmark task cost and input and output token rates side by
+  side, with each scope labeled.
+- If a user asks why token price was not used, explain the rate versus workload
+  distinction and offer a direct rate-only comparison.
+- Calculate a workload estimate only when token volume, cache behavior, tool
+  use, and retry assumptions are available. Label every assumption.
 
 ## Pick Presets
 
@@ -79,10 +109,8 @@ atomic commands above are the fastest surface for normal use.
 
 `--max-cost` remains an alias for `--max-run-cost`, the benchmark-run cost.
 Use `--max-input-price` or `--max-output-price` for API price per 1M tokens.
-Do not invent a blended price. Only calculate workload cost when the user gives
-the input, output, cache, tool, and retry assumptions. A benchmark frontier must
-pair each score with that same benchmark's cost per task. The commands reject
-known cross-benchmark cost and score pairs.
+A benchmark frontier must pair each score with that same benchmark's cost per
+task. The commands reject known cross-benchmark cost and score pairs.
 
 `pick.py` and `export.py` also accept `--sort` with `intel`, `cost`, `ctx`,
 `tokens`, `speed`, `coding`, `agentic`, `input-price`, or `output-price`.
@@ -132,6 +160,9 @@ Replace `N` with a price ceiling in USD per million input tokens.
 
 ## Output Notes
 
+- Every command emits a compact cost-scope reminder for the calling agent.
+- Default profiles omit legacy blended-rate fields. Explicit full exports retain
+  the source columns for inspection.
 - `idx-run$` is the estimated cost to run the Artificial Analysis benchmark
   suite. It is not a per-call API price.
 - `intel-task$` and `agent-task$` are the matching weighted benchmark costs per

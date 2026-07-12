@@ -686,7 +686,12 @@ def snapshot_metadata() -> dict:
     }
 
 
+def print_cost_context() -> None:
+    query.print_cost_context()
+
+
 def print_snapshot_footer(fmt: str) -> None:
+    print_cost_context()
     if fmt == "json":
         return
     meta = snapshot_metadata()
@@ -868,7 +873,10 @@ def profile_text(row: dict) -> str:
 
 
 def json_record(row: dict, fields: list[str] | None = None) -> dict:
-    keys = fields or list(row.keys())
+    keys = fields or [
+        key for key in row.keys()
+        if not key.startswith(query.BLENDED_PRICE_PREFIX)
+    ]
     return {key: query._typed(key, row.get(key)) for key in keys if key in row}
 
 

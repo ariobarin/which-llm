@@ -6,6 +6,9 @@ loosely follows [SemVer](https://semver.org/).
 ## Unreleased
 
 ### Added
+- A Reduction chart identity with a fixed frontier signal rail, eliminating
+  free-floating model labels and their overlap failure mode.
+- Compact cost-scope context in agent-facing command output.
 - Current Artificial Analysis encrypted-manifest ingestion and matching Agentic
   Index cost-per-task fields.
 - An `agentic-cost` frontier preset that pairs Agentic Index quality with its
@@ -28,12 +31,16 @@ loosely follows [SemVer](https://semver.org/).
 - Snapshot metadata in human-readable command output and artifact summaries.
 
 ### Changed
+- Default agent-facing profiles omit legacy blended-rate fields while explicit
+  full exports retain the source data.
+- Skill guidance treats command results as evidence, separates token rates from
+  workload cost, and leaves conclusions to the calling agent and user.
 - Snapshot freshness now uses the upstream data timestamp and stale snapshots
   stop recommendations.
 - Cost sorting and cost-quality frontiers use matching per-task costs instead
   of full-suite cost or implicit blended token price.
-- Frontier charts show the full eligible population, highlight the frontier,
-  and limit direct labels to four representative points.
+- Frontier charts share one restrained visual system and place up to five
+  representative frontier labels in a fixed side rail.
 - Skill and README docs now present neutral capabilities instead of a
   status-first workflow.
 
