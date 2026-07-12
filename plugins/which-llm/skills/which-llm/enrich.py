@@ -230,11 +230,21 @@ def enforce_snapshot_monotonicity(enriched: list[dict], previous: list[dict]) ->
     def without_timestamp(row: dict) -> dict:
         return {key: value for key, value in row.items() if key != TIMESTAMP_FIELD}
 
+    current_by_slug = {row.get("slug"): row for row in enriched}
+    previous_by_slug = {row.get("slug"): row for row in previous}
+    if (
+        None in current_by_slug
+        or None in previous_by_slug
+        or len(current_by_slug) != len(enriched)
+        or len(previous_by_slug) != len(previous)
+    ):
+        raise RuntimeError("snapshot rows must have unique slugs")
     unchanged = (
-        len(enriched) == len(previous)
+        current_by_slug.keys() == previous_by_slug.keys()
         and all(
-            without_timestamp(current) == without_timestamp(prior)
-            for current, prior in zip(enriched, previous)
+            without_timestamp(current_by_slug[slug])
+            == without_timestamp(previous_by_slug[slug])
+            for slug in current_by_slug
         )
     )
     if not unchanged:
@@ -242,8 +252,9 @@ def enforce_snapshot_monotonicity(enriched: list[dict], previous: list[dict]) ->
             f"refusing changed snapshot dated {current_stamp}; "
             f"tracked snapshot is newer at {previous_stamp}"
         )
-    for row in enriched:
-        row[TIMESTAMP_FIELD] = previous_stamp
+    enriched[:] = [current_by_slug[row["slug"]] for row in previous]
+    for current in enriched:
+        current[TIMESTAMP_FIELD] = previous_stamp
     return True
 
 
