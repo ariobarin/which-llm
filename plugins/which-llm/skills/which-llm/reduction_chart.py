@@ -49,6 +49,8 @@ def format_axis_value(value: float, is_usd: bool) -> str:
         return f"${value:.3f}"
     if 0 < abs(value) < 1:
         return f"${value:.2f}"
+    if abs(value) < 10:
+        return f"${value:.2f}".rstrip("0").rstrip(".")
     return f"${value:.0f}"
 
 
@@ -167,7 +169,7 @@ def render_frontier_chart(
         positives = [row["_x"] for row in rows if row["_x"] > 0]
         threshold = min(positives) / 2 if positives else 0.01
         ax.set_xscale("symlog", base=2, linthresh=threshold)
-        ax.set_xlim(0, x_max * 1.3)
+        ax.set_xlim(-threshold * 0.3, x_max * 1.3)
     else:
         padding = (x_max - x_min) * 0.05 or 1
         ax.set_xlim(x_min - padding, x_max + padding)

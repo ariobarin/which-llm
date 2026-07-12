@@ -41,6 +41,7 @@ def main() -> int:
                     top=args.top,
                     fmt="json",
                 )
+                core.print_cost_context()
                 return 0
             print("path: (not written)")
             print(f"format: {args.format}")
@@ -55,6 +56,7 @@ def main() -> int:
                 top=args.top,
                 fmt="markdown",
             )
+            core.print_cost_context()
             return 0
         raise SystemExit("no models match")
     fields = (
@@ -74,6 +76,7 @@ def main() -> int:
     print(f"row_count: {len(rows)}")
     print(f"fields: {', '.join(fields)}")
     core.print_snapshot_summary()
+    core.print_cost_context()
     return 0
 
 

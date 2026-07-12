@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import csv
 import math
+import sys
 from pathlib import Path
 
 import reduction_chart
@@ -206,6 +207,7 @@ def main() -> int:
         near_pct=args.near,
         chart_path=output,
     )
+    print(f"# cost context: {reduction_chart.metric_scope(args.x_field)}", file=sys.stderr)
     print(f"\nSaved {output}")
     return 0
 
