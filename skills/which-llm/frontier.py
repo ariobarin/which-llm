@@ -4,39 +4,16 @@ import argparse
 import math
 from pathlib import Path
 
-import plot_pareto
+import reduction_chart
 import which_llm_core as core
 
 
-FRONTIER_COLOR = "#2563EB"
-OTHER_COLOR = "#9CA3AF"
-
-
 def _load_plot_deps():
-    try:
-        import matplotlib.pyplot as plt
-        from matplotlib.ticker import FuncFormatter
-    except ImportError as exc:
-        raise SystemExit(
-            "frontier.py needs matplotlib. Install the plot extra and rerun."
-        ) from exc
-    try:
-        from adjustText import adjust_text
-    except ImportError:
-        adjust_text = None
-    return plt, FuncFormatter, adjust_text
+    return reduction_chart._load_plot_deps()
 
 
 def _label_rows(front: list[dict], limit: int = 5) -> list[dict]:
-    if limit <= 0 or not front:
-        return []
-    ordered = sorted(front, key=lambda row: row["_x"])
-    count = min(limit, len(ordered))
-    indexes = {
-        round(index * (len(ordered) - 1) / max(1, count - 1))
-        for index in range(count)
-    }
-    return [ordered[index] for index in sorted(indexes)]
+    return reduction_chart.signal_rows(front, limit)
 
 
 def _status_rows(rows: list[dict], front: list[dict], near: list[dict]) -> list[dict]:
@@ -58,139 +35,22 @@ def _unique_fields(fields: list[str]) -> list[str]:
 
 
 def _format_axis_value(value: float, is_usd: bool) -> str:
-    if not is_usd:
-        if value >= 1_000_000:
-            return f"{value / 1_000_000:g}M"
-        if value >= 1_000:
-            return f"{value / 1_000:g}K"
-        return f"{value:g}"
-    if value >= 1000:
-        return f"${value / 1000:.1f}k".replace(".0k", "k")
-    if value == 0:
-        return "$0"
-    if 0 < abs(value) < 0.01:
-        return f"${value:.3f}"
-    if 0 < abs(value) < 1:
-        return f"${value:.2f}"
-    return f"${value:.0f}"
+    return reduction_chart.format_axis_value(value, is_usd)
 
 
 def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
           x_field: str, y_field: str, x_dir: str, near_pct: float,
           chart_path: Path) -> None:
-    plt, FuncFormatter, adjust_text = _load_plot_deps()
-    front_set = {row.get("slug") for row in front}
-    near_set = {row.get("slug") for row in near}
-    other = [
-        row for row in rows
-        if row.get("slug") not in front_set and row.get("slug") not in near_set
-    ]
-
-    fig, ax = plt.subplots(figsize=(12, 7.5))
-    fig.patch.set_facecolor("white")
-    ax.set_facecolor("white")
-    if other:
-        ax.scatter(
-            [row["_x"] for row in other],
-            [row["_y"] for row in other],
-            s=14,
-            color=OTHER_COLOR,
-            alpha=0.42,
-            label=f"All models ({len(rows)})",
-            zorder=1,
-        )
-    if near:
-        ax.scatter(
-            [row["_x"] for row in near],
-            [row["_y"] for row in near],
-            s=38,
-            facecolors="none",
-            edgecolors=OTHER_COLOR,
-            linewidths=1.2,
-            label=f"Within {near_pct:g}% of frontier ({len(near)})",
-            zorder=3,
-        )
-    if front:
-        ax.scatter(
-            [row["_x"] for row in front],
-            [row["_y"] for row in front],
-            s=60,
-            color=FRONTIER_COLOR,
-            edgecolors="white",
-            linewidths=0.9,
-            zorder=4,
-        )
-
-    ordered_front = sorted(front, key=lambda row: row["_x"])
-    ax.plot(
-        [row["_x"] for row in ordered_front],
-        [row["_y"] for row in ordered_front],
-        color=FRONTIER_COLOR,
-        linewidth=2,
-        alpha=0.75,
-        label=f"Pareto frontier ({len(front)} models)",
-        zorder=2,
+    reduction_chart.render_frontier_chart(
+        rows, front, near,
+        x_field=x_field,
+        y_field=y_field,
+        x_label=core.field_label(x_field),
+        y_label=core.field_label(y_field),
+        x_dir=x_dir,
+        near_pct=near_pct,
+        chart_path=chart_path,
     )
-
-    texts = []
-    for index, row in enumerate(_label_rows(front, limit=4)):
-        label = plot_pareto.shorten(row.get("name") or row.get("slug") or "", row.get("slug") or "")
-        text = ax.annotate(
-            label,
-            (row["_x"], row["_y"]),
-            xytext=(6, 8 if index % 2 == 0 else -13),
-            textcoords="offset points",
-            fontsize=8,
-            fontweight="bold",
-            color=FRONTIER_COLOR,
-            ha="left",
-            va="bottom",
-            zorder=5,
-        )
-        texts.append(text)
-    if adjust_text and texts:
-        adjust_text(
-            texts,
-            ax=ax,
-            expand_text=(1.2, 1.5),
-            expand_points=(1.5, 1.8),
-            force_text=(0.7, 1.0),
-            force_points=(0.4, 0.7),
-            lim=250,
-        )
-
-    x_min = min(row["_x"] for row in rows)
-    x_max = max(row["_x"] for row in rows)
-    y_min = min(row["_y"] for row in rows)
-    y_max = max(row["_y"] for row in rows)
-    if x_min > 0:
-        ax.set_xscale("log", base=2)
-        ax.set_xlim(x_min / 1.4, x_max * 1.4)
-    elif ("cost" in x_field or "price" in x_field) and x_max > 0:
-        positives = [row["_x"] for row in rows if row["_x"] > 0]
-        linear_threshold = min(positives) / 2 if positives else 0.01
-        ax.set_xscale("symlog", base=2, linthresh=linear_threshold)
-        ax.set_xlim(0, x_max * 1.4)
-    else:
-        x_pad = (x_max - x_min) * 0.05 or 1
-        ax.set_xlim(max(0, x_min - x_pad), x_max + x_pad)
-    ax.set_ylim(y_min - 2, y_max + 4)
-    x_is_usd = "cost" in x_field or "price" in x_field
-
-    def fmt_x(value, _pos):
-        return _format_axis_value(value, x_is_usd)
-
-    ax.xaxis.set_major_formatter(FuncFormatter(fmt_x))
-    x_goal = "maximize" if x_dir == "max" else "minimize"
-    ax.set_xlabel(f"{core.field_label(x_field)} ({x_goal})", fontsize=11)
-    ax.set_ylabel(core.field_label(y_field), fontsize=11)
-    ax.set_title(f"{core.field_label(y_field)} vs. {core.field_label(x_field)}", fontsize=13)
-    ax.grid(True, which="major", alpha=0.25)
-    ax.legend(loc="lower right", fontsize=9)
-    chart_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.tight_layout()
-    fig.savefig(chart_path, dpi=150, facecolor="white")
-    plt.close(fig)
 
 
 def main() -> int:
@@ -287,6 +147,7 @@ def main() -> int:
         for row in sorted(front, key=lambda item: item["_x"])
     ]
     core.print_markdown_table(display)
+    core.print_cost_context()
     return 0
 
 

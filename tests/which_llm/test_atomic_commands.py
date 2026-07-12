@@ -69,6 +69,30 @@ def test_agentic_cost_preset_uses_matching_per_task_metric():
     }
 
 
+def test_default_json_record_omits_legacy_blended_rates():
+    row = {
+        "slug": "model",
+        "price_1m_input_tokens": "1",
+        "price_1m_blended_7_2_1": "2",
+    }
+
+    assert core.json_record(row) == {
+        "slug": "model",
+        "price_1m_input_tokens": 1.0,
+    }
+    assert core.json_record(row, ["price_1m_blended_7_2_1"]) == {
+        "price_1m_blended_7_2_1": 2.0,
+    }
+
+
+def test_cost_context_distinguishes_rates_and_task_evidence(capsys):
+    core.print_cost_context()
+
+    message = capsys.readouterr().err
+    assert "token prices are rates, not workload costs" in message
+    assert "benchmark-specific evidence" in message
+
+
 def test_cost_frontier_keeps_zero_cost_models():
     rows = [
         {"slug": "missing", "agentic_index_cost_per_task_usd": 0, "agentic_index": 10},

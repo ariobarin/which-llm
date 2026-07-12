@@ -42,6 +42,7 @@ else:
         row = core.resolve_one(args.model)
         if args.format == "json":
             print(json.dumps(core.json_record(row), indent=2, default=str))
+            core.print_snapshot_footer(args.format)
             return 0
         print(core.profile_text(row))
         core.print_snapshot_footer(args.format)

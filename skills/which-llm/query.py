@@ -34,6 +34,16 @@ ENRICHED_CSV = ART / "models_enriched.csv"
 BASE_CSV = ART / "models.csv"
 
 STALE_AFTER_DAYS = 2
+BLENDED_PRICE_PREFIX = "price_1m_blended_"
+COST_CONTEXT = (
+    "# cost context: token prices are rates, not workload costs. Workload cost "
+    "also depends on token volume, caching, tools, and retries. Task-cost fields "
+    "are benchmark-specific evidence, not application spend estimates."
+)
+
+
+def print_cost_context() -> None:
+    print(COST_CONTEXT, file=sys.stderr)
 
 # Canonical output columns. Both the table renderer and `--json` use these.
 OUTPUT_FIELDS = [
@@ -513,6 +523,7 @@ def cmd_models(args) -> int:
         print("# no models match", file=sys.stderr)
         return 1
     _emit_models(rows, args.json)
+    print_cost_context()
     return 0
 
 
@@ -524,8 +535,13 @@ def cmd_show(args) -> int:
         return 1
 
     if args.json:
-        json.dump(r, sys.stdout, indent=2, default=str)
+        visible = {
+            key: value for key, value in r.items()
+            if not key.startswith(BLENDED_PRICE_PREFIX)
+        }
+        json.dump(visible, sys.stdout, indent=2, default=str)
         sys.stdout.write("\n")
+        print_cost_context()
         return 0
 
     intel = _f(r["intelligence_index"])
@@ -586,6 +602,7 @@ def cmd_show(args) -> int:
         if _is_true(r.get("openrouter_has_free")):
             print("          (:free is rate-limited promo, possibly different "
                   "quant; prototyping only)")
+    print_cost_context()
     return 0
 
 
@@ -604,6 +621,7 @@ def cmd_compare(args) -> int:
             seen.add(key)
 
     _emit_models(picked, args.json)
+    print_cost_context()
     return 0
 
 
