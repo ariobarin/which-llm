@@ -6,8 +6,8 @@ loosely follows [SemVer](https://semver.org/).
 ## Unreleased
 
 ### Added
-- A Reduction chart identity with a fixed frontier signal rail, eliminating
-  free-floating model labels and their overlap failure mode.
+- A shared chart identity with compact annotations for representative frontier
+  points.
 - Compact cost-scope context in agent-facing command output.
 - Current Artificial Analysis encrypted-manifest ingestion and matching Agentic
   Index cost-per-task fields.
@@ -39,8 +39,8 @@ loosely follows [SemVer](https://semver.org/).
   stop recommendations.
 - Cost sorting and cost-quality frontiers use matching per-task costs instead
   of full-suite cost or implicit blended token price.
-- Frontier charts share one restrained visual system and place up to five
-  representative frontier labels in a fixed side rail.
+- Frontier charts share one restrained visual system and annotate up to five
+  representative points directly in the plot.
 - Skill and README docs now present neutral capabilities instead of a
   status-first workflow.
 
