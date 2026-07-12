@@ -23,6 +23,7 @@ import re
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 ART = Path(__file__).parent / "artifacts"
@@ -31,6 +32,7 @@ OR_JSON = ART / "openrouter.json"
 OUT_CSV = ART / "models_enriched.csv"
 UNMATCHED_TXT = ART / "unmatched.txt"
 OR_FIELDS = ["openrouter_slug", "openrouter_free_slug", "openrouter_has_free"]
+TIMESTAMP_FIELD = "snapshot_updated_at_utc"
 
 OR_URL = "https://openrouter.ai/api/v1/models"
 UA = "Mozilla/5.0 (compatible; aa-scrape/1.0)"
@@ -206,6 +208,68 @@ def load_aa_rows() -> list[dict]:
     return rows
 
 
+def _timestamp(value: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise RuntimeError(f"invalid snapshot source timestamp: {value!r}") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise RuntimeError(f"snapshot source timestamp must include a timezone: {value!r}")
+    return parsed.astimezone(timezone.utc)
+
+
+def _rows_by_slug(rows: list[dict]) -> dict[str, dict]:
+    by_slug = {row.get("slug"): row for row in rows}
+    if any(not row.get("slug") for row in rows) or len(by_slug) != len(rows):
+        raise RuntimeError("snapshot rows must have unique slugs")
+    return by_slug
+
+
+def _source_timestamp(rows: list[dict]) -> tuple[str, datetime]:
+    stamps = {row.get(TIMESTAMP_FIELD) or "" for row in rows}
+    if len(stamps) != 1:
+        raise RuntimeError("snapshot rows must carry one consistent source timestamp")
+    stamp = stamps.pop()
+    if not stamp:
+        raise RuntimeError("snapshot source timestamp is missing")
+    return stamp, _timestamp(stamp)
+
+
+def enforce_snapshot_monotonicity(enriched: list[dict], previous: list[dict]) -> bool:
+    """Keep a newer tracked timestamp when a stale edge returns identical data."""
+    if not enriched:
+        return False
+    current_by_slug = _rows_by_slug(enriched)
+    current_stamp, current_time = _source_timestamp(enriched)
+    if not previous:
+        return False
+    previous_by_slug = _rows_by_slug(previous)
+    previous_stamp, previous_time = _source_timestamp(previous)
+    if current_time >= previous_time:
+        return False
+
+    def without_timestamp(row: dict) -> dict:
+        return {key: value for key, value in row.items() if key != TIMESTAMP_FIELD}
+
+    unchanged = (
+        current_by_slug.keys() == previous_by_slug.keys()
+        and all(
+            without_timestamp(current_by_slug[slug])
+            == without_timestamp(previous_by_slug[slug])
+            for slug in current_by_slug
+        )
+    )
+    if not unchanged:
+        raise RuntimeError(
+            f"refusing changed snapshot dated {current_stamp}; "
+            f"tracked snapshot is newer at {previous_stamp}"
+        )
+    enriched[:] = [current_by_slug[row["slug"]] for row in previous]
+    for current in enriched:
+        current[TIMESTAMP_FIELD] = previous_stamp
+    return True
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--refresh", action="store_true",
@@ -215,6 +279,11 @@ def main() -> int:
     or_models = fetch_openrouter(args.refresh)
     print(f"OpenRouter catalog: {len(or_models)} models")
 
+    previous_rows = (
+        list(csv.DictReader(OUT_CSV.open(encoding="utf-8")))
+        if OUT_CSV.exists()
+        else []
+    )
     aa_rows = load_aa_rows()
     print(f"AA scrape:          {len(aa_rows)} models")
 
@@ -253,6 +322,9 @@ def main() -> int:
             "openrouter_free_slug": free_slug,
             "openrouter_has_free": "true" if free_slug else "false",
         })
+
+    if enforce_snapshot_monotonicity(enriched, previous_rows):
+        print("  kept newer tracked source timestamp for unchanged data")
 
     # Write the enriched CSV.
     fieldnames = list(aa_rows[0].keys()) + OR_FIELDS
