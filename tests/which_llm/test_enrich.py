@@ -48,3 +48,20 @@ def test_older_identical_snapshot_restores_tracked_row_order():
 
     assert enrich.enforce_snapshot_monotonicity(current, previous) is True
     assert [row["slug"] for row in current] == ["first", "second"]
+
+
+@pytest.mark.parametrize(
+    "current",
+    [
+        [_row("2026-07-12T03:54:05Z", slug="")],
+        [
+            _row("2026-07-12T03:54:05Z", slug="duplicate"),
+            _row("2026-07-12T03:54:05Z", slug="duplicate"),
+        ],
+    ],
+)
+def test_older_snapshot_rejects_blank_or_duplicate_slugs(current):
+    previous = [_row("2026-07-12T03:54:10Z")]
+
+    with pytest.raises(RuntimeError, match="unique slugs"):
+        enrich.enforce_snapshot_monotonicity(current, previous)

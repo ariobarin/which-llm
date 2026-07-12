@@ -233,8 +233,8 @@ def enforce_snapshot_monotonicity(enriched: list[dict], previous: list[dict]) ->
     current_by_slug = {row.get("slug"): row for row in enriched}
     previous_by_slug = {row.get("slug"): row for row in previous}
     if (
-        None in current_by_slug
-        or None in previous_by_slug
+        any(not row.get("slug") for row in enriched)
+        or any(not row.get("slug") for row in previous)
         or len(current_by_slug) != len(enriched)
         or len(previous_by_slug) != len(previous)
     ):
