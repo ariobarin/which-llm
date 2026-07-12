@@ -88,6 +88,67 @@ def _load_plot_deps():
     return plt, FuncFormatter
 
 
+def _callout_candidates(ax, row: dict) -> list[tuple[int, int]]:
+    point_px = ax.transData.transform((row["_x"], row["_y"]))
+    point_axes = ax.transAxes.inverted().transform(point_px)
+    horizontal = -1 if point_axes[0] > 0.68 else 1
+    vertical = -1 if point_axes[1] > 0.70 else 1
+    return [
+        (7 * horizontal, 9 * vertical),
+        (7 * horizontal, -13 * vertical),
+        (-7 * horizontal, 9 * vertical),
+        (14 * horizontal, 22 * vertical),
+        (14 * horizontal, -22 * vertical),
+        (-14 * horizontal, 22 * vertical),
+        (-14 * horizontal, -22 * vertical),
+        (28 * horizontal, 0),
+        (-28 * horizontal, 0),
+    ]
+
+
+def _annotate_points(fig, ax, selected: list[dict], *, x_is_usd: bool) -> None:
+    placed = []
+    for row in selected:
+        label = shorten(
+            row.get("name") or row.get("slug") or "",
+            row.get("slug") or "",
+            limit=26,
+        )
+        value = f"{format_axis_value(row['_x'], x_is_usd)} | {row['_y']:.1f}"
+        for offset in _callout_candidates(ax, row):
+            below = offset[1] < 0
+            annotation = ax.annotate(
+                f"{label}\n{value}",
+                xy=(row["_x"], row["_y"]),
+                xycoords="data",
+                xytext=offset,
+                textcoords="offset points",
+                ha="right" if offset[0] < 0 else "left",
+                va="top" if below else "bottom" if offset[1] > 0 else "center",
+                fontsize=7.5,
+                fontweight="bold",
+                color=INK,
+                linespacing=1.35,
+                bbox={"boxstyle": "round,pad=0.35", "fc": CANVAS, "ec": GRID, "lw": 0.7},
+                arrowprops={"arrowstyle": "-", "color": MUTED, "lw": 0.6},
+                zorder=6,
+            )
+            fig.canvas.draw()
+            renderer = fig.canvas.get_renderer()
+            bounds = annotation.get_bbox_patch().get_window_extent(renderer)
+            padded = bounds.expanded(1.04, 1.14)
+            inside = (
+                ax.bbox.contains(padded.x0, padded.y0)
+                and ax.bbox.contains(padded.x1, padded.y1)
+            )
+            if inside and not any(padded.overlaps(existing) for existing in placed):
+                placed.append(padded)
+                break
+            annotation.remove()
+        else:
+            raise RuntimeError(f"could not place chart label for {row.get('slug')}")
+
+
 def render_frontier_chart(
     rows: list[dict],
     front: list[dict],
@@ -181,32 +242,7 @@ def render_frontier_chart(
     for side in ("bottom", "left"):
         ax.spines[side].set_color(GRID)
 
-    callout_offsets = [(7, 9), (7, -11), (7, 9), (7, -11), (-7, 9)]
-    for index, (row, offset) in enumerate(zip(selected, callout_offsets)):
-        below = offset[1] < 0
-        alignment = "right" if offset[0] < 0 else "left"
-        label = shorten(
-            row.get("name") or row.get("slug") or "",
-            row.get("slug") or "",
-            limit=26,
-        )
-        value = f"{format_axis_value(row['_x'], x_is_usd)} | {row['_y']:.1f}"
-        ax.annotate(
-            f"{label}\n{value}",
-            xy=(row["_x"], row["_y"]),
-            xycoords="data",
-            xytext=offset,
-            textcoords="offset points",
-            ha=alignment,
-            va="top" if below else "bottom",
-            fontsize=7.5,
-            fontweight="bold",
-            color=INK,
-            linespacing=1.35,
-            bbox={"boxstyle": "round,pad=0.35", "fc": CANVAS, "ec": GRID, "lw": 0.7},
-            arrowprops={"arrowstyle": "-", "color": MUTED, "lw": 0.6},
-            zorder=6,
-        )
+    _annotate_points(fig, ax, selected, x_is_usd=x_is_usd)
 
     fig.text(0.08, 0.95, "WHICH LLM", color=FRONTIER, fontsize=9,
              fontweight="bold", ha="left")
