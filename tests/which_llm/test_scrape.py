@@ -42,6 +42,25 @@ def test_find_catalog_manifest_selects_full_model_dataset(monkeypatch):
     assert updated == "2026-07-12T00:00:00Z"
 
 
+def test_find_catalog_manifest_rejects_undated_data(monkeypatch):
+    stream = '"manifest":{"path":"/data/models.txt","key":"' + "a" * 64 + '"}'
+    models = [
+        {"slug": f"m-{i}", "name": f"M {i}", "intelligenceIndex": i, "creator": {}}
+        for i in range(3)
+    ]
+    monkeypatch.setattr(
+        scrape,
+        "_decrypt_manifest",
+        lambda path, key: ({"models": models}, None),
+    )
+    try:
+        scrape.find_catalog_manifest(stream, min_models=3)
+    except RuntimeError as exc:
+        assert "missing Last-Modified source timestamp" in str(exc)
+    else:
+        raise AssertionError("undated manifest was accepted")
+
+
 def test_flatten_current_schema_and_matching_agentic_cost():
     model = {
         "name": "GPT Test",

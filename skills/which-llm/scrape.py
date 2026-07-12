@@ -11,7 +11,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
@@ -88,7 +88,7 @@ def extract_rsc_stream(html: str) -> str:
     return "".join(parts)
 
 
-def _decrypt_manifest(path: str, key_hex: str) -> tuple[object, str]:
+def _decrypt_manifest(path: str, key_hex: str) -> tuple[object, str | None]:
     payload, last_modified = _get_bytes(urllib.request.urljoin(URL, path))
     key = bytes.fromhex(key_hex)
     iv = hashlib.sha256(key).digest()[:12]
@@ -96,9 +96,8 @@ def _decrypt_manifest(path: str, key_hex: str) -> tuple[object, str]:
     value = json.loads(gzip.decompress(cleartext))
     if last_modified:
         updated = parsedate_to_datetime(last_modified).astimezone(timezone.utc)
-    else:
-        updated = datetime.now(timezone.utc)
-    return value, updated.isoformat().replace("+00:00", "Z")
+        return value, updated.isoformat().replace("+00:00", "Z")
+    return value, None
 
 
 def find_catalog_manifest(stream: str, min_models: int = MIN_MODELS) -> tuple[list[dict], str]:
@@ -108,6 +107,9 @@ def find_catalog_manifest(stream: str, min_models: int = MIN_MODELS) -> tuple[li
             value, updated = _decrypt_manifest(path, key)
         except Exception as exc:
             errors.append(f"{path}: {exc}")
+            continue
+        if not updated:
+            errors.append(f"{path}: missing Last-Modified source timestamp")
             continue
         models = value.get("models") if isinstance(value, dict) else None
         if not isinstance(models, list) or len(models) < min_models:
