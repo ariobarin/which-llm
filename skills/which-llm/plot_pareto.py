@@ -3,9 +3,9 @@
   python plot_pareto.py
   python plot_pareto.py --max-cost 750 --near 3 --out artifacts/pareto.png
 
-Conventions match the AA chart: y = Intelligence Index (linear),
-x = cost to run the Intelligence Index in USD (log base 2). Models with
-no published cost or intelligence are silently dropped.
+The default chart uses y = Intelligence Index (linear) and x = weighted
+Intelligence Index cost per task in USD (log base 2). Models without the
+selected cost or quality metric are silently dropped.
 """
 from __future__ import annotations
 
