@@ -11,18 +11,28 @@ IGNORED_DIRS = {"__pycache__", ".pytest_cache", ".venv", "build", "dist", "wheel
 
 
 def _runtime_files(root: Path) -> list[Path]:
-    return sorted(
-        path.relative_to(root)
+    candidates = [
+        (path.relative_to(root), path.relative_to(ROOT).as_posix())
         for path in root.rglob("*")
         if path.is_file()
         and not any(part in IGNORED_DIRS for part in path.parts)
         and not any(part.endswith(".egg-info") for part in path.parts)
-        and subprocess.run(
-            ["git", "check-ignore", "-q", "--", path.relative_to(ROOT).as_posix()],
-            cwd=ROOT,
-            check=False,
-        ).returncode
-        != 0
+    ]
+    ignored = subprocess.run(
+        ["git", "check-ignore", "-z", "--stdin"],
+        cwd=ROOT,
+        input=("\0".join(repo_path for _, repo_path in candidates) + "\0").encode(),
+        capture_output=True,
+        check=False,
+    )
+    assert ignored.returncode in {0, 1}, ignored.stderr.decode(errors="replace")
+    ignored_paths = {
+        path for path in ignored.stdout.decode().split("\0") if path
+    }
+    return sorted(
+        relative_path
+        for relative_path, repo_path in candidates
+        if repo_path not in ignored_paths
     )
 
 
