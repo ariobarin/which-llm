@@ -8,6 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+.env
 
 # Regenerable artifacts. The enriched runtime CSV stays tracked so the skill
 # works instantly; refresh intermediates and plot output rebuild locally.
