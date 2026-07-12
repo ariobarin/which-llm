@@ -1,150 +1,84 @@
-"""Contract tests for scrape.py's RSC parser.
-
-Uses a synthetic fixture. No real AA HTML committed. The fixture mirrors
-the exact encoding that scrape.py expects: __next_f.push chunks wrapping
-JS-escaped RSC content with the anchored 'addToSelectedModels' /
-'defaultData' markers.
-"""
 import json
 
 import scrape
 
 
-def _make_fixture(models: list[dict]) -> str:
-    """Build a minimal HTML page whose RSC payload contains `models`."""
-    rsc_content = (
-        '37:["$","div",null,'
-        '{"selectModelsByDefault":"$undefined",'
-        '"addToSelectedModels":"$undefined",'
-        '"defaultData":' + json.dumps(models) + "}]"
-    )
-    js_escaped = json.dumps(rsc_content)
-    return f'<html><script>self.__next_f.push([1, {js_escaped}])</script></html>'
-
-
-def _fake_models(n: int) -> list[dict]:
-    return [
-        {
-            "name": f"Test Model {i}",
-            "slug": f"test-model-{i}",
-            "intelligence_index": 40 + i,
-            "model_creator_id": f"creator-{i}",
-        }
-        for i in range(n)
-    ]
+def _rsc(payload: str) -> str:
+    return f'<script>self.__next_f.push([1, {json.dumps(payload)}])</script>'
 
 
 def test_extract_rsc_stream_finds_chunks():
-    html = _make_fixture(_fake_models(3))
-    stream = scrape.extract_rsc_stream(html)
-    assert "defaultData" in stream
-    assert "addToSelectedModels" in stream
+    assert scrape.extract_rsc_stream(_rsc('1:{"ok":true}')) == '1:{"ok":true}'
 
 
-def test_find_default_data_parses_array():
-    models = _fake_models(5)
-    html = _make_fixture(models)
-    stream = scrape.extract_rsc_stream(html)
-    result = scrape.find_default_data(stream, min_models=1)
-    assert len(result) == 5
-    assert result[0]["slug"] == "test-model-0"
-    assert result[4]["intelligence_index"] == 44
+def test_find_model_array_uses_schema_not_first_array():
+    stream = (
+        '1:{"models":[{"slug":"catalog-only"}]}'
+        '2:{"models":['
+        '{"slug":"a","headlineValue":12,"costPerTask":{},"evalCost":{}},'
+        '{"slug":"b","headlineValue":13,"costPerTask":{},"evalCost":{}}]}'
+    )
+    rows = scrape.find_model_array(
+        stream,
+        min_models=2,
+        required_keys={"slug", "headlineValue", "costPerTask", "evalCost"},
+    )
+    assert [row["slug"] for row in rows] == ["a", "b"]
 
 
-def test_find_default_data_validates_min_count():
-    html = _make_fixture(_fake_models(2))
-    stream = scrape.extract_rsc_stream(html)
-    try:
-        scrape.find_default_data(stream, min_models=100)
-        assert False, "should have raised"
-    except RuntimeError as e:
-        assert "Parsed only 2" in str(e)
+def test_find_catalog_manifest_selects_full_model_dataset(monkeypatch):
+    stream = '"manifest":{"path":"/data/models.txt","key":"' + "a" * 64 + '"}'
+    models = [
+        {"slug": f"m-{i}", "name": f"M {i}", "intelligenceIndex": i, "creator": {}}
+        for i in range(3)
+    ]
+    monkeypatch.setattr(
+        scrape,
+        "_decrypt_manifest",
+        lambda path, key: ({"models": models}, "2026-07-12T00:00:00Z"),
+    )
+    found, updated = scrape.find_catalog_manifest(stream, min_models=3)
+    assert found == models
+    assert updated == "2026-07-12T00:00:00Z"
 
 
-def test_find_default_data_validates_required_keys():
-    bad_models = [{"foo": "bar"} for _ in range(5)]
-    html = _make_fixture(bad_models)
-    stream = scrape.extract_rsc_stream(html)
-    try:
-        scrape.find_default_data(stream, min_models=1)
-        assert False, "should have raised"
-    except RuntimeError as e:
-        assert "missing expected keys" in str(e)
-
-
-def test_flatten_extracts_core_fields():
-    m = {
-        "name": "Claude Test",
-        "short_name": "CT",
-        "slug": "claude-test",
-        "model_family_slug": "claude",
-        "model_creators": {"name": "Anthropic", "slug": "anthropic"},
-        "intelligence_index": 55.123456,
-        "intelligence_index_cost": {"total_cost": 1234.5, "input_cost": 800,
-                                     "output_cost": 400, "reasoning_cost": 34.5},
-        "intelligence_index_is_estimated": False,
-        "estimated_intelligence_index": None,
-        "intelligence_index_per_m_output_tokens": 0.5,
-        "indexTokensTotal": 123456789,
-        "reasoning_model": True,
-        "context_window_tokens": 200000,
-        "parameters": 175,
-        "activeParams": 175,
-        "release_date": "2026-01-01",
-        "price_1m_input_tokens": 5.0,
-        "price_1m_output_tokens": 25.0,
-        "gpqa": 0.91,
-        "hle": 0.39,
+def test_flatten_current_schema_and_matching_agentic_cost():
+    model = {
+        "name": "GPT Test",
+        "shortName": "GPT Test",
+        "slug": "gpt-test",
+        "creator": {"name": "OpenAI", "slug": "openai"},
+        "intelligenceIndex": 58.9,
+        "agenticIndex": 54,
+        "intelligenceIndexCost": {"total": 2824.18},
+        "intelligenceIndexCostPerTask": {"cost": {"total": 1.04}},
+        "canonicalIntelligenceIndexTokenCount": {"input": 100, "output": 20},
+        "isReasoning": True,
+        "inputModalityImage": True,
+        "timeToFirstAnswerToken": {"total": 1.2},
+        "endToEndResponseTime": {"total": 4.5},
     }
-    flat = scrape.flatten(m)
-    assert flat["name"] == "Claude Test"
-    assert flat["creator_name"] == "Anthropic"
-    assert flat["intelligence_index"] == 55.123456
-    assert flat["intelligence_index_cost_usd"] == 1234.5
-    assert flat["indexTokensTotal"] == 123456789
-    assert flat["reasoning_model"] is True
-    assert flat["gpqa"] == 0.91
-
-
-def test_flatten_extracts_latency_metrics():
-    m = {
-        "name": "Fast Model",
-        "slug": "fast",
-        "time_to_first_answer_token_metrics": {"total_time": 0.9},
-        "end_to_end_response_time_metrics": {"total_time": 4.6, "answer_time": 3.4},
+    agentic = {
+        "headlineValue": 54.1,
+        "costPerTask": {"total": 2.55},
+        "evalCost": {"total": 925.34},
+        "outputTokensPerTask": {"output": 24526},
+        "timePerTaskSeconds": 354.5,
     }
-    flat = scrape.flatten(m)
-    assert flat["ttft_seconds"] == 0.9
-    assert flat["e2e_response_seconds"] == 4.6
+    row = scrape.flatten(model, agentic, "2026-07-12T00:00:00Z")
+    assert row["intelligence_index_cost_per_task_usd"] == 1.04
+    assert row["agentic_index_cost_per_task_usd"] == 2.55
+    assert row["agentic_index"] == 54.1
+    assert row["indexTokensTotal"] == 120
+    assert row["snapshot_updated_at_utc"] == "2026-07-12T00:00:00Z"
+    assert row["input_modality_image"] is True
 
 
 def test_flatten_treats_zero_latency_as_unmeasured():
-    # AA emits an all-zero metrics dict for models it hasn't speed-tested;
-    # total_time == 0 must become None so it doesn't sort as 'fastest'.
-    m = {
-        "name": "Untimed Model",
+    row = scrape.flatten({
         "slug": "untimed",
-        "time_to_first_answer_token_metrics": {"total_time": 0},
-        "end_to_end_response_time_metrics": {"total_time": 0},
-    }
-    flat = scrape.flatten(m)
-    assert flat["ttft_seconds"] is None
-    assert flat["e2e_response_seconds"] is None
-
-
-def test_flatten_missing_latency_is_none():
-    flat = scrape.flatten({"name": "No Metrics", "slug": "none"})
-    assert flat["ttft_seconds"] is None
-    assert flat["e2e_response_seconds"] is None
-
-
-def test_flatten_coerces_rsc_sentinels():
-    m = {
-        "name": "Sparse Model",
-        "slug": "sparse",
-        "intelligence_index_cost": "$undefined",
-        "model_creators": {"name": "$undefined"},
-    }
-    flat = scrape.flatten(m)
-    assert flat["intelligence_index_cost_usd"] is None
-    assert flat["creator_name"] is None
+        "timeToFirstAnswerToken": {"total": 0},
+        "endToEndResponseTime": {"total": 0},
+    })
+    assert row["ttft_seconds"] is None
+    assert row["e2e_response_seconds"] is None

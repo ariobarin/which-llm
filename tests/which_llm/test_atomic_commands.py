@@ -3,6 +3,7 @@ import csv
 import json
 import subprocess
 import sys
+from datetime import datetime, timezone
 
 import export as export_cmd
 import frontier as frontier_cmd
@@ -12,6 +13,7 @@ import which_llm_core as core
 
 def _write_rows(path, rows):
     fields = [
+        "snapshot_updated_at_utc",
         "slug",
         "name",
         "creator_name",
@@ -25,6 +27,9 @@ def _write_rows(path, rows):
         "openrouter_free_slug",
         "intelligence_index",
         "intelligence_index_cost_usd",
+        "intelligence_index_cost_per_task_usd",
+        "agentic_index_cost_per_task_usd",
+        "agentic_index",
         "indexTokensTotal",
         "context_window_tokens",
         "price_1m_input_tokens",
@@ -37,7 +42,46 @@ def _write_rows(path, rows):
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
-        writer.writerows(rows)
+        for row in rows:
+            row = dict(row)
+            row.setdefault("snapshot_updated_at_utc", datetime.now(timezone.utc).isoformat())
+            row.setdefault(
+                "intelligence_index_cost_per_task_usd",
+                row.get("intelligence_index_cost_usd", ""),
+            )
+            writer.writerow(row)
+
+
+def test_cost_metrics_cannot_be_paired_with_the_wrong_benchmark():
+    with pytest.raises(SystemExit) as exc:
+        core.validate_metric_pair(
+            "intelligence_index_cost_per_task_usd",
+            "agentic_index",
+        )
+    assert "cannot be paired" in str(exc.value)
+
+
+def test_agentic_cost_preset_uses_matching_per_task_metric():
+    assert core.FRONTIER_PRESETS["agentic-cost"] == {
+        "x_field": "agentic_index_cost_per_task_usd",
+        "y_field": "agentic_index",
+        "x_dir": "min",
+    }
+
+
+def test_cost_frontier_keeps_zero_cost_models():
+    rows = [
+        {"slug": "missing", "agentic_index_cost_per_task_usd": 0, "agentic_index": 10},
+        {"slug": "priced", "agentic_index_cost_per_task_usd": 0.2, "agentic_index": 20},
+    ]
+    plotted = core.metric_rows(
+        rows,
+        "agentic_index_cost_per_task_usd",
+        "agentic_index",
+        0,
+        float("inf"),
+    )
+    assert [row["slug"] for row in plotted] == ["missing", "priced"]
 
 
 def _args(**overrides):
@@ -732,6 +776,7 @@ def test_frontier_dependency_failure_does_not_write_artifacts(tmp_path, monkeypa
 def test_frontier_price_axis_preserves_sub_dollar_labels():
     assert frontier_cmd._format_axis_value(0, True) == "$0"
     assert frontier_cmd._format_axis_value(0.25, True) == "$0.25"
+    assert frontier_cmd._format_axis_value(0.005, True) == "$0.005"
     assert frontier_cmd._format_axis_value(1, True) == "$1"
     assert frontier_cmd._format_axis_value(2500, True) == "$2.5k"
     assert frontier_cmd._format_axis_value(2500, False) == "2.5K"

@@ -8,8 +8,8 @@ import plot_pareto
 import which_llm_core as core
 
 
-CREATOR_COLORS = plot_pareto.CREATOR_COLORS
-DEFAULT_COLOR = plot_pareto.DEFAULT_COLOR
+FRONTIER_COLOR = "#2563EB"
+OTHER_COLOR = "#9CA3AF"
 
 
 def _load_plot_deps():
@@ -27,8 +27,16 @@ def _load_plot_deps():
     return plt, FuncFormatter, adjust_text
 
 
-def _color(row: dict) -> str:
-    return CREATOR_COLORS.get(row.get("creator_name") or "", DEFAULT_COLOR)
+def _label_rows(front: list[dict], limit: int = 5) -> list[dict]:
+    if limit <= 0 or not front:
+        return []
+    ordered = sorted(front, key=lambda row: row["_x"])
+    count = min(limit, len(ordered))
+    indexes = {
+        round(index * (len(ordered) - 1) / max(1, count - 1))
+        for index in range(count)
+    }
+    return [ordered[index] for index in sorted(indexes)]
 
 
 def _status_rows(rows: list[dict], front: list[dict], near: list[dict]) -> list[dict]:
@@ -60,6 +68,8 @@ def _format_axis_value(value: float, is_usd: bool) -> str:
         return f"${value / 1000:.1f}k".replace(".0k", "k")
     if value == 0:
         return "$0"
+    if 0 < abs(value) < 0.01:
+        return f"${value:.3f}"
     if 0 < abs(value) < 1:
         return f"${value:.2f}"
     return f"${value:.0f}"
@@ -76,33 +86,36 @@ def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
         if row.get("slug") not in front_set and row.get("slug") not in near_set
     ]
 
-    fig, ax = plt.subplots(figsize=(16, 10))
+    fig, ax = plt.subplots(figsize=(12, 7.5))
+    fig.patch.set_facecolor("white")
+    ax.set_facecolor("white")
     if other:
         ax.scatter(
             [row["_x"] for row in other],
             [row["_y"] for row in other],
             s=14,
-            color="#D1D5DB",
-            alpha=0.55,
-            label="Other",
+            color=OTHER_COLOR,
+            alpha=0.42,
+            label=f"All models ({len(rows)})",
             zorder=1,
         )
-    for row in near:
+    if near:
         ax.scatter(
-            row["_x"],
-            row["_y"],
-            s=55,
+            [row["_x"] for row in near],
+            [row["_y"] for row in near],
+            s=38,
             facecolors="none",
-            edgecolors=_color(row),
-            linewidths=1.4,
+            edgecolors=OTHER_COLOR,
+            linewidths=1.2,
+            label=f"Within {near_pct:g}% of frontier ({len(near)})",
             zorder=3,
         )
-    for row in front:
+    if front:
         ax.scatter(
-            row["_x"],
-            row["_y"],
-            s=85,
-            color=_color(row),
+            [row["_x"] for row in front],
+            [row["_y"] for row in front],
+            s=60,
+            color=FRONTIER_COLOR,
             edgecolors="white",
             linewidths=0.9,
             zorder=4,
@@ -112,7 +125,7 @@ def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
     ax.plot(
         [row["_x"] for row in ordered_front],
         [row["_y"] for row in ordered_front],
-        color="#16A34A",
+        color=FRONTIER_COLOR,
         linewidth=2,
         alpha=0.75,
         label=f"Pareto frontier ({len(front)} models)",
@@ -120,15 +133,16 @@ def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
     )
 
     texts = []
-    for row in front + near:
+    for index, row in enumerate(_label_rows(front, limit=4)):
         label = plot_pareto.shorten(row.get("name") or row.get("slug") or "", row.get("slug") or "")
-        text = ax.text(
-            row["_x"],
-            row["_y"],
+        text = ax.annotate(
             label,
-            fontsize=9 if row.get("slug") in front_set else 7,
-            fontweight="bold" if row.get("slug") in front_set else "normal",
-            color=_color(row),
+            (row["_x"], row["_y"]),
+            xytext=(6, 8 if index % 2 == 0 else -13),
+            textcoords="offset points",
+            fontsize=8,
+            fontweight="bold",
+            color=FRONTIER_COLOR,
             ha="left",
             va="bottom",
             zorder=5,
@@ -152,6 +166,11 @@ def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
     if x_min > 0:
         ax.set_xscale("log", base=2)
         ax.set_xlim(x_min / 1.4, x_max * 1.4)
+    elif ("cost" in x_field or "price" in x_field) and x_max > 0:
+        positives = [row["_x"] for row in rows if row["_x"] > 0]
+        linear_threshold = min(positives) / 2 if positives else 0.01
+        ax.set_xscale("symlog", base=2, linthresh=linear_threshold)
+        ax.set_xlim(0, x_max * 1.4)
     else:
         x_pad = (x_max - x_min) * 0.05 or 1
         ax.set_xlim(max(0, x_min - x_pad), x_max + x_pad)
@@ -165,16 +184,12 @@ def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
     x_goal = "maximize" if x_dir == "max" else "minimize"
     ax.set_xlabel(f"{core.field_label(x_field)} ({x_goal})", fontsize=11)
     ax.set_ylabel(core.field_label(y_field), fontsize=11)
-    ax.set_title(
-        f"{core.field_label(y_field)} vs. {core.field_label(x_field)} "
-        f"(near = {near_pct:g}% of y range)",
-        fontsize=13,
-    )
+    ax.set_title(f"{core.field_label(y_field)} vs. {core.field_label(x_field)}", fontsize=13)
     ax.grid(True, which="major", alpha=0.25)
     ax.legend(loc="lower right", fontsize=9)
     chart_path.parent.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
-    fig.savefig(chart_path, dpi=150)
+    fig.savefig(chart_path, dpi=150, facecolor="white")
     plt.close(fig)
 
 
@@ -205,6 +220,7 @@ def main() -> int:
     x_field = args.x_field or preset["x_field"]
     y_field = args.y_field or preset["y_field"]
     x_dir = args.x_dir or preset["x_dir"]
+    core.validate_metric_pair(x_field, y_field)
     rows = core.load_filtered_rows(args)
     rows = core.metric_rows(rows, x_field, y_field, args.min_x, args.max_x)
     if not rows:
@@ -228,6 +244,8 @@ def main() -> int:
         y_field,
         "intelligence_index",
         "intelligence_index_cost_usd",
+        "intelligence_index_cost_per_task_usd",
+        "agentic_index_cost_per_task_usd",
         "indexTokensTotal",
         "context_window_tokens",
         "price_1m_input_tokens",

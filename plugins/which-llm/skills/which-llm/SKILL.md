@@ -8,7 +8,7 @@ description: Choose current LLMs by quality, price, speed, context, modality, or
 This skill provides a current Artificial Analysis plus OpenRouter snapshot and
 small Python commands for model selection data. Data readiness is internal to
 each command: cached data is used immediately, missing data is created
-automatically, and stale data only prints a warning.
+automatically, and stale or undated data stops recommendations until refreshed.
 
 Run commands from this skill directory with `python`, or call scripts by path
 with `${CLAUDE_SKILL_DIR}` in Claude Code.
@@ -43,7 +43,8 @@ atomic commands above are the fastest surface for normal use.
 
 | Preset | X metric | Y metric |
 |---|---|---|
-| `cost-intel` | Benchmark-run cost, minimized | Intelligence, maximized |
+| `cost-intel` | Intelligence Index cost per task, minimized | Intelligence, maximized |
+| `agentic-cost` | Agentic Index cost per task, minimized | Agentic Index, maximized |
 | `speed-intel` | End to end latency, minimized | Intelligence, maximized |
 | `tokens-intel` | Benchmark-run tokens, minimized | Intelligence, maximized |
 | `context-intel` | Context window, maximized | Intelligence, maximized |
@@ -78,6 +79,10 @@ atomic commands above are the fastest surface for normal use.
 
 `--max-cost` remains an alias for `--max-run-cost`, the benchmark-run cost.
 Use `--max-input-price` or `--max-output-price` for API price per 1M tokens.
+Do not invent a blended price. Only calculate workload cost when the user gives
+the input, output, cache, tool, and retry assumptions. A benchmark frontier must
+pair each score with that same benchmark's cost per task. The commands reject
+known cross-benchmark cost and score pairs.
 
 `pick.py` and `export.py` also accept `--sort` with `intel`, `cost`, `ctx`,
 `tokens`, `speed`, `coding`, `agentic`, `input-price`, or `output-price`.
@@ -102,7 +107,7 @@ Replace `N` with a price ceiling in USD per million input tokens.
 
 | Behavior | Command shape |
 |---|---|
-| Benchmark-run efficient quality | `python pick.py best --min-intel 50 --sort cost --top 5` |
+| Intelligence-task cost efficiency | `python pick.py best --min-intel 50 --sort cost --top 5` |
 | Fast quality shortlist | `python pick.py best --min-intel 30 --sort speed --top 5` |
 | Low input-price shortlist | `python pick.py best --min-intel 40 --sort input-price --top 5` |
 | Low-price image-capable shortlist | `python pick.py vision --min-intel 40 --sort input-price --top 5` |
@@ -129,6 +134,11 @@ Replace `N` with a price ceiling in USD per million input tokens.
 
 - `idx-run$` is the estimated cost to run the Artificial Analysis benchmark
   suite. It is not a per-call API price.
+- `intel-task$` and `agent-task$` are the matching weighted benchmark costs per
+  task. `--sort cost` sorts by `intel-task$`.
+- `intelligence_index_cost_per_task_usd` is the weighted Intelligence Index cost
+  per task.
+- `agentic_index_cost_per_task_usd` is the weighted Agentic Index cost per task.
 - `idx-tok` is total benchmark-run token use.
 - `in$/1m` and `out$/1m` are API prices per million tokens.
 - `openrouter_slug` is the production endpoint name.
@@ -147,6 +157,7 @@ python resolve.py "gemini flash" "gpt nano"
 python profile.py glm-5-2
 python slug.py glm-5-2
 python frontier.py cost-intel --max-x 1200 --out-dir artifacts
+python frontier.py agentic-cost --image --out-dir artifacts
 python export.py open-weights --fields pricing,context --format csv
 python export.py open-weights --reasoning --fields coding --format csv
 ```

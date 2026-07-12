@@ -31,6 +31,9 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Install scraper dependencies
+        run: python -m pip install .
+
       - name: Refresh AA scrape
         run: python scrape.py --refresh
 
