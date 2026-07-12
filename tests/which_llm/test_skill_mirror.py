@@ -1,12 +1,13 @@
 import ast
 import re
+import subprocess
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "skills" / "which-llm"
 TARGET = ROOT / "plugins" / "which-llm" / "skills" / "which-llm"
-IGNORED_DIRS = {"__pycache__", ".pytest_cache", "build", "dist", "wheels"}
+IGNORED_DIRS = {"__pycache__", ".pytest_cache", ".venv", "build", "dist", "wheels"}
 
 
 def _runtime_files(root: Path) -> list[Path]:
@@ -16,6 +17,12 @@ def _runtime_files(root: Path) -> list[Path]:
         if path.is_file()
         and not any(part in IGNORED_DIRS for part in path.parts)
         and not any(part.endswith(".egg-info") for part in path.parts)
+        and subprocess.run(
+            ["git", "check-ignore", "-q", "--", path.relative_to(ROOT).as_posix()],
+            cwd=ROOT,
+            check=False,
+        ).returncode
+        != 0
     )
 
 
