@@ -61,8 +61,10 @@ remain available for compatibility.
 Pick presets: `best`, `vision`, `long-context`, `open-weights`, `free`, and
 `coding`.
 
-Frontier presets: `cost-intel`, `speed-intel`, `tokens-intel`, `context-intel`,
-`input-price-intel`, and `output-price-intel`.
+Frontier presets: `cost-intel`, `agentic-cost`, `speed-intel`, `tokens-intel`,
+`context-intel`, `input-price-intel`, and `output-price-intel`. Cost frontiers
+use the matching benchmark's weighted cost per task. Known cross-benchmark cost
+and score pairs are rejected.
 
 Common filters: `--min-intel N`, `--max-run-cost N`, `--max-input-price N`,
 `--max-output-price N`, `--min-context N`, `--max-latency N`,
@@ -105,7 +107,11 @@ $ python pick.py best --min-intel 50 --reasoning --sort tokens --top 3
 | 3 | GPT-5.5 (xhigh) | gpt-5-5 | OpenAI | 54.8 | $2,630 | 295.5M | $5.00 | $30.00 | 922.0K | 115.9 | openai/gpt-5.5 |
 ```
 
-`idx-run$` and `idx-tok` are benchmark-run proxies from Artificial Analysis, not per-call API pricing. For API pricing, use `in$/1m` and `out$/1m`.
+`intel-task$` and `agent-task$` are matching weighted benchmark costs per task.
+`idx-run$` and `idx-tok` are full benchmark-run proxies from Artificial Analysis,
+not per-call API pricing. For API pricing, use `in$/1m` and `out$/1m`.
+Blended token price is never assumed. Workload cost requires explicit input,
+output, cache, tool, and retry assumptions.
 
 OpenRouter `:free` slugs are prototype options. They can have rate limits, daily caps, weaker availability, or different serving details than paid endpoints.
 
@@ -132,7 +138,7 @@ python skills/which-llm/pick.py best --top 3
 
 Edit `skills/which-llm` first, then run `python scripts/sync_plugin_wrapper.py` to refresh the optional plugin wrapper. The mirror test fails if the wrapper drifts.
 
-The daily GitHub Action refreshes the canonical skill snapshot, syncs the plugin wrapper, and commits CSV diffs when the public catalogs move.
+The daily GitHub Action refreshes the canonical skill snapshot, syncs the plugin wrapper, and commits CSV diffs when the public catalogs move. The snapshot carries the upstream data timestamp, and stale or undated data stops recommendations.
 
 ## License
 

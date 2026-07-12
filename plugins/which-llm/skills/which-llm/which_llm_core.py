@@ -27,8 +27,13 @@ PICK_PRESETS = {
 
 FRONTIER_PRESETS = {
     "cost-intel": {
-        "x_field": "intelligence_index_cost_usd",
+        "x_field": "intelligence_index_cost_per_task_usd",
         "y_field": "intelligence_index",
+        "x_dir": "min",
+    },
+    "agentic-cost": {
+        "x_field": "agentic_index_cost_per_task_usd",
+        "y_field": "agentic_index",
         "x_dir": "min",
     },
     "speed-intel": {
@@ -60,6 +65,8 @@ FRONTIER_PRESETS = {
 
 FIELD_LABELS = {
     "intelligence_index_cost_usd": "Index cost USD",
+    "intelligence_index_cost_per_task_usd": "Intelligence cost per task USD",
+    "agentic_index_cost_per_task_usd": "Agentic cost per task USD",
     "intelligence_index": "Intelligence index",
     "indexTokensTotal": "Index tokens",
     "context_window_tokens": "Context tokens",
@@ -78,6 +85,8 @@ FIELD_GROUPS = {
         "creator_name",
         "intelligence_index",
         "intelligence_index_cost_usd",
+        "intelligence_index_cost_per_task_usd",
+        "agentic_index_cost_per_task_usd",
         "indexTokensTotal",
         "context_window_tokens",
         "price_1m_input_tokens",
@@ -90,6 +99,8 @@ FIELD_GROUPS = {
         "name",
         "creator_name",
         "intelligence_index_cost_usd",
+        "intelligence_index_cost_per_task_usd",
+        "agentic_index_cost_per_task_usd",
         "indexTokensTotal",
         "price_1m_input_tokens",
         "price_1m_output_tokens",
@@ -171,7 +182,7 @@ def _number_or(row: dict, field: str, missing):
 
 SORT_KEYS = {
     "intel": lambda r: (-_number_or(r, "intelligence_index", -math.inf),),
-    "cost": lambda r: (_number_or(r, "intelligence_index_cost_usd", math.inf),),
+    "cost": lambda r: (_number_or(r, "intelligence_index_cost_per_task_usd", math.inf),),
     "ctx": lambda r: (-_number_or(r, "context_window_tokens", 0),),
     "tokens": lambda r: (_number_or(r, "indexTokensTotal", math.inf),),
     "speed": lambda r: (_number_or(r, "e2e_response_seconds", math.inf),),
@@ -187,11 +198,11 @@ def ensure_snapshot(warn_stale: bool = True) -> None:
     if not warn_stale:
         return
     age = query._data_age_days()
-    if age is not None and age > query.STALE_AFTER_DAYS:
-        print(
-            f"# WARN: snapshot is {age:.1f} days old; use query.py data refresh "
-            "only when current freshness is required.",
-            file=sys.stderr,
+    if age is None:
+        raise SystemExit("snapshot has no source timestamp; refresh data before recommending models")
+    if age > query.STALE_AFTER_DAYS:
+        raise SystemExit(
+            f"snapshot is {age:.1f} days old; refresh data before recommending models"
         )
 
 
@@ -548,6 +559,10 @@ def _display_value(row: dict, key: str):
         return query._fmt_intel(row.get("intelligence_index"))
     if key == "idx_run_usd":
         return query._fmt_cost(row.get("intelligence_index_cost_usd"))
+    if key == "intel_task_usd":
+        return query._fmt_cost(row.get("intelligence_index_cost_per_task_usd"))
+    if key == "agent_task_usd":
+        return query._fmt_cost(row.get("agentic_index_cost_per_task_usd"))
     if key == "idx_tokens":
         return query._fmt_tokens(row.get("indexTokensTotal"))
     if key == "input_usd_1m":
@@ -580,6 +595,8 @@ def shortlist_rows(rows: list[dict], *, include_rank: bool = True,
         ("slug", "slug"),
         ("creator", "creator"),
         ("intelligence", "intel"),
+        ("intel_task_usd", "intel-task$"),
+        ("agent_task_usd", "agent-task$"),
         ("idx_run_usd", "idx-run$"),
         ("idx_tokens", "idx-tok"),
         ("input_usd_1m", "in$/1m"),
@@ -604,6 +621,8 @@ def comparison_rows(rows: list[dict]) -> list[dict]:
         ("slug", "slug"),
         ("creator", "creator"),
         ("intelligence", "intel"),
+        ("intel_task_usd", "intel-task$"),
+        ("agent_task_usd", "agent-task$"),
         ("idx_run_usd", "idx-run$"),
         ("idx_tokens", "idx-tok"),
         ("input_usd_1m", "in$/1m"),
@@ -817,6 +836,8 @@ def profile_text(row: dict) -> str:
         "## Quality",
         "",
         f"- intelligence index: {_display_value(row, 'intelligence')}",
+        f"- intelligence cost per task: {_display_value(row, 'intel_task_usd')}",
+        f"- agentic cost per task: {_display_value(row, 'agent_task_usd')}",
         f"- idx-run$: {_display_value(row, 'idx_run_usd')} (benchmark-run proxy, not per-call price)",
         f"- idx-tok: {_display_value(row, 'idx_tokens')}",
         f"- index per 1M output: {query._fmt_cost(row.get('intelligence_index_per_m_output_tokens'))}",
@@ -936,6 +957,21 @@ def metric_rows(rows: list[dict], x_field: str, y_field: str,
             continue
         out.append({**row, "_x": x_value, "_y": y_value})
     return out
+
+
+MATCHED_COST_METRICS = {
+    "intelligence_index_cost_per_task_usd": "intelligence_index",
+    "agentic_index_cost_per_task_usd": "agentic_index",
+}
+
+
+def validate_metric_pair(x_field: str, y_field: str) -> None:
+    expected = MATCHED_COST_METRICS.get(x_field)
+    if expected and y_field != expected:
+        raise SystemExit(
+            f"{x_field} measures {expected.replace('_', ' ')} tasks and cannot be "
+            f"paired with {y_field}; use --y-field {expected}"
+        )
 
 
 def pareto_front(rows: list[dict], x_dir: str) -> list[dict]:

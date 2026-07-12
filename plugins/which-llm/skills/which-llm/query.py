@@ -25,6 +25,7 @@ import re
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).parent
@@ -32,11 +33,12 @@ ART = HERE / "artifacts"
 ENRICHED_CSV = ART / "models_enriched.csv"
 BASE_CSV = ART / "models.csv"
 
-STALE_AFTER_DAYS = 7  # warn (don't refuse) if data older than this
+STALE_AFTER_DAYS = 2
 
 # Canonical output columns. Both the table renderer and `--json` use these.
 OUTPUT_FIELDS = [
     "slug", "name", "creator_name", "intelligence_index",
+    "intelligence_index_cost_per_task_usd", "agentic_index_cost_per_task_usd",
     "intelligence_index_cost_usd", "indexTokensTotal",
     "context_window_tokens",
     "price_1m_input_tokens", "price_1m_output_tokens",
@@ -74,7 +76,16 @@ def _data_age_days() -> float | None:
     p = _csv_path()
     if not p.exists():
         return None
-    return (time.time() - p.stat().st_mtime) / 86400
+    try:
+        with p.open(encoding="utf-8", newline="") as handle:
+            row = next(csv.DictReader(handle), None)
+        stamp = (row or {}).get("snapshot_updated_at_utc")
+        if not stamp:
+            return None
+        updated = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+        return (datetime.now(timezone.utc) - updated.astimezone(timezone.utc)).total_seconds() / 86400
+    except (OSError, csv.Error, ValueError, StopIteration):
+        return None
 
 
 def ensure_data() -> None:
@@ -84,6 +95,16 @@ def ensure_data() -> None:
               file=sys.stderr)
         _run_python("scrape.py")
         _run_python("enrich.py")
+
+
+def require_fresh_data() -> None:
+    age = _data_age_days()
+    if age is None:
+        raise SystemExit("snapshot has no source timestamp; run: python query.py data refresh")
+    if age > STALE_AFTER_DAYS:
+        raise SystemExit(
+            f"snapshot is {age:.1f} days old; run: python query.py data refresh"
+        )
 
 
 def _run_python(script: str, *args: str) -> None:
@@ -258,9 +279,9 @@ def pareto_frontier(rows: list[dict]) -> list[dict]:
     pts = [
         r for r in rows
         if _f(r.get("intelligence_index")) is not None
-        and (_f(r.get("intelligence_index_cost_usd")) or 0) > 0
+        and _f(r.get("intelligence_index_cost_per_task_usd")) is not None
     ]
-    pts.sort(key=lambda r: (_f(r["intelligence_index_cost_usd"]),
+    pts.sort(key=lambda r: (_f(r["intelligence_index_cost_per_task_usd"]),
                             -_f(r["intelligence_index"])))
     front = []
     best = -math.inf
@@ -280,7 +301,10 @@ def _speed_key(r):
 
 SORT_KEYS = {
     "intel": lambda r: (-( _f(r.get("intelligence_index")) or -math.inf),),
-    "cost":  lambda r: ( _f(r.get("intelligence_index_cost_usd")) or math.inf,),
+    "cost": lambda r: (
+        value if (value := _f(r.get("intelligence_index_cost_per_task_usd"))) is not None
+        else math.inf,
+    ),
     "ctx":   lambda r: (-( _f(r.get("context_window_tokens")) or 0),),
     "tokens": lambda r: (_f(r.get("indexTokensTotal")) or math.inf,),
     "speed": _speed_key,
@@ -328,6 +352,8 @@ def _row_for_output(r: dict) -> dict:
         "name": r.get("name") or "",
         "creator": r.get("creator_name") or "-",
         "intel": _fmt_intel(r.get("intelligence_index")),
+        "intel-task$": _fmt_cost(r.get("intelligence_index_cost_per_task_usd")),
+        "agent-task$": _fmt_cost(r.get("agentic_index_cost_per_task_usd")),
         "idx-run$": _fmt_cost(r.get("intelligence_index_cost_usd")),
         "idx-tok": _fmt_tokens(r.get("indexTokensTotal")),
         "in$/1m": _fmt_cost(r.get("price_1m_input_tokens")),
@@ -355,6 +381,8 @@ def _print_table(rows: list[dict]) -> None:
 _JSON_ROUND = {
     "intelligence_index": 1,
     "intelligence_index_cost_usd": 2,
+    "intelligence_index_cost_per_task_usd": 4,
+    "agentic_index_cost_per_task_usd": 4,
     "ttft_seconds": 1,
     "e2e_response_seconds": 1,
 }
@@ -619,20 +647,20 @@ def cmd_data(args) -> int:
             print("no data cached. run: python query.py data refresh",
                   file=sys.stderr)
             return 1
-        age = _data_age_days() or 0
+        age = _data_age_days()
         print(f"data file:   {p}")
-        print(f"data age:    {age:.1f} days")
-        if age > STALE_AFTER_DAYS:
+        print(f"data age:    {'unknown' if age is None else f'{age:.1f} days'}")
+        if age is None or age > STALE_AFTER_DAYS:
             print(
-                f"WARN: data older than {STALE_AFTER_DAYS} days. "
-                f"Run: python query.py data refresh",
+                "STALE: source timestamp missing or too old. "
+                "Run: python query.py data refresh",
                 file=sys.stderr,
             )
         enriched = "yes" if p == ENRICHED_CSV else "no (run enrich.py)"
         print(f"openrouter:  {enriched}")
         rows = load_rows(modalities=set(), include_deprecated=True)
         print(f"model count: {len(rows)}")
-        return 0
+        return 1 if age is None or age > STALE_AFTER_DAYS else 0
     if args.action == "refresh":
         _run_python("scrape.py", "--refresh")
         _run_python("enrich.py", "--refresh")
@@ -733,6 +761,8 @@ def main() -> int:
     # `data refresh` is the only path that's allowed to run without cached data.
     if not (getattr(args, "action", None) == "refresh"):
         ensure_data()
+    if args.cmd not in {"data", "status", "refresh"}:
+        require_fresh_data()
     return args.func(args) or 0
 
 

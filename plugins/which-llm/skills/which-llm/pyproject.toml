@@ -5,6 +5,7 @@ description = "Agent skill: query current LLM intelligence, cost, capabilities, 
 license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
+    "cryptography>=45.0.0",
 ]
 
 [project.optional-dependencies]

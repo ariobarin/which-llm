@@ -3,9 +3,9 @@
   python plot_pareto.py
   python plot_pareto.py --max-cost 750 --near 3 --out artifacts/pareto.png
 
-Conventions match the AA chart: y = Intelligence Index (linear),
-x = cost to run the Intelligence Index in USD (log base 2). Models with
-no published cost or intelligence are silently dropped.
+The default chart uses y = Intelligence Index (linear) and x = weighted
+Intelligence Index cost per task in USD (log base 2). Models without the
+selected cost or quality metric are silently dropped.
 """
 from __future__ import annotations
 
@@ -48,14 +48,15 @@ CREATOR_COLORS = {
     "Perplexity": "#20808D",
 }
 DEFAULT_COLOR = "#6B7280"
-DEFAULT_X_FIELD = "intelligence_index_cost_usd"
+DEFAULT_X_FIELD = "intelligence_index_cost_per_task_usd"
 DEFAULT_Y_FIELD = "intelligence_index"
 FIELD_LABELS = {
     "intelligence_index_cost_usd": "Cost to Run Intelligence Index (USD, log base 2)",
+    "intelligence_index_cost_per_task_usd": "Intelligence Cost per Task (USD, log scale)",
+    "agentic_index_cost_per_task_usd": "Agentic Cost per Task (USD, log scale)",
     "intelligence_index": "Artificial Analysis Intelligence Index",
     "price_1m_input_tokens": "Input Price per 1M Tokens (USD, log scale)",
     "price_1m_output_tokens": "Output Price per 1M Tokens (USD, log scale)",
-    "price_1m_blended_7_2_1": "Blended Price per 1M Tokens (USD, 7:2:1, log scale)",
     "coding_index": "Artificial Analysis Coding Index",
     "agentic_index": "Artificial Analysis Agentic Index",
     "ttft_seconds": "Time to First Token (seconds, log scale)",
@@ -202,6 +203,18 @@ def field_label(field: str) -> str:
     return FIELD_LABELS.get(field, field.replace("_", " ").title())
 
 
+def validate_metric_pair(x_field: str, y_field: str) -> None:
+    pairs = {
+        "intelligence_index_cost_per_task_usd": "intelligence_index",
+        "agentic_index_cost_per_task_usd": "agentic_index",
+    }
+    expected = pairs.get(x_field)
+    if expected and y_field != expected:
+        raise SystemExit(
+            f"{x_field} cannot be paired with {y_field}; use --y-field {expected}"
+        )
+
+
 def _load_plot_deps():
     try:
         import matplotlib.pyplot as plt
@@ -243,6 +256,7 @@ def main() -> int:
                     help="CSV field to maximize on the y-axis.")
     ap.add_argument("--out", default="artifacts/pareto.png", help="Output PNG path.")
     args = ap.parse_args()
+    validate_metric_pair(args.x_field, args.y_field)
 
     rows = load_rows(args.min_cost, args.max_cost,
                      args.text, args.image, args.video, args.audio, args.free_only,

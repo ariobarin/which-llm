@@ -1,10 +1,12 @@
 import csv
+from datetime import datetime, timezone
 
 import plot_pareto
 
 
 def _write_models(path, rows):
     fieldnames = [
+        "snapshot_updated_at_utc",
         "slug",
         "name",
         "creator_name",
@@ -16,13 +18,19 @@ def _write_models(path, rows):
         "openrouter_has_free",
         "intelligence_index",
         "intelligence_index_cost_usd",
+        "intelligence_index_cost_per_task_usd",
+        "agentic_index_cost_per_task_usd",
+        "agentic_index",
         "price_1m_output_tokens",
         "coding_index",
     ]
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(rows)
+        for row in rows:
+            row = dict(row)
+            row.setdefault("snapshot_updated_at_utc", datetime.now(timezone.utc).isoformat())
+            writer.writerow(row)
 
 
 def test_load_rows_filters_creators_and_maps_metric_pair(tmp_path, monkeypatch):
@@ -92,6 +100,18 @@ def test_pareto_front_uses_generic_plot_coordinates():
     ]
 
     assert [row["slug"] for row in plot_pareto.pareto_front(rows)] == ["cheap", "better"]
+
+
+def test_plot_rejects_cross_benchmark_cost_pair():
+    try:
+        plot_pareto.validate_metric_pair(
+            "agentic_index_cost_per_task_usd",
+            "intelligence_index",
+        )
+    except SystemExit as exc:
+        assert "cannot be paired" in str(exc)
+    else:
+        raise AssertionError("cross-benchmark pair was accepted")
 
 
 def test_plot_pareto_price_axis_preserves_sub_dollar_labels():
