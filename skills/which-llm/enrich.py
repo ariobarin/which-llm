@@ -23,6 +23,7 @@ import re
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 
 ART = Path(__file__).parent / "artifacts"
@@ -31,6 +32,7 @@ OR_JSON = ART / "openrouter.json"
 OUT_CSV = ART / "models_enriched.csv"
 UNMATCHED_TXT = ART / "unmatched.txt"
 OR_FIELDS = ["openrouter_slug", "openrouter_free_slug", "openrouter_has_free"]
+TIMESTAMP_FIELD = "snapshot_updated_at_utc"
 
 OR_URL = "https://openrouter.ai/api/v1/models"
 UA = "Mozilla/5.0 (compatible; aa-scrape/1.0)"
@@ -206,6 +208,45 @@ def load_aa_rows() -> list[dict]:
     return rows
 
 
+def _timestamp(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def enforce_snapshot_monotonicity(enriched: list[dict], previous: list[dict]) -> bool:
+    """Keep a newer tracked timestamp when a stale edge returns identical data."""
+    if not enriched or not previous:
+        return False
+    current_stamps = {row.get(TIMESTAMP_FIELD) or "" for row in enriched}
+    previous_stamps = {row.get(TIMESTAMP_FIELD) or "" for row in previous}
+    if len(current_stamps) != 1 or len(previous_stamps) != 1:
+        raise RuntimeError("snapshot rows must carry one consistent source timestamp")
+    current_stamp = current_stamps.pop()
+    previous_stamp = previous_stamps.pop()
+    if not current_stamp or not previous_stamp:
+        raise RuntimeError("snapshot source timestamp is missing")
+    if _timestamp(current_stamp) >= _timestamp(previous_stamp):
+        return False
+
+    def without_timestamp(row: dict) -> dict:
+        return {key: value for key, value in row.items() if key != TIMESTAMP_FIELD}
+
+    unchanged = (
+        len(enriched) == len(previous)
+        and all(
+            without_timestamp(current) == without_timestamp(prior)
+            for current, prior in zip(enriched, previous)
+        )
+    )
+    if not unchanged:
+        raise RuntimeError(
+            f"refusing changed snapshot dated {current_stamp}; "
+            f"tracked snapshot is newer at {previous_stamp}"
+        )
+    for row in enriched:
+        row[TIMESTAMP_FIELD] = previous_stamp
+    return True
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--refresh", action="store_true",
@@ -215,6 +256,11 @@ def main() -> int:
     or_models = fetch_openrouter(args.refresh)
     print(f"OpenRouter catalog: {len(or_models)} models")
 
+    previous_rows = (
+        list(csv.DictReader(OUT_CSV.open(encoding="utf-8")))
+        if OUT_CSV.exists()
+        else []
+    )
     aa_rows = load_aa_rows()
     print(f"AA scrape:          {len(aa_rows)} models")
 
@@ -253,6 +299,9 @@ def main() -> int:
             "openrouter_free_slug": free_slug,
             "openrouter_has_free": "true" if free_slug else "false",
         })
+
+    if enforce_snapshot_monotonicity(enriched, previous_rows):
+        print("  kept newer tracked source timestamp for unchanged data")
 
     # Write the enriched CSV.
     fieldnames = list(aa_rows[0].keys()) + OR_FIELDS
