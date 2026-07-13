@@ -237,6 +237,31 @@ def _placement_order(ax, rows: list[dict]) -> list[dict]:
     return [rows[index] for _nearest, index in sorted(density)]
 
 
+def _point_obstacles(
+    fig,
+    ax,
+    rows: list[dict],
+    *,
+    elbow_slugs: set[str] | None = None,
+) -> list:
+    """Reserve visible clearance around important model markers."""
+    from matplotlib.transforms import Bbox
+
+    elbow_slugs = elbow_slugs or set()
+    obstacles = []
+    for row in rows:
+        center_x, center_y = ax.transData.transform((row["_x"], row["_y"]))
+        half_points = 8.5 if row.get("slug") in elbow_slugs else 6.5
+        half_pixels = half_points * fig.dpi / 72
+        obstacles.append(Bbox.from_extents(
+            center_x - half_pixels,
+            center_y - half_pixels,
+            center_x + half_pixels,
+            center_y + half_pixels,
+        ))
+    return obstacles
+
+
 def _annotate_points(
     fig,
     ax,
@@ -402,7 +427,9 @@ def render_frontier_chart(
             linewidths=1.7, zorder=5,
         )
 
-    placed = []
+    placed = _point_obstacles(
+        fig, ax, front + near, elbow_slugs=elbow_slugs,
+    )
     _annotate_points(
         fig, ax, selected,
         tier="frontier", elbow_slugs=elbow_slugs, placed=placed,

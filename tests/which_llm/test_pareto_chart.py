@@ -1,5 +1,7 @@
 import math
 
+import pytest
+
 import pareto_chart
 
 
@@ -113,3 +115,35 @@ def test_fallback_variant_keeps_effort_without_the_long_fallback_name():
     )
 
     assert label == "Claude Fable 5 (max)"
+
+
+def test_labels_clear_important_model_markers():
+    plt = pytest.importorskip("matplotlib.pyplot")
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 10)
+    selected = [{"_x": 5, "_y": 5, "slug": "front", "name": "Frontier model"}]
+    important = selected + [
+        {"_x": 5.4, "_y": 5.2, "slug": "near", "name": "Nearby model"},
+    ]
+    blockers = pareto_chart._point_obstacles(fig, ax, important)
+    blocker_count = len(blockers)
+
+    placed_count = pareto_chart._annotate_points(
+        fig,
+        ax,
+        selected,
+        tier="frontier",
+        elbow_slugs=set(),
+        placed=blockers,
+    )
+    label_boxes = blockers[blocker_count:]
+
+    assert placed_count == 1
+    assert label_boxes
+    assert not any(
+        label.overlaps(marker)
+        for label in label_boxes
+        for marker in blockers[:blocker_count]
+    )
+    plt.close(fig)
