@@ -313,7 +313,7 @@ def main() -> int:
             if len(sample_matches) < 8:
                 sample_matches.append((r["slug"], paid_slug, free_slug))
         else:
-            # Track only non-deprecated unmatched for noise reduction.
+            # Track only non-deprecated unmatched models to keep the report focused.
             if (r.get("deprecated") or "").lower() != "true":
                 unmatched.append(f"{r['slug']:45s}  {r['name']}")
         enriched.append({

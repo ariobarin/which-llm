@@ -7,7 +7,7 @@ import math
 import sys
 from pathlib import Path
 
-import reduction_chart
+import pareto_chart
 
 
 _ART = Path(__file__).parent / "artifacts"
@@ -31,14 +31,14 @@ FIELD_LABELS = {
     "e2e_response_seconds": "End to End Response Time (seconds, log scale)",
 }
 
-shorten = reduction_chart.shorten
+shorten = pareto_chart.shorten
 
 
 def format_axis_value(value: float, is_usd: bool) -> str:
     """Preserve the compatibility CLI's public tick formatting helper."""
     if not is_usd:
         return f"{value:g}"
-    return reduction_chart.format_axis_value(value, True)
+    return pareto_chart.format_axis_value(value, True)
 
 
 def _float(value):
@@ -145,7 +145,7 @@ def validate_metric_pair(x_field: str, y_field: str) -> None:
 
 
 def _load_plot_deps():
-    return reduction_chart._load_plot_deps()
+    return pareto_chart._load_plot_deps()
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -197,7 +197,7 @@ def main() -> int:
         print(f"  {row['_x']:8.2f}  {row['_y']:6.2f}  {row['name']}")
 
     output = Path(args.out)
-    reduction_chart.render_frontier_chart(
+    pareto_chart.render_frontier_chart(
         rows, front, near,
         x_field=args.x_field,
         y_field=args.y_field,
@@ -207,7 +207,7 @@ def main() -> int:
         near_pct=args.near,
         chart_path=output,
     )
-    print(f"# cost context: {reduction_chart.metric_scope(args.x_field)}", file=sys.stderr)
+    print(f"# cost context: {pareto_chart.metric_scope(args.x_field)}", file=sys.stderr)
     print(f"\nSaved {output}")
     return 0
 

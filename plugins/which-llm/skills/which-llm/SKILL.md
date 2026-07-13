@@ -22,7 +22,7 @@ with `${CLAUDE_SKILL_DIR}` in Claude Code.
 | Inspect one model | `python profile.py <model>` | Model profile |
 | Resolve natural names | `python resolve.py <model>...` | Selected slugs plus alternates |
 | Resolve endpoint names | `python slug.py <model>` | Provider endpoint record |
-| Generate tradeoff frontier | `python frontier.py [preset] [filters]` | PNG chart plus CSV data |
+| Generate Pareto frontier | `python frontier.py [preset] [filters]` | PNG chart plus CSV data |
 | Export filtered rows | `python export.py [preset] [filters]` | CSV or JSON file |
 
 `query.py` and `plot_pareto.py` remain available for compatibility, but the
