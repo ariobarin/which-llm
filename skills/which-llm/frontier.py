@@ -4,16 +4,16 @@ import argparse
 import math
 from pathlib import Path
 
-import reduction_chart
+import pareto_chart
 import which_llm_core as core
 
 
 def _load_plot_deps():
-    return reduction_chart._load_plot_deps()
+    return pareto_chart._load_plot_deps()
 
 
-def _label_rows(front: list[dict], limit: int = 5) -> list[dict]:
-    return reduction_chart.signal_rows(front, limit)
+def _label_rows(front: list[dict], limit: int | None = None) -> list[dict]:
+    return pareto_chart.signal_rows(front, limit)
 
 
 def _status_rows(rows: list[dict], front: list[dict], near: list[dict]) -> list[dict]:
@@ -35,13 +35,13 @@ def _unique_fields(fields: list[str]) -> list[str]:
 
 
 def _format_axis_value(value: float, is_usd: bool) -> str:
-    return reduction_chart.format_axis_value(value, is_usd)
+    return pareto_chart.format_axis_value(value, is_usd)
 
 
 def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
           x_field: str, y_field: str, x_dir: str, near_pct: float,
           chart_path: Path) -> None:
-    reduction_chart.render_frontier_chart(
+    pareto_chart.render_frontier_chart(
         rows, front, near,
         x_field=x_field,
         y_field=y_field,
@@ -55,7 +55,7 @@ def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Generate an LLM tradeoff frontier chart plus data.",
+        description=f"Generate an LLM {pareto_chart.CHART_TITLE} chart plus data.",
     )
     parser.add_argument("preset", nargs="?", default="cost-intel",
                         choices=sorted(core.FRONTIER_PRESETS),
