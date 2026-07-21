@@ -1,4 +1,4 @@
-# Unmatched non-deprecated AA models (135 total)
+# Unmatched non-deprecated AA models (134 total)
 # Run: python enrich.py  (regenerates this file)
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
@@ -35,7 +35,6 @@ granite-4-0-h-small                            Granite 4.0 H Small
 granite-4-0-nano-1b                            Granite 4.0 1B
 granite-4-1-30b                                Granite 4.1 30B
 granite-4-1-3b                                 Granite 4.1 3B
-grok-build-0-1-06-16                           Grok Build 0.1 0616
 hermes-4-llama-3-1-405b                        Hermes 4 - Llama-3.1 405B (Non-reasoning)
 hermes-4-llama-3-1-405b-reasoning              Hermes 4 - Llama-3.1 405B (Reasoning)
 hermes-4-llama-3-1-70b                         Hermes 4 - Llama-3.1 70B (Non-reasoning)
@@ -67,10 +66,10 @@ ling-mini-2-0                                  Ling-mini-2.0
 llama-3-1-instruct-405b                        Llama 3.1 Instruct 405B
 llama-3-1-nemotron-instruct-70b                Llama 3.1 Nemotron Instruct 70B
 llama-3-1-nemotron-ultra-253b-v1-reasoning     Llama 3.1 Nemotron Ultra 253B v1 (Reasoning)
+llama-3-2-instruct-11b-vision                  Llama 3.2 Instruct 11B (Vision)
 llama-3-2-instruct-90b-vision                  Llama 3.2 Instruct 90B (Vision)
 llama-nemotron-super-49b-v1-5                  Llama Nemotron Super 49B v1.5 (Non-reasoning)
 llama-nemotron-super-49b-v1-5-reasoning        Llama Nemotron Super 49B v1.5 (Reasoning)
-longcat-2-0                                    LongCat 2.0
 longcat-flash-lite                             LongCat Flash Lite
 magistral-medium-2509                          Magistral Medium 1.2
 magistral-small-2509                           Magistral Small 1.2
@@ -89,9 +88,9 @@ ministral-3-8b                                 Ministral 3 8B
 mistral-large-3                                Mistral Large 3
 molmo-7b-d                                     Molmo 7B-D
 molmo2-8b                                      Molmo2-8B
+motif-0714                                     Motif 3 (Beta)
 motif-2-12-7b                                  Motif-2-12.7B-Reasoning
 muse-spark                                     Muse Spark
-muse-spark-1-1                                 Muse Spark 1.1 (xhigh)
 nanbeige4-1-3b                                 Nanbeige4.1-3B
 nemotron-cascade-2-30b-a3b                     Nemotron Cascade 2 30B A3B
 nova-2-0-lite                                  Nova 2.0 Lite (Non-reasoning)
