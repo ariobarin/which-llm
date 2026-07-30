@@ -1,5 +1,6 @@
-# Unmatched non-deprecated AA models (134 total)
+# Unmatched non-deprecated AA models (133 total)
 # Run: python enrich.py  (regenerates this file)
+agnes-2-5-pro-alpha                            Agnes 2.5 Pro Alpha
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
 apriel-v1-6-15b-thinker                        Apriel-v1.6-15B-Thinker
@@ -19,6 +20,7 @@ exaone-4-0-32b-reasoning                       EXAONE 4.0 32B (Reasoning)
 exaone-4-5-33b                                 EXAONE 4.5 33B
 exaone-4-5-33b-non-reasoning                   EXAONE 4.5 33B (Non-reasoning)
 falcon-h1r-7b                                  Falcon-H1R-7B
+g9v3-3b                                        G9v3-3B
 gemini-3-deep-think                            Gemini 3 Deep Think
 gemma-3-270m                                   Gemma 3 270M
 gemma-4-12b                                    Gemma 4 12B (Reasoning)
@@ -128,9 +130,6 @@ ring-flash-2-0                                 Ring-flash-2.0
 sarvam-105b                                    Sarvam 105B (high)
 sarvam-30b                                     Sarvam 30B (high)
 solar-open-100b-reasoning                      Solar Open 100B (Reasoning)
-solar-pro-2                                    Solar Pro 2 (Non-reasoning)
-solar-pro-2-reasoning                          Solar Pro 2 (Reasoning)
 step-3-vl-10b                                  Step3 VL 10B
 tiny-aya-global                                Tiny Aya Global
-tri-21b-think-preview                          Tri-21B-think Preview
 tri-21b-think-v0-5                             Tri-21B-Think
