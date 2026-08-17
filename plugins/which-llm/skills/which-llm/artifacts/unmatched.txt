@@ -1,5 +1,6 @@
-# Unmatched non-deprecated AA models (135 total)
+# Unmatched non-deprecated AA models (137 total)
 # Run: python enrich.py  (regenerates this file)
+a-x-k2                                         A.X-K2
 agnes-2-5-pro-alpha                            Agnes 2.5 Pro Alpha
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
@@ -52,12 +53,12 @@ jt-35b-flash                                   JT-35B-Flash
 jt-4-1-flash-236b-a21b                         JT-4.1 Flash 236B A21B
 jt-mini                                        JT-MINI
 k-exaone                                       K-EXAONE (Reasoning)
+k-exaone-2-0-0803                              K-EXAONE 2.0 0803
 k-exaone-non-reasoning                         K-EXAONE (Non-reasoning)
 k2-think-v2                                    K2 Think V2
 k2-v2                                          K2-V2 (high)
 k2-v2-low                                      K2-V2 (low)
 k2-v2-medium                                   K2-V2 (medium)
-kat-coder-pro-v1                               KAT-Coder-Pro V1
 kimi-linear-48b-a3b-instruct                   Kimi Linear 48B A3B Instruct
 lfm2-2-6b                                      LFM2 2.6B
 lfm2-24b-a2b                                   LFM2 24B A2B
@@ -66,7 +67,7 @@ lfm2-5-1-2b-thinking                           LFM2.5-1.2B-Thinking
 lfm2-5-8b-a1b                                  LFM2.5-8B-A1B
 lfm2-5-vl-1-6b                                 LFM2.5-VL-1.6B
 lfm2-8b-a1b                                    LFM2 8B A1B
-ling-mini-2-0                                  Ling-mini-2.0
+ling-3-0-tiny                                  Ling 3.0 Tiny
 llama-3-1-instruct-405b                        Llama 3.1 Instruct 405B
 llama-3-1-nemotron-instruct-70b                Llama 3.1 Nemotron Instruct 70B
 llama-3-1-nemotron-ultra-253b-v1-reasoning     Llama 3.1 Nemotron Ultra 253B v1 (Reasoning)
@@ -78,7 +79,6 @@ longcat-flash-lite                             LongCat Flash Lite
 magistral-medium-2509                          Magistral Medium 1.2
 magistral-small-2509                           Magistral Small 1.2
 mi-dm-k-2-5-pro-dec28                          Mi:dm K 2.5 Pro
-midm-250-pro-rsnsft                            Mi:dm K 2.5 Pro Preview
 mimo-v2-0206                                   MiMo-V2-Flash (Feb 2026)
 mimo-v2-flash                                  MiMo-V2-Flash (Non-reasoning)
 mimo-v2-omni                                   MiMo-V2-Omni
@@ -94,7 +94,8 @@ molmo-7b-d                                     Molmo 7B-D
 molmo2-8b                                      Molmo2-8B
 motif-0714                                     Motif 3 (Beta)
 motif-2-12-7b                                  Motif-2-12.7B-Reasoning
-muse-spark                                     Muse Spark
+motif-3                                        Motif 3
+muse-glimmer                                   Muse Glimmer (high)
 nanbeige4-1-3b                                 Nanbeige4.1-3B
 nemotron-cascade-2-30b-a3b                     Nemotron Cascade 2 30B A3B
 nova-2-0-lite                                  Nova 2.0 Lite (Non-reasoning)
@@ -132,6 +133,7 @@ ring-flash-2-0                                 Ring-flash-2.0
 sarvam-105b                                    Sarvam 105B (high)
 sarvam-30b                                     Sarvam 30B (high)
 solar-open-100b-reasoning                      Solar Open 100B (Reasoning)
+solar-open2-250b                               Solar Open2 250B
 step-3-vl-10b                                  Step3 VL 10B
 tiny-aya-global                                Tiny Aya Global
 tri-21b-think-v0-5                             Tri-21B-Think
