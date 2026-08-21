@@ -1,4 +1,4 @@
-# Unmatched non-deprecated AA models (137 total)
+# Unmatched non-deprecated AA models (138 total)
 # Run: python enrich.py  (regenerates this file)
 a-x-k2                                         A.X-K2
 agnes-2-5-pro-alpha                            Agnes 2.5 Pro Alpha
@@ -47,6 +47,7 @@ hermes-4-llama-3-1-70b-reasoning               Hermes 4 - Llama-3.1 70B (Reasoni
 hyperclova-x-seed-think-32b                    HyperCLOVA X SEED Think (32B)
 hypernova-60b                                  HyperNova 60B 2605
 intellect-3                                    INTELLECT-3
+jamba-1-7-large                                Jamba 1.7 Large
 jamba-1-7-mini                                 Jamba 1.7 Mini
 jamba-reasoning-3b                             Jamba Reasoning 3B
 jt-35b-flash                                   JT-35B-Flash
