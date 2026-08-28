@@ -125,19 +125,32 @@ def find_catalog_manifest(stream: str, min_models: int = MIN_MODELS) -> tuple[li
 def find_model_array(
     stream: str, *, min_models: int, required_keys: set[str]
 ) -> list[dict]:
+    """
+    Find an array of model-like dicts in the RSC JSON stream that contains the
+    required keys. Artificial Analysis recently moved the agentic capability
+    data from a `"models"` array to an `"initialModels"` array on the page,
+    so we search generically for any JSON array value and then filter by
+    structure rather than key name.
+    """
     decoder = json.JSONDecoder()
-    candidates = []
-    for match in re.finditer(r'"models"\s*:\s*\[', stream):
+    candidates: list[list[dict]] = []
+    # Search for any `"someKey": [` pattern, then attempt to decode the array value
+    # starting from the opening bracket. We only keep arrays of dicts where the
+    # first element contains the required keys and the length threshold.
+    for match in re.finditer(r'"([A-Za-z0-9_]+)"\s*:\s*\[', stream):
         try:
             value, _ = decoder.raw_decode(stream, match.end() - 1)
         except json.JSONDecodeError:
             continue
-        if not isinstance(value, list) or len(value) < min_models or not value:
+        if not isinstance(value, list) or not value or len(value) < min_models:
             continue
-        if isinstance(value[0], dict) and required_keys <= set(value[0]):
+        first = value[0]
+        if isinstance(first, dict) and required_keys <= set(first):
             candidates.append(value)
     if not candidates:
         raise RuntimeError(f"No model array found with keys {sorted(required_keys)}")
+    # Prefer the largest matching array to reduce the chance of picking a small
+    # unrelated list that happens to have the same keys.
     return max(candidates, key=len)
 
 
