@@ -146,6 +146,24 @@ def test_optional_failure_preserves_date_and_core_catalog(tmp_path, monkeypatch)
     assert "refresh_error" in bundle["datasets"]["evaluations"]
 
 
+@pytest.mark.parametrize("changed", [False, True])
+def test_stale_edge_keeps_newer_timestamp_only_for_unchanged_rows(tmp_path, monkeypatch, changed):
+    old = {"source_url": "source", "source_updated_at_utc": "2026-09-06T14:00:00Z", "rows": [{"id": "agent", "indexScore": 0.7}]}
+    path = tmp_path / "aa_data.json"
+    path.write_text(json.dumps({"schema_version": 1, "datasets": {"coding-agents": old}}))
+    monkeypatch.setattr(data, "DATA_PATH", path)
+    monkeypatch.setattr(scrape, "discover_dataset", lambda url, key:
+                        ({"models": [{"slug": "model", key: {}}]}, "2026-09-06T14:00:00Z", url))
+    home = {"codingAgents": [{"id": "agent", "indexScore": 0.6 if changed else 0.7}],
+            "hostModels": [{"id": "host"}], "media": {}, "speech": {}}
+    monkeypatch.setattr(scrape, "shared_dataset", lambda url: (home, "2026-09-06T10:00:00Z"))
+    bundle = scrape.collect_details([{"slug": "model"}], "2026-09-06T14:00:00Z")
+    table = bundle["datasets"]["coding-agents"]
+    assert table["source_updated_at_utc"] == old["source_updated_at_utc"]
+    assert table["rows"] == old["rows"]
+    assert bool(bundle["refresh_errors"]) is changed
+
+
 def test_current_benchmarks_keep_zero_and_nested_details():
     row = scrape.flatten({"slug": "test", "gdpPdfAllPass": 0, "terminalbenchV21": 0.75,
                           "briefcaseBreakdown": {"overall": {"elo": 1400}},
