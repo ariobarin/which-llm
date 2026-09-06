@@ -1,14 +1,17 @@
-# Unmatched non-deprecated AA models (138 total)
+# Unmatched non-deprecated AA models (153 total)
 # Run: python enrich.py  (regenerates this file)
 a-x-k2                                         A.X-K2
 agnes-2-5-pro-alpha                            Agnes 2.5 Pro Alpha
+agnes-2-5-pro-beta                             Agnes 2.5 Pro Beta
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
+apodex-1-1                                     Apodex 1.1
 apriel-v1-6-15b-thinker                        Apriel-v1.6-15B-Thinker
 celeris-1                                      Celeris-1
 cogito-v2-1-reasoning                          Cogito v2.1 (Reasoning)
 deephermes-3-llama-3-1-8b-preview              DeepHermes 3 - Llama-3.1 8B Preview (Non-reasoning)
 deephermes-3-mistral-24b-preview               DeepHermes 3 - Mistral 24B Preview (Non-reasoning)
+deepseek-v4-flash-vision                       DeepSeek V4 Flash Vision (Reasoning, Max Effort)
 devstral-2                                     Devstral 2
 devstral-small-2                               Devstral Small 2
 diffusiongemma-26b-a4b                         DiffusionGemma 26B A4B
@@ -40,12 +43,15 @@ granite-4-0-h-small                            Granite 4.0 H Small
 granite-4-0-nano-1b                            Granite 4.0 1B
 granite-4-1-30b                                Granite 4.1 30B
 granite-4-1-3b                                 Granite 4.1 3B
+granite-4-1-8b                                 Granite 4.1 8B
+granite-4-2-30b                                Granite 4.2 30B
+granite-4-2-3b                                 Granite 4.2 3B
 hermes-4-llama-3-1-405b                        Hermes 4 - Llama-3.1 405B (Non-reasoning)
 hermes-4-llama-3-1-405b-reasoning              Hermes 4 - Llama-3.1 405B (Reasoning)
 hermes-4-llama-3-1-70b                         Hermes 4 - Llama-3.1 70B (Non-reasoning)
 hermes-4-llama-3-1-70b-reasoning               Hermes 4 - Llama-3.1 70B (Reasoning)
 hyperclova-x-seed-think-32b                    HyperCLOVA X SEED Think (32B)
-hypernova-60b                                  HyperNova 60B 2605
+hypernova-60b                                  HyperNova 60B 2605 (high, based on gpt-oss-120b)
 intellect-3                                    INTELLECT-3
 jamba-1-7-large                                Jamba 1.7 Large
 jamba-1-7-mini                                 Jamba 1.7 Mini
@@ -54,8 +60,9 @@ jt-35b-flash                                   JT-35B-Flash
 jt-4-1-flash-236b-a21b                         JT-4.1 Flash 236B A21B
 jt-mini                                        JT-MINI
 k-exaone                                       K-EXAONE (Reasoning)
-k-exaone-2-0-0803                              K-EXAONE 2.0 0803
+k-exaone-2-0-0803                              K-EXAONE 2.0
 k-exaone-non-reasoning                         K-EXAONE (Non-reasoning)
+k2-horizon-375b-a23b                           K2 Horizon 375B A23B
 k2-think-v2                                    K2 Think V2
 k2-v2                                          K2-V2 (high)
 k2-v2-low                                      K2-V2 (low)
@@ -112,12 +119,17 @@ nova-2-0-pro-reasoning-medium                  Nova 2.0 Pro Preview (medium)
 nova-micro                                     Nova Micro
 nova-premier                                   Nova Premier
 nvidia-nemotron-3-nano-4b                      NVIDIA Nemotron 3 Nano 4B
+nvidia-nemotron-nano-12b-v2-vl                 NVIDIA Nemotron Nano 12B v2 VL (Non-reasoning)
+nvidia-nemotron-nano-12b-v2-vl-reasoning       NVIDIA Nemotron Nano 12B v2 VL (Reasoning)
+nvidia-nemotron-nano-9b-v2                     NVIDIA Nemotron Nano 9B V2 (Non-reasoning)
+nvidia-nemotron-nano-9b-v2-reasoning           NVIDIA Nemotron Nano 9B V2 (Reasoning)
 olmo-3-1-32b-instruct                          Olmo 3.1 32B Instruct
 olmo-3-1-32b-think                             Olmo 3.1 32B Think
 olmo-3-7b-instruct                             Olmo 3 7B Instruct
 olmo-3-7b-think                                Olmo 3 7B Think
 phi-4-mini                                     Phi-4 Mini Instruct
 phi-4-multimodal                               Phi-4 Multimodal Instruct
+quasar-438b                                    Quasar 438B (max, based on GLM-5.2)
 qwen3-5-0-8b                                   Qwen3.5 0.8B (Reasoning)
 qwen3-5-0-8b-non-reasoning                     Qwen3.5 0.8B (Non-reasoning)
 qwen3-5-2b                                     Qwen3.5 2B (Reasoning)
@@ -126,10 +138,13 @@ qwen3-5-4b                                     Qwen3.5 4B (Reasoning)
 qwen3-5-4b-non-reasoning                       Qwen3.5 4B (Non-reasoning)
 qwen3-5-omni-flash                             Qwen3.5 Omni Flash
 qwen3-5-omni-plus                              Qwen3.5 Omni Plus
+qwen3-8-flash-next                             Qwen3.8-Flash-Next
+qwen3-8-max                                    Qwen3.8 Max
 qwen3-next-80b-a3b-reasoning                   Qwen3 Next 80B A3B (Reasoning)
 qwen3-omni-30b-a3b-instruct                    Qwen3 Omni 30B A3B Instruct
 qwen3-omni-30b-a3b-reasoning                   Qwen3 Omni 30B A3B (Reasoning)
 r1-1776                                        R1 1776
+ring-2-6-1t                                    Ring-2.6-1T
 ring-flash-2-0                                 Ring-flash-2.0
 sarvam-105b                                    Sarvam 105B (high)
 sarvam-30b                                     Sarvam 30B (high)

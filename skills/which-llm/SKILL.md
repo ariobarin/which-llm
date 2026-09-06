@@ -6,9 +6,11 @@ description: Inspect current LLM tradeoffs across quality, price, speed, context
 # which-llm
 
 This skill provides a current Artificial Analysis plus OpenRouter snapshot and
-small Python commands for model selection data. Data readiness is internal to
-each command: cached data is used immediately, missing data is created
-automatically, and stale or undated data stops recommendations until refreshed.
+Python commands for model selection data. Fresh cached data works offline.
+Missing, stale, or undated data is replaced automatically from the published
+daily snapshot, with main as a fallback. Normal use needs only Python 3.10+.
+If neither published snapshot is current, the command explains the failure and
+preserves the cache without recommending from stale data.
 
 Run commands from this skill directory with `python`, or call scripts by path
 with `${CLAUDE_SKILL_DIR}` in Claude Code.
@@ -23,6 +25,7 @@ with `${CLAUDE_SKILL_DIR}` in Claude Code.
 | Resolve natural names | `python resolve.py <model>...` | Selected slugs plus alternates |
 | Resolve endpoint names | `python slug.py <model>` | Provider endpoint record |
 | Generate Pareto frontier | `python frontier.py [preset] [filters]` | PNG chart plus CSV data |
+| Inspect detailed AA datasets | `python data.py [dataset] [filters]` | Source-dated JSON |
 | Export filtered rows | `python export.py [preset] [filters]` | CSV or JSON file |
 
 `query.py` and `plot_pareto.py` remain available for compatibility, but the
@@ -67,14 +70,14 @@ and model behavior can materially change total spend.
 | `long-context` | Context window at least 256K tokens. |
 | `open-weights` | Open-weight models. |
 | `free` | Models with OpenRouter free prototype endpoints. |
-| `coding` | Ranked by Artificial Analysis coding index. |
+| `coding` | Legacy Coding Index, available only when AA supplies it. |
 
 ## Frontier Presets
 
 | Preset | X metric | Y metric |
 |---|---|---|
 | `cost-intel` | Intelligence Index cost per task, minimized | Intelligence, maximized |
-| `agentic-cost` | Agentic Index cost per task, minimized | Agentic Index, maximized |
+| `agentic-cost` | Legacy Agentic Index cost per task, when available | Legacy Agentic Index |
 | `speed-intel` | End to end latency, minimized | Intelligence, maximized |
 | `tokens-intel` | Benchmark-run tokens, minimized | Intelligence, maximized |
 | `context-intel` | Context window, maximized | Intelligence, maximized |
@@ -124,7 +127,7 @@ data file.
 selecting the strongest ambiguous match and listing alternates is acceptable.
 
 `export.py` accepts `--fields core`, `pricing`, `context`, `benchmarks`,
-`coding`, `slugs`, or `full`. Field groups can be combined with commas, such
+`coding`, `speed`, `slugs`, or `full`. Field groups can be combined with commas, such
 as `--fields pricing,context`. Exact columns can be selected with
 `--columns name,openrouter_slug,coding_index`.
 
@@ -139,7 +142,7 @@ Replace `N` with a price ceiling in USD per million input tokens.
 | Fast quality shortlist | `python pick.py best --min-intel 30 --sort speed --top 5` |
 | Low input-price shortlist | `python pick.py best --min-intel 40 --sort input-price --top 5` |
 | Low-price image-capable shortlist | `python pick.py vision --min-intel 40 --sort input-price --top 5` |
-| Price-aware coding shortlist | `python pick.py coding --min-coding 45 --sort input-price --top 5` |
+| Coding-agent evidence | `python data.py coding-agents --sort indexScore --top 5` |
 | Long-context ranked by input price | `python pick.py long-context --min-intel 40 --sort input-price --top 5` |
 | Long-context under input-price budget | `python pick.py long-context --min-intel 40 --max-input-price N --sort input-price --top 5` |
 | Low output-price shortlist | `python pick.py best --max-output-price 5 --sort output-price --top 5` |
@@ -154,7 +157,8 @@ Replace `N` with a price ceiling in USD per million input tokens.
 | `pricing` | Benchmark-run cost, token use, API prices, cache price, and slugs. |
 | `context` | Context window, modalities, reasoning, open weights, and slug. |
 | `coding` | API prices, context, OpenRouter slugs, coding scores, and coding benchmarks. |
-| `benchmarks` | Intelligence, coding, agentic, math, and benchmark scores. |
+| `benchmarks` | Current and legacy benchmark scores, including Briefcase, GDP.pdf, Terminal-Bench v2.1, and hallucination metrics. |
+| `speed` | Output tokens per second, latency, speed percentiles, and measurement provider. |
 | `slugs` | Internal slug, OpenRouter production slug, and free slug. |
 | `full` | All tracked columns. |
 
@@ -181,21 +185,59 @@ Replace `N` with a price ceiling in USD per million input tokens.
 ```text
 python pick.py best --min-intel 50 --sort cost --image --top 8
 python pick.py vision --min-intel 40 --sort input-price --top 5
-python pick.py coding --min-coding 45 --sort input-price --top 5
+python data.py coding-agents --sort indexScore --top 5
 python pick.py long-context --min-intel 40 --sort input-price --top 5
 python compare.py gpt-5-5-medium glm-5-2
 python resolve.py "gemini flash" "gpt nano"
 python profile.py glm-5-2
 python slug.py glm-5-2
 python frontier.py cost-intel --max-x 1200 --out-dir artifacts
-python frontier.py agentic-cost --image --out-dir artifacts
+python data.py capabilities --sort capabilities.legal.headlineValue --top 5
 python export.py open-weights --fields pricing,context --format csv
 python export.py open-weights --reasoning --fields coding --format csv
 ```
 
+## Detailed datasets
+
+Run `python data.py` to list available datasets, row counts, source dates, and
+freshness. `python data.py <dataset>` returns ten raw records as JSON; use
+`--model TEXT`, `--fields a,b`, `--sort FIELD`, `--ascending`, and `--top N`
+(`0` means all). Nested paths preserve AA's field names and units.
+
+- `catalog` preserves all model fields, including effort, licenses, speed
+  distributions, benchmark costs, and token breakdowns.
+- `evaluations` preserves benchmark subscores, confidence intervals, domain
+  breakdowns, and canonical evaluation token counts.
+- `capabilities` contains domain indices with their matching task costs, times,
+  tokens, and subscores. List a record to discover current capability names.
+- `coding-agents` contains agent and model configurations, scores, costs,
+  timing, token use, evaluation components, and version information.
+- `media/*` and `speech/*` contain AA's available image, video, and speech
+  leaderboard records. `providers` is the homepage comparison subset.
+
+The legacy Coding and Agentic indices are no longer supplied by AA. For coding
+agents, use `data.py coding-agents`; for individual model benchmarks, use
+`export.py --fields coding`. Do not equate an agent configuration's score with
+a model-only score. Keep scores, costs, and times from the same evaluation and
+configuration. Elo, proportions, percentages, and WER retain source units;
+lower WER is better. Inspect fields before choosing a numeric sort.
+
+```text
+python data.py coding-agents --sort indexScore --fields displayLabel,indexScore,mean.costUsd,mean.agentWallTimeSec --top 5
+python data.py capabilities --sort capabilities.legal.headlineValue --fields name,capabilities.legal --top 5
+python data.py evaluations --model gpt-6-astra --fields name,gdpPdfAllPass,gdpPdfBreakdown
+python data.py media/textToImage --sort elo --fields name,elo,lower95ci,upper95ci
+python data.py speech/sttNonStreaming --sort werIndex --ascending
+```
+
+Each dataset keeps its own source date. An unavailable secondary source cannot
+block the model refresh; any retained data keeps its old date and an error.
+Commands refuse stale datasets. Complete coverage is limited to the shared
+public datasets, not every AA article, provider endpoint, or historical chart.
+
 ## Do Not Use For
 
-- Domain evals or private benchmarks that Artificial Analysis does not track.
+- Evaluations or private benchmarks that Artificial Analysis does not publish.
 - Models so new that Artificial Analysis has not indexed them yet.
 - Authoritative non-OpenRouter provider pricing. Verify those prices with the
   provider.

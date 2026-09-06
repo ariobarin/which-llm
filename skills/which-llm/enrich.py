@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import io
 import re
 import time
 import urllib.error
@@ -63,7 +64,7 @@ NAME_NOISE = re.compile(
 
 def _get_json(url: str, timeout: int = 60):
     """Fetch JSON with a small retry loop for transient upstream failures."""
-    transient_status = {502, 503, 504, 520, 521, 522, 524}
+    transient_status = {429, 500, 502, 503, 504, 520, 521, 522, 524}
     last_error: Exception | None = None
     for attempt in range(4):
         try:
@@ -75,10 +76,10 @@ def _get_json(url: str, timeout: int = 60):
             if exc.code not in transient_status:
                 raise
             last_error = exc
-        except urllib.error.URLError as exc:
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
             last_error = exc
         if attempt < 3:
-            time.sleep(2 * attempt)
+            time.sleep(2 ** attempt)
     if last_error is not None:
         raise last_error
     raise RuntimeError(f"failed to fetch {url}")
@@ -277,6 +278,8 @@ def main() -> int:
     args = ap.parse_args()
 
     or_models = fetch_openrouter(args.refresh)
+    if not or_models or not all(isinstance(model, dict) and model.get("id") for model in or_models):
+        raise RuntimeError("OpenRouter returned an empty or invalid model catalog")
     print(f"OpenRouter catalog: {len(or_models)} models")
 
     previous_rows = (
@@ -328,10 +331,12 @@ def main() -> int:
 
     # Write the enriched CSV.
     fieldnames = list(aa_rows[0].keys()) + OR_FIELDS
-    with OUT_CSV.open("w", encoding="utf-8", newline="") as f:
+    from data import atomic_write
+    with io.StringIO(newline="") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
         w.writeheader()
         w.writerows(enriched)
+        atomic_write(OUT_CSV, f.getvalue())
     print(f"  wrote {OUT_CSV}")
 
     # Persist unmatched slugs to a tracked artifact so match-rate regressions

@@ -5,12 +5,15 @@ import argparse
 import csv
 import gzip
 import hashlib
+import io
 import json
 import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
+from html.parser import HTMLParser
 from datetime import timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -19,7 +22,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
 URL = "https://artificialanalysis.ai/models"
-AGENTIC_URL = "https://artificialanalysis.ai/models/capabilities/agentic"
+BASE_URL = "https://artificialanalysis.ai"
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
@@ -32,7 +35,7 @@ MIN_MODELS = 400
 
 
 def _open(url: str, timeout: int = 60):
-    transient = {502, 503, 504, 520, 521, 522, 524}
+    transient = {429, 500, 502, 503, 504, 520, 521, 522, 524}
     last_error: Exception | None = None
     for attempt in range(4):
         try:
@@ -42,10 +45,10 @@ def _open(url: str, timeout: int = 60):
             if exc.code not in transient:
                 raise
             last_error = exc
-        except urllib.error.URLError as exc:
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
             last_error = exc
         if attempt < 3:
-            time.sleep(2 * attempt)
+            time.sleep(2 ** attempt)
     raise last_error or RuntimeError(f"failed to fetch {url}")
 
 
@@ -74,8 +77,19 @@ _CHUNK_RE = re.compile(
     r'self\.__next_f\.push\(\[(\d+),\s*"((?:[^"\\]|\\.)*)"\]\)', re.DOTALL
 )
 _MANIFEST_RE = re.compile(
-    r'"manifest":\{"path":"([^"]+)","key":"([0-9a-f]{64})"\}'
+    r'"manifest"\s*:\s*(\{[^{}]+\})'
 )
+
+
+def manifests(stream: str):
+    seen = set()
+    for match in _MANIFEST_RE.finditer(stream):
+        value = json.loads(match.group(1))
+        path, key = value.get("path"), value.get("key")
+        if isinstance(path, str) and isinstance(key, str) and re.fullmatch(r"[0-9a-f]{64}", key):
+            if (path, key) not in seen:
+                seen.add((path, key))
+                yield path, key
 
 
 def extract_rsc_stream(html: str) -> str:
@@ -102,7 +116,7 @@ def _decrypt_manifest(path: str, key_hex: str) -> tuple[object, str | None]:
 
 def find_catalog_manifest(stream: str, min_models: int = MIN_MODELS) -> tuple[list[dict], str]:
     errors = []
-    for path, key in _MANIFEST_RE.findall(stream):
+    for path, key in manifests(stream):
         try:
             value, updated = _decrypt_manifest(path, key)
         except Exception as exc:
@@ -122,45 +136,102 @@ def find_catalog_manifest(stream: str, min_models: int = MIN_MODELS) -> tuple[li
     raise RuntimeError(f"No valid AA model manifest found. {detail}".strip())
 
 
-def find_model_array(
-    stream: str, *, min_models: int, required_keys: set[str]
-) -> list[dict]:
-    """
-    Find an array of model-like dicts in the RSC JSON stream that contains the
-    required keys. Artificial Analysis recently moved the agentic capability
-    data from a `"models"` array to an `"initialModels"` array on the page,
-    so we search generically for any JSON array value and then filter by
-    structure rather than key name.
-    """
-    decoder = json.JSONDecoder()
-    candidates: list[list[dict]] = []
-    # Search for any `"someKey": [` pattern, then attempt to decode the array value
-    # starting from the opening bracket. We only keep arrays of dicts where the
-    # first element contains the required keys and the length threshold.
-    for match in re.finditer(r'"([A-Za-z0-9_]+)"\s*:\s*\[', stream):
+class PageLinks(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.links = set()
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "a":
+            href = dict(attrs).get("href", "")
+            if href.startswith(("/evaluations/", "/models/capabilities/")):
+                self.links.add(href.split("#")[0])
+
+
+def shared_dataset(url: str, row_key: str | None = None) -> tuple[dict, str]:
+    stream = extract_rsc_stream(_get_text(url))
+    errors = []
+    for path, key in manifests(stream):
         try:
-            value, _ = decoder.raw_decode(stream, match.end() - 1)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(value, list) or not value or len(value) < min_models:
-            continue
-        first = value[0]
-        if isinstance(first, dict) and required_keys <= set(first):
-            candidates.append(value)
-    if not candidates:
-        raise RuntimeError(f"No model array found with keys {sorted(required_keys)}")
-    # Prefer the largest matching array to reduce the chance of picking a small
-    # unrelated list that happens to have the same keys.
-    return max(candidates, key=len)
+            value, updated = _decrypt_manifest(path, key)
+            if not isinstance(value, dict) or not updated:
+                continue
+            if row_key:
+                rows = value.get("models")
+                if not isinstance(rows, list) or not rows:
+                    continue
+                if not all(isinstance(row, dict) and row.get("slug") for row in rows):
+                    continue
+                if not any(row_key in row for row in rows):
+                    continue
+            elif not all(isinstance(value.get(key), kind) for key, kind in
+                         (("media", dict), ("speech", dict), ("codingAgents", list))):
+                continue
+            return value, updated
+        except Exception as exc:
+            errors.append(str(exc))
+    raise RuntimeError(f"No dated shared dataset at {url}: {'; '.join(errors[:2])}")
 
 
-def fetch_agentic_models() -> list[dict]:
-    stream = extract_rsc_stream(_get_text(AGENTIC_URL))
-    return find_model_array(
-        stream,
-        min_models=20,
-        required_keys={"slug", "headlineValue", "costPerTask", "evalCost"},
-    )
+def discover_dataset(index_url: str, row_key: str) -> tuple[dict, str, str]:
+    links = PageLinks()
+    links.feed(_get_text(index_url))
+    prefix = urllib.parse.urlparse(index_url).path.rstrip("/") + "/"
+    errors = []
+    for path in sorted(link for link in links.links if link.startswith(prefix)):
+        url = BASE_URL + path
+        try:
+            value, updated = shared_dataset(url, row_key)
+            return value, updated, url
+        except (RuntimeError, OSError, ValueError) as exc:
+            errors.append(f"{url}: {exc}")
+    raise RuntimeError(f"No shared dataset discovered from {index_url}: {'; '.join(errors[:3])}")
+
+
+def collect_details(models: list[dict], updated_at: str) -> dict:
+    from data import DATA_PATH, age_days, read_bundle
+
+    try:
+        previous = read_bundle(DATA_PATH)
+    except (OSError, ValueError):
+        previous = {"datasets": {}}
+    datasets = {"catalog": {"source_url": URL, "source_updated_at_utc": updated_at, "rows": models}}
+    groups = [
+        ("evaluations", BASE_URL + "/evaluations", "canonicalEvalTokenCounts"),
+        ("capabilities", BASE_URL + "/models/capabilities", "capabilities"),
+        ("home", BASE_URL, None),
+    ]
+    errors = {}
+    for name, url, row_key in groups:
+        try:
+            if row_key:
+                value, stamp, source_url = discover_dataset(url, row_key)
+                tables = {name: value["models"]}
+            else:
+                value, stamp = shared_dataset(url)
+                source_url = url
+                tables = {"coding-agents": value["codingAgents"], "providers": value.get("hostModels", [])}
+                for group in ("media", "speech"):
+                    tables.update({f"{group}/{key}": rows for key, rows in value[group].items()})
+            for table, rows in tables.items():
+                if not isinstance(rows, list) or not rows or not all(isinstance(row, dict) for row in rows):
+                    raise RuntimeError(f"Empty or invalid {table} dataset")
+                cached = previous["datasets"].get(table, {})
+                if cached and len(rows) < len(cached["rows"]) * 0.8:
+                    raise RuntimeError(f"{table} lost over 20% of its rows")
+                if cached and age_days(stamp) > age_days(cached.get("source_updated_at_utc")):
+                    raise RuntimeError(f"{table} source timestamp regressed")
+            datasets.update({table: {"source_url": source_url, "source_updated_at_utc": stamp,
+                                    **({"scope": "AA homepage provider comparison subset, not the full hosting catalog"} if table == "providers" else {}),
+                                    "rows": rows}
+                             for table, rows in tables.items()})
+        except (RuntimeError, OSError, ValueError) as exc:
+            errors[name] = str(exc)
+            print(f"WARNING: {name} unavailable: {exc}", file=sys.stderr)
+            for table, cached in previous["datasets"].items():
+                if table == name or (name == "home" and table not in {"catalog", "evaluations", "capabilities"}):
+                    datasets[table] = {**cached, "refresh_error": str(exc)}
+    return {"schema_version": 1, "refresh_errors": errors, "datasets": datasets}
 
 
 CSV_FIELDS = [
@@ -189,6 +260,31 @@ CSV_FIELDS = [
     "parameters_billions", "active_parameters_billions", "size_class",
     "ttft_seconds", "e2e_response_seconds",
 ]
+
+EXTRA_FIELDS = {
+    "release_slug": "release.slug", "reasoning_effort": "effort.slug",
+    "license_name": "licenseName", "license_url": "licenseUrl",
+    "weights_url": "modelWeightsSourceUrl", "openness_category": "openSourceCategorization",
+    "openness_index": "openness.opennessIndex", "cache_write_price": "cacheWritePrice",
+    "output_tokens_per_second": "timescaleData.medianOutputSpeed",
+    "time_to_first_chunk_seconds": "timescaleData.medianTimeToFirstChunk",
+    "output_speed_p05": "outputSpeedVariance.p05", "output_speed_p95": "outputSpeedVariance.p95",
+    "performance_provider": "performanceDataSource.providerName",
+    "intelligence_index_time_per_task_seconds": "intelligenceIndexTimePerTask",
+    "intelligence_index_output_tokens_per_task": "intelligenceIndexOutputTokensPerTask.output",
+    "intelligence_index_reasoning_tokens_per_task": "intelligenceIndexOutputTokensPerTask.reasoning",
+    "intelligence_index_answer_tokens_per_task": "intelligenceIndexOutputTokensPerTask.answer",
+    "briefcase_elo": "briefcaseBreakdown.overall.elo",
+    "briefcase_rubric_pass_rate": "briefcaseBreakdown.rubricPassRate",
+    "gdp_pdf_all_pass": "gdpPdfAllPass", "gdpval_normalized": "gdpvalNormalized",
+    "tau3_banking": "tauBanking", "terminalbench_v2_1": "terminalbenchV21",
+    "terminalbench_v4_0": "terminalbenchV40", "analyst_agent": "analystAgent",
+    "automation_bench": "automationBenchPartialScore", "enterprise_ops_gym": "enterpriseOpsGym",
+    "harvey_lab": "harveyLab", "itbench_sre": "itBenchSre",
+    "mlcr_overall": "mlcrOverall", "omniscience_accuracy": "omniscienceBreakdown.accuracy",
+    "omniscience_hallucination_rate": "omniscienceBreakdown.hallucinationRate",
+}
+CSV_FIELDS += list(EXTRA_FIELDS)
 
 
 def _nested(value, *keys):
@@ -219,10 +315,10 @@ def flatten(model: dict, agentic: dict | None = None, updated_at: str | None = N
     agentic_cost = agentic.get("costPerTask") or {}
     agentic_total = agentic.get("evalCost") or {}
     agentic_tokens = agentic.get("outputTokensPerTask") or {}
-    return {
+    row = {
         "snapshot_updated_at_utc": updated_at,
         "name": model.get("name"), "short_name": model.get("shortName") or model.get("short_name"),
-        "slug": model.get("slug"), "model_family_slug": model.get("model_family_slug"),
+        "slug": model.get("slug"), "model_family_slug": model.get("model_family_slug") or _nested(model, "release", "slug"),
         "creator_name": creator.get("name"), "creator_slug": creator.get("slug"),
         "release_date": model.get("releaseDate") or model.get("release_date"),
         "knowledge_cutoff_date": model.get("knowledgeCutoffDate") or model.get("knowledge_cutoff_date"),
@@ -278,6 +374,8 @@ def flatten(model: dict, agentic: dict | None = None, updated_at: str | None = N
         "ttft_seconds": _positive(_nested(model, "timeToFirstAnswerToken", "total") or _nested(model, "time_to_first_answer_token_metrics", "total_time")),
         "e2e_response_seconds": _positive(_nested(model, "endToEndResponseTime", "total") or _nested(model, "end_to_end_response_time_metrics", "total_time")),
     }
+    row.update({field: _nested(model, *path.split(".")) for field, path in EXTRA_FIELDS.items()})
+    return row
 
 
 def previous_model_count() -> int | None:
@@ -297,21 +395,35 @@ def main() -> int:
     args = parser.parse_args()
     stream = extract_rsc_stream(fetch_html(args.refresh))
     models, updated_at = find_catalog_manifest(stream)
-    agentic = fetch_agentic_models()
-    print(f"Parsed {len(models)} catalog models and {len(agentic)} agentic rows")
+    print(f"Parsed {len(models)} catalog models")
     prior = previous_model_count()
     if prior and len(models) / prior < 0.8:
         print(f"ABORT: parsed {len(models)} models, previous snapshot had {prior}", file=sys.stderr)
         return 2
-    by_slug = {row["slug"]: row for row in agentic if row.get("slug")}
-    rows = [flatten(model, by_slug.get(model.get("slug")), updated_at) for model in models]
-    if not any(row["slug"].startswith("gpt-5-6") for row in rows):
-        raise RuntimeError("fresh catalog is missing GPT-5.6")
+    slugs = [model.get("slug") for model in models]
+    if not all(slugs) or len(set(slugs)) != len(slugs):
+        raise RuntimeError("catalog contains missing or duplicate slugs")
+    rows = [flatten(model, updated_at=updated_at) for model in models]
+    if not all(any(row[field] is not None for row in rows) for field in
+               ("intelligence_index", "intelligence_index_cost_per_task_usd", "context_window_tokens")):
+        raise RuntimeError("catalog lost required score, cost, or context fields")
+    details = collect_details(models, updated_at)
+    from data import DATA_PATH, atomic_write
+    # One record per line keeps source changes reviewable without expanding every nested metric.
+    tables = []
+    for name, dataset in sorted(details["datasets"].items()):
+        metadata = json.dumps({k: v for k, v in dataset.items() if k != "rows"}, ensure_ascii=False)
+        records = ",\n".join(json.dumps(row, ensure_ascii=False, separators=(",", ":")) for row in dataset["rows"])
+        tables.append(json.dumps(name) + ":" + metadata[:-1] + ',"rows":[\n' + records + "]}")
+    bundle = '{"schema_version":1,"refresh_errors":' + json.dumps(details["refresh_errors"]) + ',"datasets":{\n' + ",\n".join(tables) + "}}\n"
+    atomic_write(DATA_PATH, bundle)
     ART.mkdir(parents=True, exist_ok=True)
-    with CSV_PATH.open("w", encoding="utf-8", newline="") as handle:
+    with io.StringIO(newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=CSV_FIELDS, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
+        atomic_write(CSV_PATH, handle.getvalue())
+    print("  datasets: " + ", ".join(f"{key}={len(value['rows'])}" for key, value in details["datasets"].items()))
     print(f"  source_updated_at: {updated_at}")
     print(f"  wrote {CSV_PATH} ({CSV_PATH.stat().st_size:,} bytes)")
     return 0

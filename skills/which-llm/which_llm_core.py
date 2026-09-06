@@ -174,6 +174,21 @@ FIELD_GROUP_ALIASES = {
     "contexts": "context",
 }
 
+CURRENT_BENCHMARKS = [
+    "briefcase_elo", "briefcase_rubric_pass_rate", "gdpval", "gdp_pdf_all_pass",
+    "tau3_banking", "terminalbench_v2_1", "terminalbench_v4_0", "scicode", "lcr",
+    "critpt", "analyst_agent", "automation_bench", "enterprise_ops_gym", "harvey_lab",
+    "itbench_sre", "mlcr_overall", "omniscience", "omniscience_accuracy",
+    "omniscience_hallucination_rate", "openness_index",
+]
+FIELD_GROUPS["benchmarks"] += CURRENT_BENCHMARKS
+FIELD_GROUPS["coding"] += ["terminalbench_v2_1", "terminalbench_v4_0", "scicode"]
+FIELD_GROUPS["pricing"] += ["cache_write_price", "intelligence_index_time_per_task_seconds",
+                            "intelligence_index_output_tokens_per_task"]
+FIELD_GROUPS["speed"] = ["slug", "name", "output_tokens_per_second", "time_to_first_chunk_seconds",
+                         "ttft_seconds", "e2e_response_seconds", "output_speed_p05", "output_speed_p95",
+                         "performance_provider"]
+
 
 def _number_or(row: dict, field: str, missing):
     value = query._f(row.get(field))
@@ -255,7 +270,7 @@ def add_fields_arg(p: argparse.ArgumentParser) -> None:
         "--fields",
         default="core",
         help=(
-            "Field group or comma list: core, pricing, context, benchmarks, "
+            "Field group or comma list: core, pricing, context, speed, benchmarks, "
             "coding, slugs, full."
         ),
     )
@@ -369,6 +384,12 @@ def sort_name(args, preset: str | None = None) -> str:
 def rank_rows(rows: list[dict], sort: str) -> list[dict]:
     if sort not in SORT_KEYS:
         raise SystemExit(f"unknown sort {sort!r}; valid: {', '.join(SORT_KEYS)}")
+    if rows and sort in {"coding", "agentic"} and not any(query._f(row.get(sort + "_index")) is not None for row in rows):
+        raise SystemExit(
+            f"AA no longer supplies the legacy {sort} index for these models. "
+            "Use data.py coding-agents --sort indexScore for agent configurations, "
+            "or export.py --fields coding for individual model benchmarks."
+        )
     return sorted(rows, key=SORT_KEYS[sort])
 
 
@@ -823,6 +844,7 @@ def profile_text(row: dict) -> str:
         ("math_index", "Math Index"),
         ("agentic_index", "Agentic Index"),
     ]
+    bench_keys += [(key, key.replace("_", " ")) for key in CURRENT_BENCHMARKS]
     modalities = _display_value(row, "modalities")
     lines = [
         f"# {row.get('name') or row.get('slug')}",
@@ -852,6 +874,8 @@ def profile_text(row: dict) -> str:
         f"- input price: {query._fmt_cost(row.get('price_1m_input_tokens'))} per 1M tokens",
         f"- output price: {query._fmt_cost(row.get('price_1m_output_tokens'))} per 1M tokens",
         f"- cached price: {query._fmt_cost(row.get('cache_hit_price'))} per 1M tokens",
+        f"- cache write price: {query._fmt_cost(row.get('cache_write_price'))} per 1M tokens",
+        f"- output tokens per second: {row.get('output_tokens_per_second') or '-'}",
         f"- ttft: {query._fmt_secs(row.get('ttft_seconds'))}s",
         f"- end to end: {query._fmt_secs(row.get('e2e_response_seconds'))}s",
         "",
@@ -863,11 +887,12 @@ def profile_text(row: dict) -> str:
     if query._is_true(row.get("openrouter_has_free")):
         lines.append("- free caveat: prototype only, rate limits and serving details can differ")
     lines.extend(["", "## Benchmarks", ""])
-    for key, label in bench_keys:
+    for key, label in dict(bench_keys).items():
         value = query._f(row.get(key))
         if value is None:
             continue
-        rendered = f"{value * 100:.1f}%" if value < 1 and "index" not in key else f"{value:.1f}"
+        proportion = 0 <= value <= 1 and "index" not in key and key not in {"briefcase_elo", "gdpval", "omniscience"}
+        rendered = f"{value * 100:.1f}%" if proportion else f"{value:.1f}"
         lines.append(f"- {label}: {rendered}")
     return "\n".join(lines)
 

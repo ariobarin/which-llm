@@ -99,12 +99,17 @@ def _data_age_days() -> float | None:
 
 
 def ensure_data() -> None:
-    """If no CSV exists, run scrape.py + enrich.py."""
-    if not (ENRICHED_CSV.exists() or BASE_CSV.exists()):
-        print("# No cached data found, fetching from Artificial Analysis...",
-              file=sys.stderr)
-        _run_python("scrape.py")
-        _run_python("enrich.py")
+    """Use fresh local data; otherwise fetch the published, validated snapshot."""
+    from data import refresh_file, validate_csv
+
+    age = _data_age_days()
+    if age is not None and -1 / 24 <= age <= STALE_AFTER_DAYS:
+        return
+    print("# Fetching the current which-llm snapshot...", file=sys.stderr)
+    try:
+        refresh_file(ENRICHED_CSV, validate_csv)
+    except RuntimeError as exc:
+        raise SystemExit(f"{exc}. Cached data was preserved. Maintainers can run: python query.py data refresh") from exc
 
 
 def require_fresh_data() -> None:

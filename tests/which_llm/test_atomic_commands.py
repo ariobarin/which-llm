@@ -687,6 +687,9 @@ def test_coding_export_group_is_focused():
         "coding_index",
         "livecodebench",
         "terminalbench_hard",
+        "terminalbench_v2_1",
+        "terminalbench_v4_0",
+        "scicode",
     ]
 
 
