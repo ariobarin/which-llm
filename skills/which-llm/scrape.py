@@ -213,15 +213,19 @@ def collect_details(models: list[dict], updated_at: str) -> dict:
                 tables = {"coding-agents": value["codingAgents"], "providers": value.get("hostModels", [])}
                 for group in ("media", "speech"):
                     tables.update({f"{group}/{key}": rows for key, rows in value[group].items()})
+            stamps = {}
             for table, rows in tables.items():
+                stamps[table] = stamp
                 if not isinstance(rows, list) or not rows or not all(isinstance(row, dict) for row in rows):
                     raise RuntimeError(f"Empty or invalid {table} dataset")
                 cached = previous["datasets"].get(table, {})
                 if cached and len(rows) < len(cached["rows"]) * 0.8:
                     raise RuntimeError(f"{table} lost over 20% of its rows")
                 if cached and age_days(stamp) > age_days(cached.get("source_updated_at_utc")):
-                    raise RuntimeError(f"{table} source timestamp regressed")
-            datasets.update({table: {"source_url": source_url, "source_updated_at_utc": stamp,
+                    if rows != cached["rows"]:
+                        raise RuntimeError(f"{table} source timestamp regressed with changed data")
+                    stamps[table] = cached["source_updated_at_utc"]
+            datasets.update({table: {"source_url": source_url, "source_updated_at_utc": stamps[table],
                                     **({"scope": "AA homepage provider comparison subset, not the full hosting catalog"} if table == "providers" else {}),
                                     "rows": rows}
                              for table, rows in tables.items()})
