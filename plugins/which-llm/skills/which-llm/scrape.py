@@ -164,7 +164,8 @@ def shared_dataset(url: str, row_key: str | None = None) -> tuple[dict, str]:
                     continue
                 if not any(row_key in row for row in rows):
                     continue
-            elif not all(key in value for key in ("media", "speech", "codingAgents")):
+            elif not all(isinstance(value.get(key), kind) for key, kind in
+                         (("media", dict), ("speech", dict), ("codingAgents", list))):
                 continue
             return value, updated
         except Exception as exc:

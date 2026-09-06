@@ -103,6 +103,15 @@ def test_shared_dataset_uses_complete_manifest_not_preview(monkeypatch):
     assert result == complete
 
 
+def test_shared_dataset_rejects_changed_home_schema(monkeypatch):
+    page = _rsc(json.dumps({"manifest": {"path": "/data/home.txt", "key": "a" * 64}}))
+    monkeypatch.setattr(scrape, "_get_text", lambda url: page)
+    monkeypatch.setattr(scrape, "_decrypt_manifest", lambda *args:
+                        ({"media": None, "speech": [], "codingAgents": []}, "2026-09-06T00:00:00Z"))
+    with pytest.raises(RuntimeError, match="No dated shared dataset"):
+        scrape.shared_dataset("https://artificialanalysis.ai")
+
+
 def test_discovery_survives_retired_page(monkeypatch):
     monkeypatch.setattr(scrape, "_get_text", lambda url:
                         '<a href="/evaluations/a-retired">Old</a><a href="/evaluations/b-current">Current</a>')

@@ -24,7 +24,7 @@ PUBLISHED_ROOTS = [
 
 
 def age_days(stamp: str | None) -> float:
-    if not stamp:
+    if not isinstance(stamp, str) or not stamp:
         return math.inf
     try:
         parsed = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
