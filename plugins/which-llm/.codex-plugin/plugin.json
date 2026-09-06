@@ -1,6 +1,6 @@
 {
   "name": "which-llm",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Codex plugin wrapper for the agent-agnostic which-llm skill.",
   "author": {
     "name": "Ari Obarin",

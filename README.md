@@ -28,7 +28,7 @@ Compare GPT-5, Claude, and Gemini for coding.
 What is the OpenRouter slug for Claude Opus?
 ```
 
-Requires Python 3.10+. No API keys are needed. First use is offline because the enriched CSV snapshot is checked in.
+Requires Python 3.10+. No API keys are needed. A current bundled snapshot works offline; commands automatically download a current snapshot when the local copy is missing, undated, or older than two days. Scraping dependencies are only needed by maintainers refreshing directly from AA.
 
 ## Optional Plugin Wrapper
 
@@ -53,6 +53,7 @@ Run commands from `skills/which-llm`.
 | `python resolve.py <model>...` | Selected slugs plus alternates. |
 | `python slug.py <model>` | Provider endpoint record. |
 | `python frontier.py [preset] [filters]` | PNG chart plus CSV data. |
+| `python data.py [dataset] [filters]` | Source-dated AA datasets and nested metrics as JSON. |
 | `python export.py [preset] [filters]` | CSV or JSON file. |
 
 Data readiness is handled inside each command. `query.py` and `plot_pareto.py`
@@ -85,7 +86,7 @@ Common behavior is built by composing presets, filters, and sorts:
 python pick.py best --min-intel 50 --sort cost --top 5
 python pick.py best --min-intel 30 --sort speed --top 5
 python pick.py vision --min-intel 40 --sort input-price --top 5
-python pick.py coding --min-coding 45 --sort input-price --top 5
+python data.py coding-agents --sort indexScore --top 5
 python pick.py long-context --min-intel 40 --sort input-price --top 5
 python pick.py long-context --min-intel 40 --max-input-price N --sort input-price --top 5
 ```
@@ -93,11 +94,11 @@ python pick.py long-context --min-intel 40 --max-input-price N --sort input-pric
 Replace `N` with a price ceiling in USD per million input tokens.
 
 Export field groups: `core`, `pricing`, `context`, `benchmarks`, `coding`,
-`slugs`, and `full`. Groups can be combined with commas, such as
+`speed`, `slugs`, and `full`. Groups can be combined with commas, such as
 `--fields pricing,context`. Exact CSV columns can be selected with
-`--columns name,openrouter_slug,coding_index`.
+`--columns name,openrouter_slug,terminalbench_v2_1`.
 The `coding` group includes API prices, context, OpenRouter slugs, coding
-scores, and coding benchmarks.
+scores, and coding benchmarks. AA has retired its legacy Coding and Agentic indices; use `data.py coding-agents` for current agent configurations, or `export.py --fields coding` for individual benchmarks.
 
 ## Example
 
@@ -131,6 +132,7 @@ Tracked runtime data:
 | File | Contents |
 |---|---|
 | `skills/which-llm/artifacts/models_enriched.csv` | The compact AA plus OpenRouter snapshot used by the commands. |
+| `skills/which-llm/artifacts/aa_data.json` | Full catalog and evaluation records, six capability indices, coding agents, media and speech leaderboards, and the homepage provider subset. |
 | `skills/which-llm/artifacts/unmatched.txt` | Non-deprecated AA models without OpenRouter matches. |
 
 Regenerable refresh intermediates such as `models.html`, `models.csv`, `models.json`, and `openrouter.json` are ignored to keep skill installs small.
@@ -147,7 +149,18 @@ python skills/which-llm/pick.py best --top 3
 
 Edit `skills/which-llm` first, then run `python scripts/sync_plugin_wrapper.py` to refresh the optional plugin wrapper. The mirror test fails if the wrapper drifts.
 
-The daily GitHub Action refreshes the canonical skill snapshot, syncs the plugin wrapper, and commits CSV diffs when the public catalogs move. The snapshot carries the upstream data timestamp, and stale or undated data stops recommendations.
+The daily GitHub Action reads four shared AA datasets, enriches model rows with OpenRouter, validates the runtime snapshot, syncs the plugin wrapper, and publishes to `automation/daily-data-refresh`. Its PR updates bundled copies on main; installed skills fetch directly from the daily branch, so fresh data does not wait for a PR merge. Failed downloads preserve the cache. Failed secondary sources retain their own source dates and errors while the main model refresh can continue.
+
+The scraper discovers evaluation and capability pages from AA's listings and reads their complete shared manifests rather than the initial chart selection. Raw nested records preserve new fields without adding a column for each one. Run `python data.py` to see dataset names, counts, dates, and freshness. See the skill's detailed dataset examples for sorting and selecting nested metrics.
+
+To refresh directly from AA and OpenRouter:
+
+```bash
+python -m pip install ./skills/which-llm
+python skills/which-llm/query.py data refresh
+```
+
+Normal queries need no third-party packages. Plotting requires the `plot` extra.
 
 ## License
 

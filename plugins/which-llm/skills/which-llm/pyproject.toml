@@ -1,6 +1,6 @@
 [project]
 name = "which-llm"
-version = "0.4.0"
+version = "0.5.0"
 description = "Agent skill: query current LLM intelligence, cost, capabilities, and OpenRouter slugs (incl. free tier) from Artificial Analysis."
 license = "MIT"
 requires-python = ">=3.10"
@@ -19,6 +19,7 @@ test = [
 [tool.setuptools]
 py-modules = [
     "compare",
+    "data",
     "enrich",
     "export",
     "frontier",

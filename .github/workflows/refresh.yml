@@ -9,6 +9,10 @@ on:
     - cron: "0 12 * * *"  # Every day at 12:00 UTC
   workflow_dispatch:
 
+concurrency:
+  group: daily-data-refresh
+  cancel-in-progress: false
+
 defaults:
   run:
     working-directory: skills/which-llm
@@ -21,6 +25,7 @@ permissions:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # actions/checkout@v4 (resolved 2026-05-23)
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -40,6 +45,12 @@ jobs:
       - name: Refresh OpenRouter enrichment
         run: python enrich.py --refresh
 
+      - name: Validate runtime snapshot
+        run: |
+          python -c "from data import validate_csv; from pathlib import Path; validate_csv(Path('artifacts/models_enriched.csv').read_text())"
+          python pick.py best --top 3
+          python data.py
+
       - name: Sync plugin wrapper
         working-directory: ${{ github.workspace }}
         run: python scripts/sync_plugin_wrapper.py
@@ -56,8 +67,10 @@ jobs:
             git fetch origin "$REFRESH_BRANCH:refs/remotes/origin/$REFRESH_BRANCH" || true
             git switch -C "$REFRESH_BRANCH" "$GITHUB_SHA"
             git add skills/which-llm/artifacts/models_enriched.csv \
+                    skills/which-llm/artifacts/aa_data.json \
                     skills/which-llm/artifacts/unmatched.txt \
                     plugins/which-llm/skills/which-llm/artifacts/models_enriched.csv \
+                    plugins/which-llm/skills/which-llm/artifacts/aa_data.json \
                     plugins/which-llm/skills/which-llm/artifacts/unmatched.txt
             if git diff --cached --quiet; then
               echo "No artifact changes; nothing to commit."
