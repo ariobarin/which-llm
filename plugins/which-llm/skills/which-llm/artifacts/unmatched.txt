@@ -1,8 +1,9 @@
-# Unmatched non-deprecated AA models (153 total)
+# Unmatched non-deprecated AA models (156 total)
 # Run: python enrich.py  (regenerates this file)
 a-x-k2                                         A.X-K2
 agnes-2-5-pro-alpha                            Agnes 2.5 Pro Alpha
 agnes-2-5-pro-beta                             Agnes 2.5 Pro Beta
+agnes-3-0-flash                                Agnes 3.0 Flash
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
 apodex-1-1                                     Apodex 1.1
@@ -94,6 +95,7 @@ mimo-v2-omni-0327                              MiMo-V2-Omni-0327
 minicpm-v4-6-1-3b                              MiniCPM-V 4.6 1.3B
 minicpm5-1b                                    MiniCPM5-1B (Reasoning)
 minicpm5-1b-non-reasoning                      MiniCPM5-1B (Non-reasoning)
+minicpm5-2b                                    MiniCPM5-2B
 ministral-3-14b                                Ministral 3 14B
 ministral-3-3b                                 Ministral 3 3B
 ministral-3-8b                                 Ministral 3 8B
@@ -106,6 +108,7 @@ motif-3                                        Motif 3
 muse-glimmer                                   Muse Glimmer (high)
 nanbeige4-1-3b                                 Nanbeige4.1-3B
 nemotron-cascade-2-30b-a3b                     Nemotron Cascade 2 30B A3B
+nex-n2-pro                                     Nex-N2-Pro
 nova-2-0-lite                                  Nova 2.0 Lite (Non-reasoning)
 nova-2-0-lite-reasoning                        Nova 2.0 Lite (high)
 nova-2-0-lite-reasoning-low                    Nova 2.0 Lite (low)
