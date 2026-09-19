@@ -1,8 +1,9 @@
-# Unmatched non-deprecated AA models (153 total)
+# Unmatched non-deprecated AA models (149 total)
 # Run: python enrich.py  (regenerates this file)
 a-x-k2                                         A.X-K2
 agnes-2-5-pro-alpha                            Agnes 2.5 Pro Alpha
 agnes-2-5-pro-beta                             Agnes 2.5 Pro Beta
+agnes-3-0-flash                                Agnes 3.0 Flash
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
 apodex-1-1                                     Apodex 1.1
@@ -40,10 +41,6 @@ granite-4-0-350m                               Granite 4.0 350M
 granite-4-0-h-350m                             Granite 4.0 H 350M
 granite-4-0-h-nano-1b                          Granite 4.0 H 1B
 granite-4-0-h-small                            Granite 4.0 H Small
-granite-4-0-nano-1b                            Granite 4.0 1B
-granite-4-1-30b                                Granite 4.1 30B
-granite-4-1-3b                                 Granite 4.1 3B
-granite-4-1-8b                                 Granite 4.1 8B
 granite-4-2-30b                                Granite 4.2 30B
 granite-4-2-3b                                 Granite 4.2 3B
 hermes-4-llama-3-1-405b                        Hermes 4 - Llama-3.1 405B (Non-reasoning)
@@ -59,22 +56,22 @@ jamba-reasoning-3b                             Jamba Reasoning 3B
 jt-35b-flash                                   JT-35B-Flash
 jt-4-1-flash-236b-a21b                         JT-4.1 Flash 236B A21B
 jt-mini                                        JT-MINI
-k-exaone                                       K-EXAONE (Reasoning)
-k-exaone-2-0-0803                              K-EXAONE 2.0
-k-exaone-non-reasoning                         K-EXAONE (Non-reasoning)
+k-exaone-2-0-0803                              K-EXAONE 2.0 0803
+k2-horizon-0-9b                                K2 Horizon 0.9B
+k2-horizon-3-7b                                K2 Horizon 3.7B
 k2-horizon-375b-a23b                           K2 Horizon 375B A23B
+k2-horizon-7b                                  K2 Horizon 7B
+k2-horizon-mova-36b-a4b                        K2 Horizon MoVA 36B A4B
 k2-think-v2                                    K2 Think V2
 k2-v2                                          K2-V2 (high)
 k2-v2-low                                      K2-V2 (low)
 k2-v2-medium                                   K2-V2 (medium)
 kimi-linear-48b-a3b-instruct                   Kimi Linear 48B A3B Instruct
-lfm2-2-6b                                      LFM2 2.6B
 lfm2-24b-a2b                                   LFM2 24B A2B
 lfm2-5-1-2b-instruct                           LFM2.5-1.2B-Instruct
 lfm2-5-1-2b-thinking                           LFM2.5-1.2B-Thinking
 lfm2-5-8b-a1b                                  LFM2.5-8B-A1B
 lfm2-5-vl-1-6b                                 LFM2.5-VL-1.6B
-lfm2-8b-a1b                                    LFM2 8B A1B
 ling-3-0-tiny                                  Ling 3.0 Tiny
 llama-3-1-instruct-405b                        Llama 3.1 Instruct 405B
 llama-3-1-nemotron-instruct-70b                Llama 3.1 Nemotron Instruct 70B
@@ -88,12 +85,10 @@ magistral-medium-2509                          Magistral Medium 1.2
 magistral-small-2509                           Magistral Small 1.2
 mi-dm-k-2-5-pro-dec28                          Mi:dm K 2.5 Pro
 mimo-v2-0206                                   MiMo-V2-Flash (Feb 2026)
-mimo-v2-flash                                  MiMo-V2-Flash (Non-reasoning)
-mimo-v2-omni                                   MiMo-V2-Omni
-mimo-v2-omni-0327                              MiMo-V2-Omni-0327
 minicpm-v4-6-1-3b                              MiniCPM-V 4.6 1.3B
 minicpm5-1b                                    MiniCPM5-1B (Reasoning)
 minicpm5-1b-non-reasoning                      MiniCPM5-1B (Non-reasoning)
+minicpm5-2b                                    MiniCPM5-2B
 ministral-3-14b                                Ministral 3 14B
 ministral-3-3b                                 Ministral 3 3B
 ministral-3-8b                                 Ministral 3 8B
@@ -106,6 +101,7 @@ motif-3                                        Motif 3
 muse-glimmer                                   Muse Glimmer (high)
 nanbeige4-1-3b                                 Nanbeige4.1-3B
 nemotron-cascade-2-30b-a3b                     Nemotron Cascade 2 30B A3B
+nex-n2-pro                                     Nex-N2-Pro (based on Qwen3.5-397B-A17B)
 nova-2-0-lite                                  Nova 2.0 Lite (Non-reasoning)
 nova-2-0-lite-reasoning                        Nova 2.0 Lite (high)
 nova-2-0-lite-reasoning-low                    Nova 2.0 Lite (low)
@@ -139,7 +135,6 @@ qwen3-5-4b-non-reasoning                       Qwen3.5 4B (Non-reasoning)
 qwen3-5-omni-flash                             Qwen3.5 Omni Flash
 qwen3-5-omni-plus                              Qwen3.5 Omni Plus
 qwen3-8-flash-next                             Qwen3.8-Flash-Next
-qwen3-8-max                                    Qwen3.8 Max
 qwen3-next-80b-a3b-reasoning                   Qwen3 Next 80B A3B (Reasoning)
 qwen3-omni-30b-a3b-instruct                    Qwen3 Omni 30B A3B Instruct
 qwen3-omni-30b-a3b-reasoning                   Qwen3 Omni 30B A3B (Reasoning)
@@ -151,5 +146,6 @@ sarvam-30b                                     Sarvam 30B (high)
 solar-open-100b-reasoning                      Solar Open 100B (Reasoning)
 solar-open2-250b                               Solar Open2 250B
 step-3-vl-10b                                  Step3 VL 10B
+step-5                                         Step 5 Preview
 tiny-aya-global                                Tiny Aya Global
 tri-21b-think-v0-5                             Tri-21B-Think
