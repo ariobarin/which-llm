@@ -1,4 +1,4 @@
-# Unmatched non-deprecated AA models (140 total)
+# Unmatched non-deprecated AA models (142 total)
 # Run: python enrich.py  (regenerates this file)
 a-x-k2                                         A.X-K2
 apertus-70b-instruct                           Apertus 70B Instruct
@@ -9,7 +9,7 @@ celeris-1                                      Celeris-1
 cogito-v2-1-reasoning                          Cogito v2.1 (Reasoning)
 deephermes-3-llama-3-1-8b-preview              DeepHermes 3 - Llama-3.1 8B Preview (Non-reasoning)
 deephermes-3-mistral-24b-preview               DeepHermes 3 - Mistral 24B Preview (Non-reasoning)
-deepseek-v4-flash-vision                       DeepSeek V4 Flash Vision (Reasoning, Max Effort)
+deepseek-v4-flash-vision                       DeepSeek V4 Flash Vision (Max)
 diffusiongemma-26b-a4b                         DiffusionGemma 26B A4B
 doubao-seed-code                               Doubao Seed Code
 ernie-4-5-300b-a47b                            ERNIE 4.5 300B A47B
@@ -18,12 +18,13 @@ exaone-4-0-1-2b                                Exaone 4.0 1.2B (Non-reasoning)
 exaone-4-0-1-2b-reasoning                      Exaone 4.0 1.2B (Reasoning)
 exaone-4-0-32b                                 EXAONE 4.0 32B (Non-reasoning)
 exaone-4-0-32b-reasoning                       EXAONE 4.0 32B (Reasoning)
-exaone-4-5-33b                                 EXAONE 4.5 33B
+exaone-4-5-33b                                 EXAONE 4.5 33B (Reasoning)
 exaone-4-5-33b-non-reasoning                   EXAONE 4.5 33B (Non-reasoning)
 falcon-h1r-7b                                  Falcon-H1R-7B
 g9v3-39a5b                                     G9v3-39A5B
 g9v3-3b                                        G9v3-3B
 gemini-3-deep-think                            Gemini 3 Deep Think
+gemini-4-argon                                 Gemini 4 Argon (High)
 gemma-3-270m                                   Gemma 3 270M
 gemma-4-12b                                    Gemma 4 12B (Reasoning)
 gemma-4-12b-non-reasoning                      Gemma 4 12B (Non-reasoning)
@@ -43,13 +44,14 @@ hermes-4-llama-3-1-405b-reasoning              Hermes 4 - Llama-3.1 405B (Reason
 hermes-4-llama-3-1-70b                         Hermes 4 - Llama-3.1 70B (Non-reasoning)
 hermes-4-llama-3-1-70b-reasoning               Hermes 4 - Llama-3.1 70B (Reasoning)
 hyperclova-x-seed-think-32b                    HyperCLOVA X SEED Think (32B)
-hypernova-60b                                  HyperNova 60B 2605 (high, based on gpt-oss-120b)
-intellect-3                                    INTELLECT-3 (based on GLM-4.5-Air)
+hypernova-60b                                  HyperNova 60B 2605 (High, Based on gpt-oss-120b)
+intellect-3                                    INTELLECT-3 (Based on GLM-4.5-Air)
 jamba-1-7-large                                Jamba 1.7 Large
 jamba-1-7-mini                                 Jamba 1.7 Mini
 jamba-reasoning-3b                             Jamba Reasoning 3B
 jt-35b-flash                                   JT-35B-Flash
-jt-4-1-flash-236b-a21b                         JT-4.1 Flash 236B A21B
+jt-4-1-flash-236b-a21b                         JT-4.1 Flash 236B A21B (Reasoning)
+jt-4-1-flash-236b-a21b-non-reasoning           JT-4.1 Flash 236B A21B (Non-reasoning)
 jt-mini                                        JT-MINI
 k-exaone-2-0-0803                              K-EXAONE 2.0 0803
 k2-horizon-0-9b                                K2 Horizon 0.9B
@@ -58,9 +60,9 @@ k2-horizon-375b-a23b                           K2 Horizon 375B A23B
 k2-horizon-7b                                  K2 Horizon 7B
 k2-horizon-mova-36b-a4b                        K2 Horizon MoVA 36B A4B
 k2-think-v2                                    K2 Think V2
-k2-v2                                          K2-V2 (high)
-k2-v2-low                                      K2-V2 (low)
-k2-v2-medium                                   K2-V2 (medium)
+k2-v2                                          K2-V2 (High)
+k2-v2-low                                      K2-V2 (Low)
+k2-v2-medium                                   K2-V2 (Medium)
 kat-coder-pro-v2                               KAT Coder Pro V2
 kimi-linear-48b-a3b-instruct                   Kimi Linear 48B A3B Instruct
 lfm2-24b-a2b                                   LFM2 24B A2B
@@ -89,20 +91,20 @@ molmo-7b-d                                     Molmo 7B-D
 molmo2-8b                                      Molmo2-8B
 motif-2-12-7b                                  Motif-2-12.7B-Reasoning
 motif-3                                        Motif 3
-muse-glimmer                                   Muse Glimmer (high)
+muse-glimmer                                   Muse Glimmer (High)
 nanbeige4-1-3b                                 Nanbeige4.1-3B
 nemotron-cascade-2-30b-a3b                     Nemotron Cascade 2 30B A3B
-nex-n2-pro                                     Nex-N2-Pro (based on Qwen3.5-397B-A17B)
+nex-n2-pro                                     Nex-N2-Pro (Based on Qwen3.5-397B-A17B)
 nova-2-0-lite                                  Nova 2.0 Lite (Non-reasoning)
-nova-2-0-lite-reasoning                        Nova 2.0 Lite (high)
-nova-2-0-lite-reasoning-low                    Nova 2.0 Lite (low)
-nova-2-0-lite-reasoning-medium                 Nova 2.0 Lite (medium)
+nova-2-0-lite-reasoning                        Nova 2.0 Lite (High)
+nova-2-0-lite-reasoning-low                    Nova 2.0 Lite (Low)
+nova-2-0-lite-reasoning-medium                 Nova 2.0 Lite (Medium)
 nova-2-0-omni                                  Nova 2.0 Omni (Non-reasoning)
-nova-2-0-omni-reasoning-low                    Nova 2.0 Omni (low)
-nova-2-0-omni-reasoning-medium                 Nova 2.0 Omni (medium)
+nova-2-0-omni-reasoning-low                    Nova 2.0 Omni (Low)
+nova-2-0-omni-reasoning-medium                 Nova 2.0 Omni (Medium)
 nova-2-0-pro                                   Nova 2.0 Pro Preview (Non-reasoning)
-nova-2-0-pro-reasoning-low                     Nova 2.0 Pro Preview (low)
-nova-2-0-pro-reasoning-medium                  Nova 2.0 Pro Preview (medium)
+nova-2-0-pro-reasoning-low                     Nova 2.0 Pro Preview (Low)
+nova-2-0-pro-reasoning-medium                  Nova 2.0 Pro Preview (Medium)
 nova-micro                                     Nova Micro
 nova-premier                                   Nova Premier
 nvidia-nemotron-3-nano-4b                      NVIDIA Nemotron 3 Nano 4B
@@ -116,7 +118,7 @@ olmo-3-7b-instruct                             Olmo 3 7B Instruct
 olmo-3-7b-think                                Olmo 3 7B Think
 phi-4-mini                                     Phi-4 Mini Instruct
 phi-4-multimodal                               Phi-4 Multimodal Instruct
-quasar-438b                                    Quasar 438B (max, based on GLM-5.2)
+quasar-438b                                    Quasar 438B (Max, Based on GLM-5.2)
 qwen3-5-0-8b                                   Qwen3.5 0.8B (Reasoning)
 qwen3-5-0-8b-non-reasoning                     Qwen3.5 0.8B (Non-reasoning)
 qwen3-5-2b                                     Qwen3.5 2B (Reasoning)
@@ -132,8 +134,8 @@ qwen3-omni-30b-a3b-reasoning                   Qwen3 Omni 30B A3B (Reasoning)
 r1-1776                                        R1 1776
 ring-2-6-1t                                    Ring-2.6-1T
 ring-flash-2-0                                 Ring-flash-2.0
-sarvam-105b                                    Sarvam 105B (high)
-sarvam-30b                                     Sarvam 30B (high)
+sarvam-105b                                    Sarvam 105B (High)
+sarvam-30b                                     Sarvam 30B (High)
 solar-open-100b-reasoning                      Solar Open 100B (Reasoning)
 solar-open2-250b                               Solar Open2 250B
 step-3-vl-10b                                  Step3 VL 10B
