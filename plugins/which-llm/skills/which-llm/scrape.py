@@ -68,6 +68,8 @@ def fetch_html(refresh: bool) -> str:
     ART.mkdir(parents=True, exist_ok=True)
     print(f"GET {URL}")
     text = _get_text(URL)
+    if "self.__next_f.push" not in text:
+        raise RuntimeError("AA page has no model-data stream; preserving cached HTML")
     HTML_PATH.write_text(text, encoding="utf-8")
     print(f"  saved {len(text):,} chars -> {HTML_PATH}")
     return text
@@ -84,7 +86,10 @@ _MANIFEST_RE = re.compile(
 def manifests(stream: str):
     seen = set()
     for match in _MANIFEST_RE.finditer(stream):
-        value = json.loads(match.group(1))
+        try:
+            value = json.loads(match.group(1))
+        except json.JSONDecodeError:
+            continue
         path, key = value.get("path"), value.get("key")
         if isinstance(path, str) and isinstance(key, str) and re.fullmatch(r"[0-9a-f]{64}", key):
             if (path, key) not in seen:
@@ -96,7 +101,10 @@ def extract_rsc_stream(html: str) -> str:
     parts = []
     for match in _CHUNK_RE.finditer(html):
         if match.group(1) == "1":
-            parts.append(json.loads('"' + match.group(2) + '"'))
+            try:
+                parts.append(json.loads('"' + match.group(2) + '"'))
+            except json.JSONDecodeError:
+                continue
     if not parts:
         raise RuntimeError("No __next_f.push chunks found - page format changed?")
     return "".join(parts)
@@ -164,8 +172,11 @@ def shared_dataset(url: str, row_key: str | None = None) -> tuple[dict, str]:
                     continue
                 if not any(row_key in row for row in rows):
                     continue
-            elif not all(isinstance(value.get(key), kind) for key, kind in
-                         (("media", dict), ("speech", dict), ("codingAgents", list))):
+            elif not any(
+                isinstance(value.get(key), kind) and bool(value[key])
+                for key, kind in
+                (("media", dict), ("speech", dict), ("codingAgents", list), ("hostModels", list))
+            ):
                 continue
             return value, updated
         except Exception as exc:
@@ -189,12 +200,14 @@ def discover_dataset(index_url: str, row_key: str) -> tuple[dict, str, str]:
 
 
 def collect_details(models: list[dict], updated_at: str) -> dict:
+    """Refresh optional datasets independently; retain dated cached tables on errors."""
     from data import DATA_PATH, age_days, read_bundle
 
     try:
         previous = read_bundle(DATA_PATH)
     except (OSError, ValueError):
         previous = {"datasets": {}}
+    cached_datasets = previous["datasets"]
     datasets = {"catalog": {"source_url": URL, "source_updated_at_utc": updated_at, "rows": models}}
     groups = [
         ("evaluations", BASE_URL + "/evaluations", "canonicalEvalTokenCounts"),
@@ -202,41 +215,66 @@ def collect_details(models: list[dict], updated_at: str) -> dict:
         ("home", BASE_URL, None),
     ]
     errors = {}
-    for name, url, row_key in groups:
+    for group, url, row_key in groups:
+        if row_key:
+            old_tables = {group: cached_datasets[group]} if group in cached_datasets else {}
+        else:
+            old_tables = {
+                name: cached for name, cached in cached_datasets.items()
+                if name not in {"catalog", "evaluations", "capabilities"}
+            }
+
         try:
             if row_key:
                 value, stamp, source_url = discover_dataset(url, row_key)
-                tables = {name: value["models"]}
+                tables = {group: value["models"]}
             else:
                 value, stamp = shared_dataset(url)
                 source_url = url
-                tables = {"coding-agents": value["codingAgents"], "providers": value.get("hostModels", [])}
-                for group in ("media", "speech"):
-                    tables.update({f"{group}/{key}": rows for key, rows in value[group].items()})
-            stamps = {}
-            for table, rows in tables.items():
-                stamps[table] = stamp
+                tables = {}
+                for field, table in (("codingAgents", "coding-agents"), ("hostModels", "providers")):
+                    if field in value:
+                        tables[table] = value[field]
+                for section in ("media", "speech"):
+                    source = value.get(section)
+                    if isinstance(source, dict):
+                        tables.update({f"{section}/{key}": rows for key, rows in source.items()})
+        except (RuntimeError, OSError, ValueError, KeyError, TypeError) as exc:
+            errors[group] = str(exc)
+            print(f"WARNING: {group} unavailable: {exc}", file=sys.stderr)
+            for name, cached in old_tables.items():
+                datasets[name] = {**cached, "refresh_error": str(exc)}
+            continue
+
+        # A missing or malformed table must not discard the valid tables in this group.
+        for name in sorted(set(tables) | set(old_tables)):
+            cached = old_tables.get(name, {})
+            try:
+                if name not in tables:
+                    raise RuntimeError(f"{name} missing from fresh {group} data")
+                rows = tables[name]
                 if not isinstance(rows, list) or not rows or not all(isinstance(row, dict) for row in rows):
-                    raise RuntimeError(f"Empty or invalid {table} dataset")
-                cached = previous["datasets"].get(table, {})
+                    raise RuntimeError(f"Empty or invalid {name} dataset")
                 if cached and len(rows) < len(cached["rows"]) * 0.8:
-                    raise RuntimeError(f"{table} lost over 20% of its rows")
+                    raise RuntimeError(f"{name} lost over 20% of its rows")
+                table_stamp = stamp
                 if cached and age_days(stamp) > age_days(cached.get("source_updated_at_utc")):
                     if rows != cached["rows"]:
-                        raise RuntimeError(f"{table} source timestamp regressed with changed data")
-                    stamps[table] = cached["source_updated_at_utc"]
-            datasets.update({table: {"source_url": source_url, "source_updated_at_utc": stamps[table],
-                                    **({"scope": "AA homepage provider comparison subset, not the full hosting catalog"} if table == "providers" else {}),
-                                    "rows": rows}
-                             for table, rows in tables.items()})
-        except (RuntimeError, OSError, ValueError) as exc:
-            errors[name] = str(exc)
-            print(f"WARNING: {name} unavailable: {exc}", file=sys.stderr)
-            for table, cached in previous["datasets"].items():
-                if table == name or (name == "home" and table not in {"catalog", "evaluations", "capabilities"}):
-                    datasets[table] = {**cached, "refresh_error": str(exc)}
+                        raise RuntimeError(f"{name} source timestamp regressed with changed data")
+                    table_stamp = cached["source_updated_at_utc"]
+                datasets[name] = {
+                    "source_url": source_url,
+                    "source_updated_at_utc": table_stamp,
+                    **({"scope": "AA homepage provider comparison subset, not the full hosting catalog"}
+                       if name == "providers" else {}),
+                    "rows": rows,
+                }
+            except (RuntimeError, KeyError, TypeError) as exc:
+                errors[name] = str(exc)
+                print(f"WARNING: {name} unavailable: {exc}", file=sys.stderr)
+                if cached:
+                    datasets[name] = {**cached, "refresh_error": str(exc)}
     return {"schema_version": 1, "refresh_errors": errors, "datasets": datasets}
-
 
 CSV_FIELDS = [
     "snapshot_updated_at_utc",

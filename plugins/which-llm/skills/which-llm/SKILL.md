@@ -179,6 +179,11 @@ Replace `N` with a price ceiling in USD per million input tokens.
 - `openrouter_slug` is the production endpoint name.
 - `openrouter_free_slug` is a prototype option. Free endpoints can be
   rate-limited or served differently from paid listings.
+- `openrouter_data_status` reports `live` for verified catalog data,
+  `cached` for last-known mappings when OpenRouter fails, or `unavailable`
+  for models without cached mappings. Do not represent cached slugs as current.
+- Optional benchmark datasets can retain dated cached rows with a
+  `refresh_error`. Their source dates remain unchanged; freshness checks still apply.
 
 ## Examples
 
