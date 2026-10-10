@@ -93,6 +93,7 @@ FIELD_GROUPS = {
         "price_1m_output_tokens",
         "e2e_response_seconds",
         "openrouter_slug",
+        "openrouter_data_status",
     ],
     "pricing": [
         "slug",
@@ -160,6 +161,7 @@ FIELD_GROUPS = {
         "openrouter_slug",
         "openrouter_free_slug",
         "openrouter_has_free",
+        "openrouter_data_status",
     ],
 }
 

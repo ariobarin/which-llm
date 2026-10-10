@@ -21,6 +21,7 @@ import csv
 import json
 import io
 import re
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -32,7 +33,7 @@ AA_CSV = ART / "models.csv"
 OR_JSON = ART / "openrouter.json"
 OUT_CSV = ART / "models_enriched.csv"
 UNMATCHED_TXT = ART / "unmatched.txt"
-OR_FIELDS = ["openrouter_slug", "openrouter_free_slug", "openrouter_has_free"]
+OR_FIELDS = ["openrouter_slug", "openrouter_free_slug", "openrouter_has_free", "openrouter_data_status"]
 TIMESTAMP_FIELD = "snapshot_updated_at_utc"
 
 OR_URL = "https://openrouter.ai/api/v1/models"
@@ -91,12 +92,18 @@ def fetch_openrouter(refresh: bool) -> list[dict]:
     else:
         print(f"GET {OR_URL}")
         data = _get_json(OR_URL)
-        OR_JSON.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    models = data.get("data") if isinstance(data, dict) else data
+    if not isinstance(models, list) or len(models) < 100 or not all(
+        isinstance(model, dict) and isinstance(model.get("id"), str) and model["id"]
+        for model in models
+    ):
+        raise RuntimeError("OpenRouter returned an empty or invalid model catalog")
+    # Never overwrite a previously valid cache with a partial/error API response.
+    if refresh or not OR_JSON.exists():
+        from data import atomic_write
+        atomic_write(OR_JSON, json.dumps(data, indent=2))
         print(f"  saved {OR_JSON} ({len(json.dumps(data)):,} bytes)")
-    models = data["data"] if isinstance(data, dict) else data
-    # Sort by id for deterministic indexing order. Without this, a model with
-    # multiple OR variants can flap between runs and pollute the diff.
-    return sorted(models, key=lambda m: m.get("id") or "")
+    return sorted(models, key=lambda m: m["id"])
 
 
 def _norm(s: str) -> str:
@@ -277,11 +284,6 @@ def main() -> int:
                     help="Re-fetch openrouter.json before matching.")
     args = ap.parse_args()
 
-    or_models = fetch_openrouter(args.refresh)
-    if not or_models or not all(isinstance(model, dict) and model.get("id") for model in or_models):
-        raise RuntimeError("OpenRouter returned an empty or invalid model catalog")
-    print(f"OpenRouter catalog: {len(or_models)} models")
-
     previous_rows = (
         list(csv.DictReader(OUT_CSV.open(encoding="utf-8")))
         if OUT_CSV.exists()
@@ -290,7 +292,38 @@ def main() -> int:
     aa_rows = load_aa_rows()
     print(f"AA scrape:          {len(aa_rows)} models")
 
-    exact_idx, loose_idx = build_or_index(or_models)
+    try:
+        or_models = fetch_openrouter(args.refresh)
+    except (OSError, ValueError, RuntimeError) as exc:
+        # The AA data is still usable. Do not erase known-good slugs due to
+        # a broken optional OpenRouter feed; mark each fallback explicitly.
+        if not any(row.get("openrouter_slug") or row.get("openrouter_free_slug")
+                   for row in previous_rows):
+            raise RuntimeError("OpenRouter unavailable and no published slug mappings exist") from exc
+        print(f"WARNING: OpenRouter unavailable ({exc}); retaining cached slug mappings", file=sys.stderr)
+        or_models = None
+    previous_by_slug = {row["slug"]: row for row in previous_rows}
+    if or_models is not None:
+        print(f"OpenRouter catalog: {len(or_models)} models")
+        exact_idx, loose_idx = build_or_index(or_models)
+        previously_matched = [
+            row for row in aa_rows
+            if (old := previous_by_slug.get(row["slug"]))
+            and (old.get("openrouter_slug") or old.get("openrouter_free_slug"))
+        ]
+        still_matched = sum(
+            bool(match_aa_to_or(row, exact_idx, loose_idx))
+            for row in previously_matched
+        )
+        if len(previously_matched) >= 20 and still_matched < len(previously_matched) * 0.8:
+            print(
+                f"WARNING: OpenRouter match count dropped from {len(previously_matched)} "
+                f"to {still_matched}; keeping cached mappings instead",
+                file=sys.stderr,
+            )
+            or_models = None
+    if or_models is None:
+        exact_idx, loose_idx = {}, {}
 
     matched = 0
     free_matched = 0
@@ -299,54 +332,64 @@ def main() -> int:
     sample_matches: list[tuple[str, str, str]] = []
 
     for r in aa_rows:
-        hits = match_aa_to_or(r, exact_idx, loose_idx)
         paid_slug = ""
         free_slug = ""
-        for h in hits:
-            full = h.get("id") or ""
-            if full.endswith(":free"):
-                if not free_slug:
-                    free_slug = full
-            elif not paid_slug:
-                paid_slug = full
+        if or_models is None:
+            cached = previous_by_slug.get(r["slug"], {})
+            paid_slug = cached.get("openrouter_slug") or ""
+            free_slug = cached.get("openrouter_free_slug") or ""
+            source_status = "cached" if paid_slug or free_slug else "unavailable"
+        else:
+            hits = match_aa_to_or(r, exact_idx, loose_idx)
+            for h in hits:
+                full = h.get("id") or ""
+                if full.endswith(":free"):
+                    if not free_slug:
+                        free_slug = full
+                elif not paid_slug:
+                    paid_slug = full
+            source_status = "live"
+
         if paid_slug or free_slug:
             matched += 1
             if free_slug:
                 free_matched += 1
             if len(sample_matches) < 8:
                 sample_matches.append((r["slug"], paid_slug, free_slug))
-        else:
-            # Track only non-deprecated unmatched models to keep the report focused.
-            if (r.get("deprecated") or "").lower() != "true":
-                unmatched.append(f"{r['slug']:45s}  {r['name']}")
+        elif (r.get("deprecated") or "").lower() != "true":
+            unmatched.append(f"{r['slug']:45s}  {r['name']}")
+
         enriched.append({
             **r,
             "openrouter_slug": paid_slug,
             "openrouter_free_slug": free_slug,
             "openrouter_has_free": "true" if free_slug else "false",
+            "openrouter_data_status": source_status,
         })
 
     if enforce_snapshot_monotonicity(enriched, previous_rows):
         print("  kept newer tracked source timestamp for unchanged data")
 
-    # Write the enriched CSV.
     fieldnames = list(aa_rows[0].keys()) + OR_FIELDS
     from data import atomic_write
     with io.StringIO(newline="") as f:
-        w = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
-        w.writeheader()
-        w.writerows(enriched)
+        writer = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(enriched)
         atomic_write(OUT_CSV, f.getvalue())
     print(f"  wrote {OUT_CSV}")
 
-    # Persist unmatched slugs to a tracked artifact so match-rate regressions
-    # show up in `git diff` instead of vanishing into log noise.
     unmatched_sorted = sorted(unmatched)
-    UNMATCHED_TXT.write_text(
+    warning = (
+        "# WARNING: OpenRouter refresh failed; cached slugs may be stale. "
+        "Rows carry openrouter_data_status=cached or unavailable.\n"
+        if or_models is None else ""
+    )
+    atomic_write(
+        UNMATCHED_TXT,
         f"# Unmatched non-deprecated AA models ({len(unmatched_sorted)} total)\n"
         f"# Run: python enrich.py  (regenerates this file)\n"
-        + "\n".join(unmatched_sorted) + "\n",
-        encoding="utf-8",
+        + warning + "\n".join(unmatched_sorted) + "\n",
     )
 
     print(f"\nMatched {matched}/{len(aa_rows)} AA models to OpenRouter "
@@ -357,7 +400,6 @@ def main() -> int:
     for aa, paid, free in sample_matches:
         print(f"  {aa:45s} -> paid={paid or '-'}  free={free or '-'}")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
