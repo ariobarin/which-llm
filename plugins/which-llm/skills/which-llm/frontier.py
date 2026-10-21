@@ -12,10 +12,6 @@ def _load_plot_deps():
     return pareto_chart._load_plot_deps()
 
 
-def _label_rows(front: list[dict], limit: int | None = None) -> list[dict]:
-    return pareto_chart.signal_rows(front, limit)
-
-
 def _status_rows(rows: list[dict], front: list[dict], near: list[dict]) -> list[dict]:
     front_set = {row.get("slug") for row in front}
     near_set = {row.get("slug") for row in near}
@@ -24,18 +20,6 @@ def _status_rows(rows: list[dict], front: list[dict], near: list[dict]) -> list[
         status = "frontier" if row.get("slug") in front_set else "near" if row.get("slug") in near_set else "other"
         out.append({**row, "frontier_status": status})
     return out
-
-
-def _unique_fields(fields: list[str]) -> list[str]:
-    out = []
-    for field in fields:
-        if field not in out:
-            out.append(field)
-    return out
-
-
-def _format_axis_value(value: float, is_usd: bool) -> str:
-    return pareto_chart.format_axis_value(value, is_usd)
 
 
 def _plot(rows: list[dict], front: list[dict], near: list[dict], *,
@@ -95,7 +79,7 @@ def main() -> int:
         args.out_dir,
     )
     data_path = Path(args.data_out) if args.data_out else chart_path.with_suffix(".csv")
-    fields = _unique_fields([
+    fields = list(dict.fromkeys([
         "frontier_status",
         "slug",
         "name",
@@ -112,7 +96,7 @@ def main() -> int:
         "price_1m_output_tokens",
         "e2e_response_seconds",
         "openrouter_slug",
-    ])
+    ]))
     _load_plot_deps()
     core.write_data_file(status_rows, data_path, "csv", fields)
     _plot(

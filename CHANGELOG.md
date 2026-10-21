@@ -44,6 +44,14 @@ loosely follows [SemVer](https://semver.org/).
 - Skill and README docs now present neutral capabilities instead of a
   status-first workflow.
 
+### Fixed
+- The test suite no longer downloads a fresh snapshot into the tracked
+  artifacts. That download broke the plugin mirror check and failed the daily
+  refresh whenever the bundled data was over two days old.
+
+### Removed
+- One-off `dev/` exploration scripts and unused frontier helpers.
+
 ## [0.4.0] - 2026-06-22
 
 ### Added
