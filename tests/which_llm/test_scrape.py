@@ -103,13 +103,13 @@ def test_shared_dataset_uses_complete_manifest_not_preview(monkeypatch):
     assert result == complete
 
 
-def test_shared_dataset_rejects_changed_home_schema(monkeypatch):
+def test_page_tables_rejects_changed_home_schema(monkeypatch):
     page = _rsc(json.dumps({"manifest": {"path": "/data/home.txt", "key": "a" * 64}}))
     monkeypatch.setattr(scrape, "_get_text", lambda url: page)
     monkeypatch.setattr(scrape, "_decrypt_manifest", lambda *args:
-                        ({"media": None, "speech": [], "codingAgents": []}, "2026-09-06T00:00:00Z"))
-    with pytest.raises(RuntimeError, match="No dated shared dataset"):
-        scrape.shared_dataset("https://artificialanalysis.ai")
+                        ({"media": None, "speech": [], "codingAgents": None}, "2026-09-06T00:00:00Z"))
+    with pytest.raises(RuntimeError, match="No dated shared tables"):
+        scrape.page_tables("https://artificialanalysis.ai")
 
 
 def test_discovery_survives_retired_page(monkeypatch):
@@ -139,7 +139,7 @@ def test_optional_failure_preserves_date_and_core_catalog(tmp_path, monkeypatch)
         raise RuntimeError("source disappeared")
 
     monkeypatch.setattr(scrape, "discover_dataset", unavailable)
-    monkeypatch.setattr(scrape, "shared_dataset", unavailable)
+    monkeypatch.setattr(scrape, "page_tables", unavailable)
     bundle = scrape.collect_details([{"slug": "new"}], "2026-09-06T00:00:00Z")
     assert bundle["datasets"]["catalog"]["rows"] == [{"slug": "new"}]
     assert bundle["datasets"]["evaluations"]["source_updated_at_utc"] == old["source_updated_at_utc"]
@@ -154,9 +154,9 @@ def test_stale_edge_keeps_newer_timestamp_only_for_unchanged_rows(tmp_path, monk
     monkeypatch.setattr(data, "DATA_PATH", path)
     monkeypatch.setattr(scrape, "discover_dataset", lambda url, key:
                         ({"models": [{"slug": "model", key: {}}]}, "2026-09-06T14:00:00Z", url))
-    home = {"codingAgents": [{"id": "agent", "indexScore": 0.6 if changed else 0.7}],
-            "hostModels": [{"id": "host"}], "media": {}, "speech": {}}
-    monkeypatch.setattr(scrape, "shared_dataset", lambda url: (home, "2026-09-06T10:00:00Z"))
+    home = {"coding-agents": ([{"id": "agent", "indexScore": 0.6 if changed else 0.7}], "2026-09-06T10:00:00Z"),
+            "providers": ([{"id": "host"}], "2026-09-06T10:00:00Z")}
+    monkeypatch.setattr(scrape, "page_tables", lambda url: home)
     bundle = scrape.collect_details([{"slug": "model"}], "2026-09-06T14:00:00Z")
     table = bundle["datasets"]["coding-agents"]
     assert table["source_updated_at_utc"] == old["source_updated_at_utc"]

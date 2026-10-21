@@ -4,6 +4,7 @@ import csv
 import json
 import sys
 import urllib.error
+from datetime import datetime, timedelta, timezone
 
 import data
 import enrich
@@ -18,15 +19,21 @@ def _csv(path, rows):
         writer.writerows(rows)
 
 
+def _ago(days):
+    stamp = datetime.now(timezone.utc) - timedelta(days=days)
+    return stamp.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def test_home_subtables_refresh_independently(tmp_path, monkeypatch):
+    old, new = _ago(1), _ago(0.5)
     previous = {
-        "coding-agents": {"source_url": "old", "source_updated_at_utc": "2026-10-08T00:00:00Z",
+        "coding-agents": {"source_url": "old", "source_updated_at_utc": old,
                           "rows": [{"id": "old-agent"}]},
-        "media/image": {"source_url": "old", "source_updated_at_utc": "2026-10-08T00:00:00Z",
+        "media/image": {"source_url": "old", "source_updated_at_utc": old,
                         "rows": [{"id": "old-image"}]},
-        "media/text": {"source_url": "old", "source_updated_at_utc": "2026-10-08T00:00:00Z",
+        "media/text": {"source_url": "old", "source_updated_at_utc": old,
                        "rows": [{"id": "old-text"}]},
-        "providers": {"source_url": "old", "source_updated_at_utc": "2026-10-08T00:00:00Z",
+        "providers": {"source_url": "old", "source_updated_at_utc": old,
                       "rows": [{"id": "old-provider"}]},
     }
     path = tmp_path / "aa_data.json"
@@ -34,17 +41,14 @@ def test_home_subtables_refresh_independently(tmp_path, monkeypatch):
     monkeypatch.setattr(data, "DATA_PATH", path)
     monkeypatch.setattr(
         scrape, "discover_dataset",
-        lambda url, key: ({"models": [{"slug": "new", key: 0.5}]}, "2026-10-10T00:00:00Z", url),
+        lambda url, key: ({"models": [{"slug": "new", key: 0.5}]}, new, url),
     )
     monkeypatch.setattr(
-        scrape, "shared_dataset",
-        lambda url: (
-            {"codingAgents": [{"id": "new-agent"}],
-             "media": {"image": [{"id": "new-image"}], "text": []}},
-            "2026-10-10T00:00:00Z",
-        ),
+        scrape, "page_tables",
+        lambda url: {"coding-agents": ([{"id": "new-agent"}], new),
+                     "media/image": ([{"id": "new-image"}], new), "media/text": ([], new)},
     )
-    result = scrape.collect_details([{"slug": "new"}], "2026-10-10T00:00:00Z")
+    result = scrape.collect_details([{"slug": "new"}], new)
     tables = result["datasets"]
     assert tables["catalog"]["rows"] == [{"slug": "new"}]
     assert tables["coding-agents"]["rows"] == [{"id": "new-agent"}]
@@ -53,19 +57,53 @@ def test_home_subtables_refresh_independently(tmp_path, monkeypatch):
     assert tables["providers"]["rows"] == previous["providers"]["rows"]
     assert "refresh_error" in tables["media/text"]
     assert "refresh_error" in tables["providers"]
-    assert tables["coding-agents"]["source_updated_at_utc"] == "2026-10-10T00:00:00Z"
+    assert tables["coding-agents"]["source_updated_at_utc"] == new
     assert "home" not in result["refresh_errors"]
 
 
-def test_home_manifest_accepts_partial_schema(monkeypatch):
-    manifest = {"path": "/data/home.txt", "key": "a" * 64}
-    html = '<script>self.__next_f.push([1, ' + json.dumps(json.dumps({"manifest": manifest})) + '])</script>'
+def test_stale_cache_neither_blocks_shrink_nor_survives_retirement(tmp_path, monkeypatch):
+    stale, new = _ago(10), _ago(0.5)
+    previous = {
+        "coding-agents": {"source_url": "old", "source_updated_at_utc": stale,
+                          "rows": [{"id": f"agent-{i}"} for i in range(10)]},
+        "speech/tts": {"source_url": "old", "source_updated_at_utc": stale, "rows": [{"id": "tts"}]},
+    }
+    path = tmp_path / "aa_data.json"
+    path.write_text(json.dumps({"schema_version": 1, "datasets": previous}))
+    monkeypatch.setattr(data, "DATA_PATH", path)
+    monkeypatch.setattr(scrape, "discover_dataset",
+                        lambda url, key: ({"models": [{"slug": "new", key: 0.5}]}, new, url))
+    monkeypatch.setattr(scrape, "page_tables", lambda url: {
+        "coding-agents": ([{"id": "agent-0"}], new),
+        "speech/ttsHostModels": ([{"id": "tts"}], new),
+    })
+    tables = scrape.collect_details([{"slug": "new"}], new)["datasets"]
+    assert tables["coding-agents"]["rows"] == [{"id": "agent-0"}]
+    assert tables["speech/ttsHostModels"]["rows"] == [{"id": "tts"}]
+    assert "speech/tts" not in tables
+
+
+def test_page_tables_merges_split_manifests(monkeypatch):
+    keys = {"/data/agents.txt": "a", "/data/image.txt": "b", "/data/speech.txt": "c",
+            "/data/hosts.txt": "d", "/data/providers.txt": "e"}
+    stream = "".join(json.dumps({"manifest": {"path": path, "key": key * 64}}) for path, key in keys.items())
+    html = '<script>self.__next_f.push([1, ' + json.dumps(stream) + '])</script>'
     monkeypatch.setattr(scrape, "_get_text", lambda url: html)
-    result = {"codingAgents": [{"id": "a"}]}
-    monkeypatch.setattr(scrape, "_decrypt_manifest",
-                        lambda *args: (result, "2026-10-10T00:00:00Z"))
-    found, _ = scrape.shared_dataset("https://artificialanalysis.ai")
-    assert found == result
+    provider = {"host": {}, "model": {}, "pricing": {}}
+    payloads = {
+        "/data/agents.txt": ({"models": [], "codingAgents": [{"id": "a"}]}, "2026-10-21T01:00:00Z"),
+        "/data/image.txt": ({"media": {"textToImage": [{"id": "i"}]}}, "2026-10-21T02:00:00Z"),
+        "/data/speech.txt": ({"speech": {"sttModels": [{"id": "s"}]}}, "2026-10-21T03:00:00Z"),
+        "/data/hosts.txt": ([{"host": {}, "slug": "not-a-provider-row"}], "2026-10-21T04:00:00Z"),
+        "/data/providers.txt": ([provider], "2026-10-21T05:00:00Z"),
+    }
+    monkeypatch.setattr(scrape, "_decrypt_manifest", lambda path, key: payloads[path])
+    assert scrape.page_tables("https://artificialanalysis.ai") == {
+        "coding-agents": ([{"id": "a"}], "2026-10-21T01:00:00Z"),
+        "media/textToImage": ([{"id": "i"}], "2026-10-21T02:00:00Z"),
+        "speech/sttModels": ([{"id": "s"}], "2026-10-21T03:00:00Z"),
+        "providers": ([provider], "2026-10-21T05:00:00Z"),
+    }
 
 
 def test_openrouter_invalid_api_response_preserves_cache(tmp_path, monkeypatch):

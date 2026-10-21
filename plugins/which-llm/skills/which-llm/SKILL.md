@@ -218,7 +218,10 @@ freshness. `python data.py <dataset>` returns ten raw records as JSON; use
 - `coding-agents` contains agent and model configurations, scores, costs,
   timing, token use, evaluation components, and version information.
 - `media/*` and `speech/*` contain AA's available image, video, and speech
-  leaderboard records. `providers` is the homepage comparison subset.
+  leaderboard records (`ciDelta` is the Elo 95% interval half-width).
+  `providers` has one row per AA-tracked API endpoint with `pricing`,
+  `performance`, and `features`; endpoints AA has not benchmarked lack
+  `performance`.
 
 The legacy Coding and Agentic indices are no longer supplied by AA. For coding
 agents, use `data.py coding-agents`; for individual model benchmarks, use
@@ -231,8 +234,9 @@ lower WER is better. Inspect fields before choosing a numeric sort.
 python data.py coding-agents --sort indexScore --fields displayLabel,indexScore,mean.costUsd,mean.agentWallTimeSec --top 5
 python data.py capabilities --sort capabilities.legal.headlineValue --fields name,capabilities.legal --top 5
 python data.py evaluations --model gpt-6-astra --fields name,gdpPdfAllPass,gdpPdfBreakdown
-python data.py media/textToImage --sort elo --fields name,elo,lower95ci,upper95ci
-python data.py speech/sttNonStreaming --sort werIndex --ascending
+python data.py media/textToImage --sort elo --fields name,elo,ciDelta,price
+python data.py speech/sttModels --sort representativeHostModel.aaWerIndex --ascending
+python data.py providers --model gpt-oss-120b --sort performance.medianOutputTokensPerSecond --fields label,host.name,pricing,performance.medianOutputTokensPerSecond
 ```
 
 Each dataset keeps its own source date. An unavailable secondary source cannot

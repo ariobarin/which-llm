@@ -156,7 +156,7 @@ class PageLinks(HTMLParser):
                 self.links.add(href.split("#")[0])
 
 
-def shared_dataset(url: str, row_key: str | None = None) -> tuple[dict, str]:
+def shared_dataset(url: str, row_key: str) -> tuple[dict, str]:
     stream = extract_rsc_stream(_get_text(url))
     errors = []
     for path, key in manifests(stream):
@@ -164,24 +164,49 @@ def shared_dataset(url: str, row_key: str | None = None) -> tuple[dict, str]:
             value, updated = _decrypt_manifest(path, key)
             if not isinstance(value, dict) or not updated:
                 continue
-            if row_key:
-                rows = value.get("models")
-                if not isinstance(rows, list) or not rows:
-                    continue
-                if not all(isinstance(row, dict) and row.get("slug") for row in rows):
-                    continue
-                if not any(row_key in row for row in rows):
-                    continue
-            elif not any(
-                isinstance(value.get(key), kind) and bool(value[key])
-                for key, kind in
-                (("media", dict), ("speech", dict), ("codingAgents", list), ("hostModels", list))
-            ):
+            rows = value.get("models")
+            if not isinstance(rows, list) or not rows:
+                continue
+            if not all(isinstance(row, dict) and row.get("slug") for row in rows):
+                continue
+            if not any(row_key in row for row in rows):
                 continue
             return value, updated
         except Exception as exc:
             errors.append(str(exc))
     raise RuntimeError(f"No dated shared dataset at {url}: {'; '.join(errors[:2])}")
+
+
+PROVIDER_KEYS = {"host", "model", "pricing"}
+
+
+def page_tables(url: str) -> dict[str, tuple[list, str]]:
+    """Collect every dated table on a page; AA splits a page's data across several manifests."""
+    stream = extract_rsc_stream(_get_text(url))
+    tables, errors = {}, []
+    for path, key in manifests(stream):
+        try:
+            value, updated = _decrypt_manifest(path, key)
+        except Exception as exc:
+            errors.append(str(exc))
+            continue
+        if not updated:
+            continue
+        if isinstance(value, list):
+            if value and all(isinstance(row, dict) and PROVIDER_KEYS <= set(row) for row in value):
+                tables["providers"] = (value, updated)
+            continue
+        if not isinstance(value, dict):
+            continue
+        if isinstance(value.get("codingAgents"), list):
+            tables["coding-agents"] = (value["codingAgents"], updated)
+        for section in ("media", "speech"):
+            if isinstance(value.get(section), dict):
+                for name, rows in value[section].items():
+                    tables[f"{section}/{name}"] = (rows, updated)
+    if not tables:
+        raise RuntimeError(f"No dated shared tables at {url}: {'; '.join(errors[:2])}")
+    return tables
 
 
 def discover_dataset(index_url: str, row_key: str) -> tuple[dict, str, str]:
@@ -201,7 +226,7 @@ def discover_dataset(index_url: str, row_key: str) -> tuple[dict, str, str]:
 
 def collect_details(models: list[dict], updated_at: str) -> dict:
     """Refresh optional datasets independently; retain dated cached tables on errors."""
-    from data import DATA_PATH, age_days, read_bundle
+    from data import DATA_PATH, STALE_AFTER_DAYS, age_days, read_bundle
 
     try:
         previous = read_bundle(DATA_PATH)
@@ -212,33 +237,27 @@ def collect_details(models: list[dict], updated_at: str) -> dict:
     groups = [
         ("evaluations", BASE_URL + "/evaluations", "canonicalEvalTokenCounts"),
         ("capabilities", BASE_URL + "/indexes", "capabilities"),
+        ("providers", BASE_URL + "/leaderboards/providers", None),
         ("home", BASE_URL, None),
     ]
+    owned = {"catalog"} | {group for group, _, _ in groups}
     errors = {}
     for group, url, row_key in groups:
-        if row_key:
+        if group != "home":
             old_tables = {group: cached_datasets[group]} if group in cached_datasets else {}
         else:
-            old_tables = {
-                name: cached for name, cached in cached_datasets.items()
-                if name not in {"catalog", "evaluations", "capabilities"}
-            }
+            old_tables = {name: cached for name, cached in cached_datasets.items() if name not in owned}
 
         try:
+            source_url = url
             if row_key:
                 value, stamp, source_url = discover_dataset(url, row_key)
-                tables = {group: value["models"]}
+                tables = {group: (value["models"], stamp)}
             else:
-                value, stamp = shared_dataset(url)
-                source_url = url
-                tables = {}
-                for field, table in (("codingAgents", "coding-agents"), ("hostModels", "providers")):
-                    if field in value:
-                        tables[table] = value[field]
-                for section in ("media", "speech"):
-                    source = value.get(section)
-                    if isinstance(source, dict):
-                        tables.update({f"{section}/{key}": rows for key, rows in source.items()})
+                tables = {
+                    name: table for name, table in page_tables(url).items()
+                    if (name == group if group != "home" else name not in owned)
+                }
         except (RuntimeError, OSError, ValueError, KeyError, TypeError) as exc:
             errors[group] = str(exc)
             print(f"WARNING: {group} unavailable: {exc}", file=sys.stderr)
@@ -249,13 +268,19 @@ def collect_details(models: list[dict], updated_at: str) -> dict:
         # A missing or malformed table must not discard the valid tables in this group.
         for name in sorted(set(tables) | set(old_tables)):
             cached = old_tables.get(name, {})
+            # data.py already refuses stale tables, so they must not veto AA's current data.
+            cached_fresh = bool(cached) and age_days(cached.get("source_updated_at_utc")) <= STALE_AFTER_DAYS
             try:
                 if name not in tables:
+                    if cached and not cached_fresh:
+                        errors[name] = f"{name} no longer published by AA; dropped stale cached table"
+                        print(f"WARNING: {errors[name]}", file=sys.stderr)
+                        continue
                     raise RuntimeError(f"{name} missing from fresh {group} data")
-                rows = tables[name]
+                rows, stamp = tables[name]
                 if not isinstance(rows, list) or not rows or not all(isinstance(row, dict) for row in rows):
                     raise RuntimeError(f"Empty or invalid {name} dataset")
-                if cached and len(rows) < len(cached["rows"]) * 0.8:
+                if cached_fresh and len(rows) < len(cached["rows"]) * 0.8:
                     raise RuntimeError(f"{name} lost over 20% of its rows")
                 table_stamp = stamp
                 if cached and age_days(stamp) > age_days(cached.get("source_updated_at_utc")):
@@ -265,8 +290,6 @@ def collect_details(models: list[dict], updated_at: str) -> dict:
                 datasets[name] = {
                     "source_url": source_url,
                     "source_updated_at_utc": table_stamp,
-                    **({"scope": "AA homepage provider comparison subset, not the full hosting catalog"}
-                       if name == "providers" else {}),
                     "rows": rows,
                 }
             except (RuntimeError, KeyError, TypeError) as exc:
