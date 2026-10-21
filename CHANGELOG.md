@@ -31,6 +31,10 @@ loosely follows [SemVer](https://semver.org/).
 - Snapshot metadata in human-readable command output and artifact summaries.
 
 ### Changed
+- README leads with `npx skills add ariobarin/which-llm`, fixes the Codex
+  sparse install command (it omitted the plugin directory), and moves the full
+  flag reference to SKILL.md.
+- Plugin manifests now carry version 0.5.0 and the correct author name.
 - Default agent-facing profiles omit legacy blended-rate fields while explicit
   full exports retain the source data.
 - Skill guidance treats command results as evidence, separates token rates from
