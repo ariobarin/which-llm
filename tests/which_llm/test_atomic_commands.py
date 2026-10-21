@@ -61,14 +61,6 @@ def test_cost_metrics_cannot_be_paired_with_the_wrong_benchmark():
     assert "cannot be paired" in str(exc.value)
 
 
-def test_agentic_cost_preset_uses_matching_per_task_metric():
-    assert core.FRONTIER_PRESETS["agentic-cost"] == {
-        "x_field": "agentic_index_cost_per_task_usd",
-        "y_field": "agentic_index",
-        "x_dir": "min",
-    }
-
-
 def test_default_json_record_omits_legacy_blended_rates():
     row = {
         "slug": "model",
@@ -95,13 +87,13 @@ def test_cost_context_distinguishes_rates_and_task_evidence(capsys):
 
 def test_cost_frontier_keeps_zero_cost_models():
     rows = [
-        {"slug": "missing", "agentic_index_cost_per_task_usd": 0, "agentic_index": 10},
-        {"slug": "priced", "agentic_index_cost_per_task_usd": 0.2, "agentic_index": 20},
+        {"slug": "missing", "intelligence_index_cost_per_task_usd": 0, "intelligence_index": 10},
+        {"slug": "priced", "intelligence_index_cost_per_task_usd": 0.2, "intelligence_index": 20},
     ]
     plotted = core.metric_rows(
         rows,
-        "agentic_index_cost_per_task_usd",
-        "agentic_index",
+        "intelligence_index_cost_per_task_usd",
+        "intelligence_index",
         0,
         float("inf"),
     )
@@ -122,7 +114,6 @@ def _args(**overrides):
         "max_index_tokens": None,
         "min_index_tokens": 0.0,
         "max_latency": None,
-        "coding_min": None,
         "reasoning": None,
         "open_weights": None,
         "modality": None,
@@ -258,53 +249,6 @@ def test_vision_price_behavior_uses_composed_filters(tmp_path, monkeypatch):
     ranked = core.rank_rows(rows, core.sort_name(args, "vision"))
 
     assert [row["slug"] for row in ranked] == ["cheap-image", "expensive-image"]
-
-
-def test_coding_price_behavior_uses_composed_filters(tmp_path, monkeypatch):
-    csv_path = tmp_path / "models.csv"
-    _write_rows(
-        csv_path,
-        [
-            {
-                "slug": "cheap-code",
-                "name": "Cheap Code",
-                "creator_name": "Lab",
-                "deprecated": "false",
-                "input_modality_text": "true",
-                "openrouter_has_free": "false",
-                "coding_index": "50",
-                "price_1m_input_tokens": "0.2",
-            },
-            {
-                "slug": "expensive-code",
-                "name": "Expensive Code",
-                "creator_name": "Lab",
-                "deprecated": "false",
-                "input_modality_text": "true",
-                "openrouter_has_free": "false",
-                "coding_index": "60",
-                "price_1m_input_tokens": "5",
-            },
-            {
-                "slug": "weak-code",
-                "name": "Weak Code",
-                "creator_name": "Lab",
-                "deprecated": "false",
-                "input_modality_text": "true",
-                "openrouter_has_free": "false",
-                "coding_index": "20",
-                "price_1m_input_tokens": "0.1",
-            },
-        ],
-    )
-    monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
-    monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
-
-    args = _args(coding_min=45, sort="input-price")
-    rows = core.load_filtered_rows(args, preset="coding")
-    ranked = core.rank_rows(rows, core.sort_name(args, "coding"))
-
-    assert [row["slug"] for row in ranked] == ["cheap-code", "expensive-code"]
 
 
 def test_api_price_filters_are_separate_from_run_cost(tmp_path, monkeypatch):
@@ -487,35 +431,6 @@ def test_nearest_relaxations_label_relaxed_constraints(tmp_path, monkeypatch):
     assert "drop --min-intel" in labels
 
 
-def test_nearest_relaxations_can_drop_min_coding(tmp_path, monkeypatch):
-    csv_path = tmp_path / "models.csv"
-    _write_rows(
-        csv_path,
-        [
-            {
-                "slug": "code-model",
-                "name": "Code Model",
-                "creator_name": "Lab",
-                "deprecated": "false",
-                "input_modality_text": "true",
-                "openrouter_has_free": "false",
-                "coding_index": "50",
-            },
-        ],
-    )
-    monkeypatch.setattr(core.query, "ENRICHED_CSV", csv_path)
-    monkeypatch.setattr(core.query, "BASE_CSV", tmp_path / "missing.csv")
-
-    relaxations = core.nearest_relaxations(
-        _args(coding_min=999),
-        preset="coding",
-        sort="coding",
-        top=5,
-    )
-
-    assert [item["relaxation"] for item in relaxations] == ["drop --min-coding"]
-
-
 def test_context_frontier_maximizes_x():
     rows = core.metric_rows(
         [
@@ -684,7 +599,6 @@ def test_coding_export_group_is_focused():
         "context_window_tokens",
         "openrouter_slug",
         "openrouter_free_slug",
-        "coding_index",
         "livecodebench",
         "terminalbench_hard",
         "terminalbench_v2_1",

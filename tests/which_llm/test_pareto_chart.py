@@ -102,7 +102,7 @@ def test_task_cost_values_keep_meaningful_decimals():
     assert pareto_chart.format_axis_value(2500, True) == "$2.5k"
     assert pareto_chart.format_axis_value(2500, False) == "2.5K"
     assert "Benchmark-specific" in pareto_chart.metric_scope(
-        "agentic_index_cost_per_task_usd"
+        "intelligence_index_cost_per_task_usd"
     )
 
 
@@ -151,3 +151,29 @@ def test_labels_clear_important_model_markers():
         for marker in blockers[:blocker_count]
     )
     plt.close(fig)
+
+
+def test_shorten_preserves_reasoning_effort():
+    assert (
+        pareto_chart.shorten("DeepSeek V4 Pro (Reasoning, High Effort)")
+        == "DeepSeek V4 Pro (high)"
+    )
+
+
+def test_shorten_preserves_non_reasoning_variant():
+    assert (
+        pareto_chart.shorten("Qwen3.5 0.8B (Non-reasoning)")
+        == "Qwen3.5 0.8B (non-reasoning)"
+    )
+    assert pareto_chart.shorten("Qwen3.5 0.8B (Reasoning)") == "Qwen3.5 0.8B"
+    assert (
+        pareto_chart.shorten("DeepSeek V4 Pro (Non-reasoning)")
+        == "DeepSeek V4 Pro (non-reasoning)"
+    )
+
+
+def test_shorten_uses_slug_to_disambiguate_non_reasoning():
+    assert (
+        pareto_chart.shorten("DeepSeek V4 Pro", "deepseek-v4-pro-non-reasoning")
+        == "DeepSeek V4 Pro (non-reasoning)"
+    )

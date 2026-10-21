@@ -177,10 +177,7 @@ def near_signal_rows(
 def metric_scope(x_field: str) -> str:
     if x_field in {"price_1m_input_tokens", "price_1m_output_tokens"}:
         return "Token rate only. Workload volume is not modeled."
-    if x_field in {
-        "intelligence_index_cost_per_task_usd",
-        "agentic_index_cost_per_task_usd",
-    }:
+    if x_field == "intelligence_index_cost_per_task_usd":
         return "Benchmark-specific task cost. Not an application spend estimate."
     if x_field == "intelligence_index_cost_usd":
         return "Full benchmark-run cost. Not a per-call price."
