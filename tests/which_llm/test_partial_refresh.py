@@ -1,7 +1,6 @@
 """Partial upstream failures must not replace good model data with broken data."""
 
 import csv
-import io
 import json
 import sys
 import urllib.error

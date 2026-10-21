@@ -97,6 +97,10 @@ def test_metric_scope_separates_rates_from_workload_cost():
 def test_task_cost_values_keep_meaningful_decimals():
     assert pareto_chart.format_axis_value(2.74982, True) == "$2.75"
     assert pareto_chart.format_axis_value(1.0, True) == "$1"
+    assert pareto_chart.format_axis_value(0, True) == "$0"
+    assert pareto_chart.format_axis_value(0.005, True) == "$0.005"
+    assert pareto_chart.format_axis_value(2500, True) == "$2.5k"
+    assert pareto_chart.format_axis_value(2500, False) == "2.5K"
     assert "Benchmark-specific" in pareto_chart.metric_scope(
         "agentic_index_cost_per_task_usd"
     )

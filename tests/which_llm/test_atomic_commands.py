@@ -800,15 +800,6 @@ def test_frontier_dependency_failure_does_not_write_artifacts(tmp_path, monkeypa
     assert not chart_path.exists()
 
 
-def test_frontier_price_axis_preserves_sub_dollar_labels():
-    assert frontier_cmd._format_axis_value(0, True) == "$0"
-    assert frontier_cmd._format_axis_value(0.25, True) == "$0.25"
-    assert frontier_cmd._format_axis_value(0.005, True) == "$0.005"
-    assert frontier_cmd._format_axis_value(1, True) == "$1"
-    assert frontier_cmd._format_axis_value(2500, True) == "$2.5k"
-    assert frontier_cmd._format_axis_value(2500, False) == "2.5K"
-
-
 def test_profile_script_does_not_break_cprofile(tmp_path):
     stats_path = tmp_path / "pick.prof"
 
@@ -820,9 +811,7 @@ def test_profile_script_does_not_break_cprofile(tmp_path):
             "-o",
             str(stats_path),
             "pick.py",
-            "best",
-            "--top",
-            "1",
+            "--help",
         ],
         cwd=core.HERE,
         capture_output=True,

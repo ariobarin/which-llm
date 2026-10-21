@@ -342,12 +342,12 @@ EXTRA_FIELDS = {
     "briefcase_elo": "briefcaseBreakdown.overall.elo",
     "briefcase_rubric_pass_rate": "briefcaseBreakdown.rubricPassRate",
     "gdp_pdf_all_pass": "gdpPdfAllPass", "gdpval_normalized": "gdpvalNormalized",
-    "tau3_banking": "tauBanking", "terminalbench_v2_1": "terminalbenchV21",
-    "terminalbench_v4_0": "terminalbenchV40", "analyst_agent": "analystAgent",
+    "tau3_banking": "tauBanking", "terminalbench_v2_1": "terminalBench21",
+    "terminalbench_v4_0": "terminalBench40", "analyst_agent": "analystAgent",
     "automation_bench": "automationBenchPartialScore", "enterprise_ops_gym": "enterpriseOpsGym",
     "harvey_lab": "harveyLab", "itbench_sre": "itBenchSre",
-    "mlcr_overall": "mlcrOverall", "omniscience_accuracy": "omniscienceBreakdown.accuracy",
-    "omniscience_hallucination_rate": "omniscienceBreakdown.hallucinationRate",
+    "mlcr_overall": "mlcrOverall", "omniscience_accuracy": "omniscienceAccuracy",
+    "omniscience_hallucination_rate": "omniscienceHallucinationRate",
 }
 CSV_FIELDS += list(EXTRA_FIELDS)
 
@@ -472,6 +472,9 @@ def main() -> int:
     if not all(any(row[field] is not None for row in rows) for field in
                ("intelligence_index", "intelligence_index_cost_per_task_usd", "context_window_tokens")):
         raise RuntimeError("catalog lost required score, cost, or context fields")
+    empty = [field for field in EXTRA_FIELDS if all(row[field] is None for row in rows)]
+    if empty:
+        print(f"WARNING: no catalog values for {', '.join(empty)}; AA may have renamed them", file=sys.stderr)
     details = collect_details(models, updated_at)
     from data import DATA_PATH, atomic_write
     # One record per line keeps source changes reviewable without expanding every nested metric.
