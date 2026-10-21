@@ -89,7 +89,6 @@ def main() -> int:
         "intelligence_index",
         "intelligence_index_cost_usd",
         "intelligence_index_cost_per_task_usd",
-        "agentic_index_cost_per_task_usd",
         "indexTokensTotal",
         "context_window_tokens",
         "price_1m_input_tokens",

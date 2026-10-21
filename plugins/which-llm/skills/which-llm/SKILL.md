@@ -28,9 +28,6 @@ with `${CLAUDE_SKILL_DIR}` in Claude Code.
 | Inspect detailed AA datasets | `python data.py [dataset] [filters]` | Source-dated JSON |
 | Export filtered rows | `python export.py [preset] [filters]` | CSV or JSON file |
 
-`query.py` and `plot_pareto.py` remain available for compatibility, but the
-atomic commands above are the fastest surface for normal use.
-
 ## Evidence, Not Conclusions
 
 The commands organize current evidence. They do not choose a model for the
@@ -51,7 +48,7 @@ and model behavior can materially change total spend.
 
 - Do not use a blended token price as workload-cost evidence. A blend assumes a
   token mix that may have no relationship to the user's workload.
-- `intel-task$` and `agent-task$` are benchmark-specific task-cost evidence.
+- `intel-task$` is benchmark-specific task-cost evidence.
   They are not estimates of the user's application spend.
 - `idx-run$` is the cost of a full benchmark run. It is not a per-call price.
 - When useful, show benchmark task cost and input and output token rates side by
@@ -70,14 +67,12 @@ and model behavior can materially change total spend.
 | `long-context` | Context window at least 256K tokens. |
 | `open-weights` | Open-weight models. |
 | `free` | Models with OpenRouter free prototype endpoints. |
-| `coding` | Legacy Coding Index, available only when AA supplies it. |
 
 ## Frontier Presets
 
 | Preset | X metric | Y metric |
 |---|---|---|
 | `cost-intel` | Intelligence Index cost per task, minimized | Intelligence, maximized |
-| `agentic-cost` | Legacy Agentic Index cost per task, when available | Legacy Agentic Index |
 | `speed-intel` | End to end latency, minimized | Intelligence, maximized |
 | `tokens-intel` | Benchmark-run tokens, minimized | Intelligence, maximized |
 | `context-intel` | Context window, maximized | Intelligence, maximized |
@@ -104,7 +99,6 @@ and model behavior can materially change total spend.
 --max-input-price N
 --max-output-price N
 --min-context N
---min-coding N
 --max-latency N
 --max-index-tokens N
 --min-index-tokens N
@@ -116,7 +110,7 @@ A benchmark frontier must pair each score with that same benchmark's cost per
 task. The commands reject known cross-benchmark cost and score pairs.
 
 `pick.py` and `export.py` also accept `--sort` with `intel`, `cost`, `ctx`,
-`tokens`, `speed`, `coding`, `agentic`, `input-price`, or `output-price`.
+`tokens`, `speed`, `input-price`, or `output-price`.
 They also accept `--top N`.
 `pick.py` shows clearly labeled one-filter relaxations when no rows match.
 Use `--if-empty error` for strict empty-result failure. `export.py` accepts
@@ -129,7 +123,7 @@ selecting the strongest ambiguous match and listing alternates is acceptable.
 `export.py` accepts `--fields core`, `pricing`, `context`, `benchmarks`,
 `coding`, `speed`, `slugs`, or `full`. Field groups can be combined with commas, such
 as `--fields pricing,context`. Exact columns can be selected with
-`--columns name,openrouter_slug,coding_index`.
+`--columns name,openrouter_slug,terminalbench_v2_1`.
 
 ## Useful Argument Compositions
 
@@ -156,7 +150,7 @@ Replace `N` with a price ceiling in USD per million input tokens.
 | `core` | Main quality, cost, context, speed, and OpenRouter columns. |
 | `pricing` | Benchmark-run cost, token use, API prices, cache price, and slugs. |
 | `context` | Context window, modalities, reasoning, open weights, and slug. |
-| `coding` | API prices, context, OpenRouter slugs, coding scores, and coding benchmarks. |
+| `coding` | API prices, context, OpenRouter slugs, and coding benchmarks. |
 | `benchmarks` | Current and legacy benchmark scores, including Briefcase, GDP.pdf, Terminal-Bench v2.1, and hallucination metrics. |
 | `speed` | Output tokens per second, latency, speed percentiles, and measurement provider. |
 | `slugs` | Internal slug, OpenRouter production slug, and free slug. |
@@ -169,11 +163,10 @@ Replace `N` with a price ceiling in USD per million input tokens.
   the source columns for inspection.
 - `idx-run$` is the estimated cost to run the Artificial Analysis benchmark
   suite. It is not a per-call API price.
-- `intel-task$` and `agent-task$` are the matching weighted benchmark costs per
-  task. `--sort cost` sorts by `intel-task$`.
+- `intel-task$` is the weighted Intelligence Index cost per task. `--sort cost`
+  sorts by it.
 - `intelligence_index_cost_per_task_usd` is the weighted Intelligence Index cost
   per task.
-- `agentic_index_cost_per_task_usd` is the weighted Agentic Index cost per task.
 - `idx-tok` is total benchmark-run token use.
 - `in$/1m` and `out$/1m` are API prices per million tokens.
 - `openrouter_slug` is the production endpoint name.
@@ -223,9 +216,8 @@ freshness. `python data.py <dataset>` returns ten raw records as JSON; use
   `performance`, and `features`; endpoints AA has not benchmarked lack
   `performance`.
 
-The legacy Coding and Agentic indices are no longer supplied by AA. For coding
-agents, use `data.py coding-agents`; for individual model benchmarks, use
-`export.py --fields coding`. Do not equate an agent configuration's score with
+For coding agents, use `data.py coding-agents`; for individual model
+benchmarks, use `export.py --fields coding`. Do not equate an agent configuration's score with
 a model-only score. Keep scores, costs, and times from the same evaluation and
 configuration. Elo, proportions, percentages, and WER retain source units;
 lower WER is better. Inspect fields before choosing a numeric sort.

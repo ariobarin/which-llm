@@ -22,18 +22,12 @@ PICK_PRESETS = {
     "long-context": {"context_min": 256000, "sort": "intel"},
     "open-weights": {"open_weights": True, "sort": "intel"},
     "free": {"free_only": True, "sort": "cost"},
-    "coding": {"sort": "coding"},
 }
 
 FRONTIER_PRESETS = {
     "cost-intel": {
         "x_field": "intelligence_index_cost_per_task_usd",
         "y_field": "intelligence_index",
-        "x_dir": "min",
-    },
-    "agentic-cost": {
-        "x_field": "agentic_index_cost_per_task_usd",
-        "y_field": "agentic_index",
         "x_dir": "min",
     },
     "speed-intel": {
@@ -66,7 +60,6 @@ FRONTIER_PRESETS = {
 FIELD_LABELS = {
     "intelligence_index_cost_usd": "Index cost USD",
     "intelligence_index_cost_per_task_usd": "Intelligence cost per task USD",
-    "agentic_index_cost_per_task_usd": "Agentic cost per task USD",
     "intelligence_index": "Intelligence index",
     "indexTokensTotal": "Index tokens",
     "context_window_tokens": "Context tokens",
@@ -74,8 +67,6 @@ FIELD_LABELS = {
     "price_1m_output_tokens": "Output USD per 1M",
     "e2e_response_seconds": "End to end seconds",
     "ttft_seconds": "TTFT seconds",
-    "coding_index": "Coding index",
-    "agentic_index": "Agentic index",
 }
 
 FIELD_GROUPS = {
@@ -86,7 +77,6 @@ FIELD_GROUPS = {
         "intelligence_index",
         "intelligence_index_cost_usd",
         "intelligence_index_cost_per_task_usd",
-        "agentic_index_cost_per_task_usd",
         "indexTokensTotal",
         "context_window_tokens",
         "price_1m_input_tokens",
@@ -101,7 +91,6 @@ FIELD_GROUPS = {
         "creator_name",
         "intelligence_index_cost_usd",
         "intelligence_index_cost_per_task_usd",
-        "agentic_index_cost_per_task_usd",
         "indexTokensTotal",
         "price_1m_input_tokens",
         "price_1m_output_tokens",
@@ -131,9 +120,6 @@ FIELD_GROUPS = {
         "name",
         "creator_name",
         "intelligence_index",
-        "coding_index",
-        "agentic_index",
-        "math_index",
         "gpqa",
         "hle",
         "mmlu_pro",
@@ -150,7 +136,6 @@ FIELD_GROUPS = {
         "context_window_tokens",
         "openrouter_slug",
         "openrouter_free_slug",
-        "coding_index",
         "livecodebench",
         "terminalbench_hard",
     ],
@@ -203,8 +188,6 @@ SORT_KEYS = {
     "ctx": lambda r: (-_number_or(r, "context_window_tokens", 0),),
     "tokens": lambda r: (_number_or(r, "indexTokensTotal", math.inf),),
     "speed": lambda r: (_number_or(r, "e2e_response_seconds", math.inf),),
-    "coding": lambda r: (-_number_or(r, "coding_index", -math.inf),),
-    "agentic": lambda r: (-_number_or(r, "agentic_index", -math.inf),),
     "input-price": lambda r: (_number_or(r, "price_1m_input_tokens", math.inf),),
     "output-price": lambda r: (_number_or(r, "price_1m_output_tokens", math.inf),),
 }
@@ -248,8 +231,6 @@ def add_filter_args(p: argparse.ArgumentParser) -> None:
                    help="Minimum total tokens to run AA's Intelligence Index.")
     p.add_argument("--max-latency", type=float,
                    help="Maximum end to end response latency in seconds.")
-    p.add_argument("--min-coding", dest="coding_min", type=float,
-                   help="Minimum coding_index.")
     p.add_argument("--reasoning", action=argparse.BooleanOptionalAction,
                    default=None, help="Filter reasoning models.")
     p.add_argument("--open-weights", action=argparse.BooleanOptionalAction,
@@ -356,14 +337,6 @@ def load_filtered_rows(args, *, preset: str | None = None,
                 and value <= max_output_price
             )
         ]
-    coding_min = getattr(args, "coding_min", None)
-    if coding_min is None:
-        coding_min = cfg.get("coding_min")
-    if coding_min is not None:
-        rows = [
-            row for row in rows
-            if (query._f(row.get("coding_index")) or -1) >= coding_min
-        ]
     creators = {
         creator.strip().lower()
         for creator in getattr(args, "creator", [])
@@ -386,12 +359,6 @@ def sort_name(args, preset: str | None = None) -> str:
 def rank_rows(rows: list[dict], sort: str) -> list[dict]:
     if sort not in SORT_KEYS:
         raise SystemExit(f"unknown sort {sort!r}; valid: {', '.join(SORT_KEYS)}")
-    if rows and sort in {"coding", "agentic"} and not any(query._f(row.get(sort + "_index")) is not None for row in rows):
-        raise SystemExit(
-            f"AA no longer supplies the legacy {sort} index for these models. "
-            "Use data.py coding-agents --sort indexScore for agent configurations, "
-            "or export.py --fields coding for individual model benchmarks."
-        )
     return sorted(rows, key=SORT_KEYS[sort])
 
 
@@ -584,8 +551,6 @@ def _display_value(row: dict, key: str):
         return query._fmt_cost(row.get("intelligence_index_cost_usd"))
     if key == "intel_task_usd":
         return query._fmt_cost(row.get("intelligence_index_cost_per_task_usd"))
-    if key == "agent_task_usd":
-        return query._fmt_cost(row.get("agentic_index_cost_per_task_usd"))
     if key == "idx_tokens":
         return query._fmt_tokens(row.get("indexTokensTotal"))
     if key == "input_usd_1m":
@@ -619,7 +584,6 @@ def shortlist_rows(rows: list[dict], *, include_rank: bool = True,
         ("creator", "creator"),
         ("intelligence", "intel"),
         ("intel_task_usd", "intel-task$"),
-        ("agent_task_usd", "agent-task$"),
         ("idx_run_usd", "idx-run$"),
         ("idx_tokens", "idx-tok"),
         ("input_usd_1m", "in$/1m"),
@@ -645,7 +609,6 @@ def comparison_rows(rows: list[dict]) -> list[dict]:
         ("creator", "creator"),
         ("intelligence", "intel"),
         ("intel_task_usd", "intel-task$"),
-        ("agent_task_usd", "agent-task$"),
         ("idx_run_usd", "idx-run$"),
         ("idx_tokens", "idx-tok"),
         ("input_usd_1m", "in$/1m"),
@@ -755,8 +718,6 @@ def nearest_relaxations(args, *, preset: str | None, sort: str,
         variants.append(("drop --max-run-cost", _clone_args(args, max_cost=None), preset))
     if getattr(args, "context_min", None) is not None:
         variants.append(("drop --min-context", _clone_args(args, context_min=None), preset))
-    if getattr(args, "coding_min", None) is not None:
-        variants.append(("drop --min-coding", _clone_args(args, coding_min=None), preset))
     if getattr(args, "max_latency", None) is not None:
         variants.append(("drop --max-latency", _clone_args(args, max_latency=None), preset))
     if getattr(args, "reasoning", None) is not None:
@@ -842,9 +803,6 @@ def profile_text(row: dict) -> str:
         ("tau2", "tau2"),
         ("terminalbench_hard", "TerminalBench-hard"),
         ("ifbench", "IFBench"),
-        ("coding_index", "Coding Index"),
-        ("math_index", "Math Index"),
-        ("agentic_index", "Agentic Index"),
     ]
     bench_keys += [(key, key.replace("_", " ")) for key in CURRENT_BENCHMARKS]
     modalities = _display_value(row, "modalities")
@@ -866,7 +824,6 @@ def profile_text(row: dict) -> str:
         "",
         f"- intelligence index: {_display_value(row, 'intelligence')}",
         f"- intelligence cost per task: {_display_value(row, 'intel_task_usd')}",
-        f"- agentic cost per task: {_display_value(row, 'agent_task_usd')}",
         f"- idx-run$: {_display_value(row, 'idx_run_usd')} (benchmark-run proxy, not per-call price)",
         f"- idx-tok: {_display_value(row, 'idx_tokens')}",
         f"- index per 1M output: {query._fmt_cost(row.get('intelligence_index_per_m_output_tokens'))}",
@@ -996,7 +953,6 @@ def metric_rows(rows: list[dict], x_field: str, y_field: str,
 
 MATCHED_COST_METRICS = {
     "intelligence_index_cost_per_task_usd": "intelligence_index",
-    "agentic_index_cost_per_task_usd": "agentic_index",
 }
 
 

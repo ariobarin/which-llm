@@ -24,7 +24,6 @@ py-modules = [
     "export",
     "frontier",
     "pick",
-    "plot_pareto",
     "profile",
     "query",
     "pareto_chart",

@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 import data
 import pytest
 import query
-import which_llm_core as core
 
 
 def snapshot(stamp=None):
@@ -82,8 +81,3 @@ def test_dataset_cli_preserves_config_identity_and_zero_cost(tmp_path, monkeypat
     assert [row["displayLabel"] for row in result["rows"]] == ["Agent A + Model", "Agent B + Model"]
     assert result["rows"][0]["mean.costUsd"] == 0
     assert result["source_updated_at_utc"] == stamp
-
-
-def test_retired_index_cannot_produce_arbitrary_ranking():
-    with pytest.raises(SystemExit, match="legacy coding index"):
-        core.rank_rows([{"slug": "model", "coding_index": ""}], "coding")
