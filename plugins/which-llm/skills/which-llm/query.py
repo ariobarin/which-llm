@@ -24,7 +24,6 @@ import math
 import re
 import subprocess
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -577,7 +576,7 @@ def cmd_show(args) -> int:
     print(f"  response latency:     ttft {_fmt_secs(ttft)}s / end-to-end "
           f"{_fmt_secs(e2e)}s  (AA run; reasoning models include think time)")
     print()
-    print(f"  pricing per 1M tokens:")
+    print("  pricing per 1M tokens:")
     print(f"    input:   {_fmt_cost(r.get('price_1m_input_tokens'))}")
     print(f"    output:  {_fmt_cost(r.get('price_1m_output_tokens'))}")
     print(f"    cached:  {_fmt_cost(r.get('cache_hit_price'))}")
@@ -591,7 +590,7 @@ def cmd_show(args) -> int:
         ("ifbench", "IFBench"), ("coding_index", "[Coding Index]"),
         ("math_index", "[Math Index]"), ("agentic_index", "[Agentic Index]"),
     ]
-    print(f"  benchmarks:")
+    print("  benchmarks:")
     for k, label in bench_keys:
         v = _f(r.get(k))
         if v is not None:
@@ -601,7 +600,7 @@ def cmd_show(args) -> int:
                 print(f"    {label:20s} {v:5.1f}")
     if "openrouter_slug" in r:
         print()
-        print(f"  OpenRouter:")
+        print("  OpenRouter:")
         print(f"    paid: {r.get('openrouter_slug') or '(no match found)'}")
         print(f"    free: {r.get('openrouter_free_slug') or '(not available)'}")
         if _is_true(r.get("openrouter_has_free")):
