@@ -3,7 +3,7 @@
   "version": "0.5.0",
   "description": "Codex plugin wrapper for the agent-agnostic which-llm skill.",
   "author": {
-    "name": "Ari Obarin",
+    "name": "Ario Barin",
     "url": "https://github.com/ariobarin"
   },
   "homepage": "https://github.com/ariobarin/which-llm",
@@ -21,14 +21,14 @@
     "displayName": "which-llm",
     "shortDescription": "Install the which-llm skill through the Codex plugin marketplace.",
     "longDescription": "Optional Codex wrapper around the standalone, agent-agnostic which-llm skill.",
-    "developerName": "Ari Obarin",
+    "developerName": "Ario Barin",
     "category": "Productivity",
     "capabilities": [
       "Read"
     ],
     "websiteURL": "https://github.com/ariobarin/which-llm",
     "defaultPrompt": [
-      "Use which-llm to compare GPT-5, Claude, and Gemini.",
+      "Use which-llm to compare GPT-5.5, Claude, and Gemini.",
       "Use which-llm to find a cheap vision model.",
       "Use which-llm to get an OpenRouter slug."
     ],

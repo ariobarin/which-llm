@@ -39,24 +39,24 @@ integration wrappers and install docs.
 
 ## Parser changes
 
-`scrape.py` parses an 8 MB HTML page by regex-matching Next.js RSC chunks.
-If AA changes their page structure, this will break. To fix:
+`scrape.py` reads the Next.js RSC stream on AA pages, finds the encrypted
+dataset manifests, and decrypts them. If AA changes their site, the daily
+refresh opens an issue. To fix:
 
-1. Download the new page: `python scrape.py --refresh`
-2. Inspect `artifacts/models.html` for the new structure.
-3. Update the regex / anchor in `scrape.py`.
-4. Add or update a test in `tests/test_scrape.py` for the new pattern.
-5. Verify the catastrophic-drop guard and schema assertions still pass.
+1. Run `python skills/which-llm/scrape.py --refresh` and read the error.
+2. Inspect `skills/which-llm/artifacts/models.html` for the new structure.
+3. Update `scrape.py` and add a test in `tests/which_llm/test_scrape.py`.
+4. Check that the 20% row-drop guard and schema checks still pass.
 
 ## Versioning
 
-Bump `version` in all three places when cutting a release:
+Bump `version` in these files when cutting a release, and update
+`CHANGELOG.md`:
+
+- `skills/which-llm/pyproject.toml`
 - `plugins/which-llm/.codex-plugin/plugin.json`
 - `plugins/which-llm/.claude-plugin/plugin.json`
-- `skills/which-llm/pyproject.toml`
 - `.claude-plugin/marketplace.json`
-
-Update `CHANGELOG.md` with the changes.
 
 ## Code style
 

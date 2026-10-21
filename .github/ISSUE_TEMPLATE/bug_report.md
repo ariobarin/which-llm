@@ -12,7 +12,7 @@ labels: bug
 1. 
 2. 
 
-**`query.py data status` output:**
+**`python data.py` output (run from `skills/which-llm`):**
 ```
 paste here
 ```
@@ -21,4 +21,4 @@ paste here
 - OS: 
 - Python version: 
 - Agent host/version:
-- Install method: direct skill / Codex plugin / legacy plugin
+- Install method: npx skills / Claude Code plugin / Codex plugin / manual copy
