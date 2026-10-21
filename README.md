@@ -2,140 +2,92 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Daily refresh](https://img.shields.io/github/actions/workflow/status/ariobarin/which-llm/refresh.yml?label=daily%20refresh)](https://github.com/ariobarin/which-llm/actions/workflows/refresh.yml)
-[![Last refresh](https://img.shields.io/github/last-commit/ariobarin/which-llm?label=last%20refresh)](https://github.com/ariobarin/which-llm/commits/main)
 
-A lightweight agent skill for current LLM selection. It ships a compact Artificial Analysis plus OpenRouter snapshot and a plain Python CLI for model quality, price, speed, context, modality, and OpenRouter slug checks.
+An agent skill that answers "which LLM should I use?" with current data instead of training-data guesses. It bundles a daily snapshot of [Artificial Analysis](https://artificialanalysis.ai) benchmarks and [OpenRouter](https://openrouter.ai) model IDs, plus small Python commands your agent runs to filter, compare, and chart models by quality, price, speed, context, and modality.
 
-The primary package is `skills/which-llm`, so skill marketplaces can index the skill directly. Integration-specific wrappers live outside that package.
+No API keys. Python 3.10+ standard library only.
 
-## Install The Skill Directly
+## Install
 
-Copy `skills/which-llm` into your agent host's configured skill directory.
-Example for Codex user skills:
+Any agent that supports [Agent Skills](https://agentskills.io) (Claude Code, Codex, Cursor, Gemini CLI, and more):
 
 ```bash
-git clone https://github.com/ariobarin/which-llm /tmp/which-llm
-CODEX_SKILLS_DIR="${CODEX_HOME:-$HOME/.codex}/skills"
-mkdir -p "$CODEX_SKILLS_DIR"
-cp -R /tmp/which-llm/skills/which-llm "$CODEX_SKILLS_DIR/"
+npx skills add ariobarin/which-llm
 ```
 
-Start a new agent session after installing, then ask normally:
+Add `-g` to install for all projects instead of the current one.
+
+<details>
+<summary>Other ways to install</summary>
+
+Claude Code plugin:
 
 ```text
-Which cheap vision model should I use?
-Compare GPT-5, Claude, and Gemini for coding.
-What is the OpenRouter slug for Claude Opus?
+/plugin marketplace add ariobarin/which-llm
+/plugin install which-llm@which-llm
 ```
 
-Requires Python 3.10+. No API keys are needed. A current bundled snapshot works offline; commands automatically download a current snapshot when the local copy is missing, undated, or older than two days. Scraping dependencies are only needed by maintainers refreshing directly from AA.
+Codex plugin:
 
-## Optional Plugin Wrapper
-
-Codex users can also install through the plugin marketplace wrapper:
-
-```text
-codex plugin marketplace add ariobarin/which-llm --sparse .agents/plugins
+```bash
+codex plugin marketplace add ariobarin/which-llm --sparse .agents/plugins --sparse plugins/which-llm
 codex plugin add which-llm@which-llm
 ```
 
-The plugin wrapper exists only for Codex plugin marketplace discovery and install UX. The underlying package is the same `which-llm` skill.
+Manual: copy `skills/which-llm` into your agent's skills directory.
 
-## Atomic Commands
+</details>
 
-Run commands from `skills/which-llm`.
+## Use
 
-| Command | Produces |
-|---|---|
-| `python pick.py [preset] [filters]` | Ranked evidence table. |
-| `python compare.py <model>...` | Side-by-side table. |
-| `python profile.py <model>` | Model profile. |
-| `python resolve.py <model>...` | Selected slugs plus alternates. |
-| `python slug.py <model>` | Provider endpoint record. |
-| `python frontier.py [preset] [filters]` | PNG chart plus CSV data. |
-| `python data.py [dataset] [filters]` | Source-dated AA datasets and nested metrics as JSON. |
-| `python export.py [preset] [filters]` | CSV or JSON file. |
-
-Data readiness is handled inside each command. `query.py` and `plot_pareto.py`
-remain available for compatibility.
-
-Command output is evidence, not a model decision. Default ordering reflects the
-selected sort only. Recommendations should start from the user's objective and
-state the tradeoffs and uncertainty that produced the conclusion.
-
-Pick presets: `best`, `vision`, `long-context`, `open-weights`, `free`, and
-`coding`.
-
-Frontier presets: `cost-intel`, `agentic-cost`, `speed-intel`, `tokens-intel`,
-`context-intel`, `input-price-intel`, and `output-price-intel`. Cost frontiers
-use the matching benchmark's weighted cost per task. Known cross-benchmark cost
-and score pairs are rejected.
-
-Common filters: `--min-intel N`, `--max-run-cost N`, `--max-input-price N`,
-`--max-output-price N`, `--min-context N`, `--max-latency N`,
-`--modality text,image`, `--reasoning`, `--open-weights`, and `--free`.
-`--max-cost` remains an alias for benchmark-run cost, not API price.
-`pick.py` and `export.py` also accept `--top N` and
-`--sort intel|cost|ctx|speed|tokens|coding|agentic|input-price|output-price`.
-`pick.py` shows labeled nearest relaxations when no rows match; use
-`--if-empty error` for strict empty-result failure.
-
-Common behavior is built by composing presets, filters, and sorts:
+Start a new agent session and ask normally:
 
 ```text
-python pick.py best --min-intel 50 --sort cost --top 5
-python pick.py best --min-intel 30 --sort speed --top 5
-python pick.py vision --min-intel 40 --sort input-price --top 5
-python data.py coding-agents --sort indexScore --top 5
-python pick.py long-context --min-intel 40 --sort input-price --top 5
-python pick.py long-context --min-intel 40 --max-input-price N --sort input-price --top 5
+Which cheap vision model should I use?
+Compare GPT-5.5, Claude Opus, and Gemini for coding.
+What's the OpenRouter slug for GLM-5.2? Is there a free one?
+Plot cost vs intelligence for open-weight models.
 ```
 
-Replace `N` with a price ceiling in USD per million input tokens.
-
-Export field groups: `core`, `pricing`, `context`, `benchmarks`, `coding`,
-`speed`, `slugs`, and `full`. Groups can be combined with commas, such as
-`--fields pricing,context`. Exact CSV columns can be selected with
-`--columns name,openrouter_slug,terminalbench_v2_1`.
-The `coding` group includes API prices, context, OpenRouter slugs, coding
-scores, and coding benchmarks. AA has retired its legacy Coding and Agentic indices; use `data.py coding-agents` for current agent configurations, or `export.py --fields coding` for individual benchmarks.
-
-## Example
+The agent picks the right command. You can also run them yourself from `skills/which-llm`:
 
 ```text
-$ python pick.py best --min-intel 50 --reasoning --sort tokens --top 3
+$ python pick.py vision --min-intel 40 --sort input-price --top 3
 
-| rank | model | slug | creator | intel | idx-run$ | idx-tok | in$/1m | out$/1m | ctx | e2e_s | openrouter |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | GPT-5.5 (medium) | gpt-5-5-medium | OpenAI | 50.4 | $869.91 | 127.5M | $5.00 | $30.00 | 922.0K | 20.5 | openai/gpt-5.5 |
-| 2 | GPT-5.5 (high) | gpt-5-5-high | OpenAI | 53.1 | $1,655 | 209.3M | $5.00 | $30.00 | 922.0K | 39.2 | openai/gpt-5.5 |
-| 3 | GPT-5.5 (xhigh) | gpt-5-5 | OpenAI | 54.8 | $2,630 | 295.5M | $5.00 | $30.00 | 922.0K | 115.9 | openai/gpt-5.5 |
+| rank | model | creator | intel | intel-task$ | in$/1m | out$/1m | ctx | openrouter |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Claude Haiku 5.5 (Xhigh) | Anthropic | 41.2 | $0.12 | $0.10 | $0.50 | 1.0M | anthropic/claude-haiku-5.5 |
+| 2 | Claude Haiku 5.5 (Max) | Anthropic | 43.4 | $0.21 | $0.10 | $0.50 | 1.0M | anthropic/claude-haiku-5.5 |
+| 3 | GLM-5.3-Flash | Z AI | 41.8 | $0.28 | $0.15 | $0.50 | 1.0M | z-ai/glm-5.3-flash |
 ```
 
-`intel-task$` and `agent-task$` are matching weighted benchmark costs per task.
-`idx-run$` and `idx-tok` are full benchmark-run proxies from Artificial Analysis,
-not per-call API pricing. For API pricing, use `in$/1m` and `out$/1m`.
-Token prices are rates, not workload costs. Workload cost requires explicit
-input and output volumes plus cache, tool, reasoning, and retry assumptions.
-Blended token price is not used as workload evidence because it assumes a token
-mix that may not match the workload. Benchmark task-cost fields are useful
-evidence for those benchmarks, but they are not application spend estimates.
-Default profiles omit legacy blended-rate fields; explicit full exports retain
-the source columns for inspection.
+(Some columns trimmed.)
 
-OpenRouter `:free` slugs are prototype options. They can have rate limits, daily caps, weaker availability, or different serving details than paid endpoints.
-
-## Data
-
-Tracked runtime data:
-
-| File | Contents |
+| Command | What it does |
 |---|---|
-| `skills/which-llm/artifacts/models_enriched.csv` | The compact AA plus OpenRouter snapshot used by the commands. |
-| `skills/which-llm/artifacts/aa_data.json` | Full catalog and evaluation records, six capability indices, coding agents, media and speech leaderboards, and the homepage provider subset. |
-| `skills/which-llm/artifacts/unmatched.txt` | Non-deprecated AA models without OpenRouter matches. |
+| `pick.py [preset] [filters]` | Ranked shortlist. Presets: `best`, `vision`, `long-context`, `open-weights`, `free` |
+| `compare.py <model>...` | Side-by-side table |
+| `profile.py <model>` | Everything about one model |
+| `resolve.py <name>...` | Natural name to exact slug, with alternates |
+| `slug.py <model>` | OpenRouter paid and `:free` IDs |
+| `frontier.py [preset]` | Pareto chart (PNG) plus CSV. Needs `pip install matplotlib` |
+| `export.py [preset] [filters]` | CSV or JSON file |
+| `data.py [dataset]` | Raw AA datasets: evaluations, capabilities, coding agents, media, speech |
 
-Regenerable refresh intermediates such as `models.html`, `models.csv`, `models.json`, and `openrouter.json` are ignored to keep skill installs small.
+Every command takes `--help`. [SKILL.md](skills/which-llm/SKILL.md) has the full filter and field reference.
+
+### Reading the numbers
+
+- `in$/1m` and `out$/1m` are API prices per million tokens. They are rates, not what your workload will cost.
+- `intel-task$` is AA's measured cost per Intelligence Index task. It folds in how many tokens a model actually spends, so it is the better "cost to get an answer" signal.
+- `idx-run$` is the cost of AA's whole benchmark run, not a per-call price.
+- OpenRouter `:free` endpoints are for prototyping. Expect rate limits.
+
+## How the data stays fresh
+
+A GitHub Action scrapes AA and OpenRouter daily and publishes to the `automation/daily-data-refresh` branch. Installed skills fetch from there when their local copy is more than two days old, so new models show up without reinstalling. If the fetch fails, commands say so instead of answering from stale data.
+
+The skill does not cover models AA has not benchmarked yet, private evals, or non-OpenRouter provider pricing.
 
 ## Development
 
@@ -143,25 +95,11 @@ Regenerable refresh intermediates such as `models.html`, `models.csv`, `models.j
 git clone https://github.com/ariobarin/which-llm
 cd which-llm
 python -m pip install -e "skills/which-llm[test]"
-python -m pytest tests -v
-python skills/which-llm/pick.py best --top 3
+python -m pytest tests
 ```
 
-Edit `skills/which-llm` first, then run `python scripts/sync_plugin_wrapper.py` to refresh the optional plugin wrapper. The mirror test fails if the wrapper drifts.
-
-The daily GitHub Action reads four shared AA datasets, enriches model rows with OpenRouter, validates the runtime snapshot, syncs the plugin wrapper, and publishes to `automation/daily-data-refresh`. Its PR updates bundled copies on main; installed skills fetch directly from the daily branch, so fresh data does not wait for a PR merge. Failed downloads preserve the cache. An unavailable or broken optional AA table retains its own dated cached rows with a `refresh_error`; other valid tables can still refresh. If OpenRouter is unavailable, existing slugs are retained with `openrouter_data_status=cached`, while unknown slugs are marked `unavailable`. The core catalog must still pass completeness, freshness, and schema checks; partial data is never silently presented as freshly verified.
-
-The scraper discovers evaluation and capability pages from AA's listings and reads their complete shared manifests rather than the initial chart selection. Raw nested records preserve new fields without adding a column for each one. Run `python data.py` to see dataset names, counts, dates, and freshness. See the skill's detailed dataset examples for sorting and selecting nested metrics.
-
-To refresh directly from AA and OpenRouter:
-
-```bash
-python -m pip install ./skills/which-llm
-python skills/which-llm/query.py data refresh
-```
-
-Normal queries need no third-party packages. Plotting requires the `plot` extra.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for layout and the refresh pipeline.
 
 ## License
 
-MIT. Data comes from public Artificial Analysis and OpenRouter pages.
+MIT. Data comes from public [Artificial Analysis](https://artificialanalysis.ai) and [OpenRouter](https://openrouter.ai) pages; credit them when you share results.

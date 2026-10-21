@@ -129,7 +129,7 @@ def nested(row: dict, path: str):
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("dataset", nargs="?", help="Omit to list datasets, row counts, and source dates.")
-    parser.add_argument("--model", help="Substring in model name, slug, or coding-agent label.")
+    parser.add_argument("--model", help="Substring in model name, slug, provider label, or coding-agent label.")
     parser.add_argument("--fields", help="Comma-separated fields; nested paths such as mean.costUsd work.")
     parser.add_argument("--sort", help="Numeric field or nested path. Missing values are excluded.")
     parser.add_argument("--ascending", action="store_true", help="Lower is better. Default sort is descending.")
@@ -154,7 +154,7 @@ def main() -> int:
     rows = dataset["rows"]
     if args.model:
         rows = [row for row in rows if args.model.lower() in " ".join(
-            str(row.get(key) or "") for key in ("name", "slug", "displayLabel", "hostModelSlug")
+            str(row.get(key) or "") for key in ("name", "slug", "label", "hostApiId", "displayLabel", "hostModelSlug")
         ).lower()]
     if args.sort:
         rows = [row for row in rows if isinstance(nested(row, args.sort), (float, int))
