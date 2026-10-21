@@ -165,12 +165,14 @@ def test_stale_edge_keeps_newer_timestamp_only_for_unchanged_rows(tmp_path, monk
 
 
 def test_current_benchmarks_keep_zero_and_nested_details():
-    row = scrape.flatten({"slug": "test", "gdpPdfAllPass": 0, "terminalbenchV21": 0.75,
+    row = scrape.flatten({"slug": "test", "gdpPdfAllPass": 0, "terminalBench21": 0.75,
+                          "omniscienceHallucinationRate": 0.2,
                           "briefcaseBreakdown": {"overall": {"elo": 1400}},
                           "timescaleData": {"medianOutputSpeed": 80},
                           "effort": {"slug": "high"}})
     assert row["gdp_pdf_all_pass"] == 0
     assert row["terminalbench_v2_1"] == 0.75
+    assert row["omniscience_hallucination_rate"] == 0.2
     assert row["briefcase_elo"] == 1400
     assert row["output_tokens_per_second"] == 80
     assert row["reasoning_effort"] == "high"

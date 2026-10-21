@@ -30,6 +30,13 @@ loosely follows [SemVer](https://semver.org/).
 - Exact `export.py --columns` selection plus a focused coding field group.
 - Snapshot metadata in human-readable command output and artifact summaries.
 
+### Fixed
+- Terminal-Bench v2.1/v4.0 and Omniscience accuracy/hallucination columns were
+  always empty because AA renamed the source keys. They now populate, and the
+  scraper warns when any mapped column comes back empty.
+- Capabilities refresh follows AA's move from `/models/capabilities` to
+  `/indexes`. Python 3.10's urllib does not follow the 308 redirect.
+
 ### Changed
 - Default agent-facing profiles omit legacy blended-rate fields while explicit
   full exports retain the source data.
