@@ -16,7 +16,8 @@ ELBOW = "#E4624A"
 CHART_TITLE = "Pareto frontier"
 
 _EFFORT_RE = re.compile(
-    r"\s*\((?:Adaptive\s+)?[Rr]easoning,\s*([A-Za-z]+)\s+Effort"
+    r"\s*\((?:(?:Adaptive\s+)?[Rr]easoning,\s*([A-Za-z]+)\s+Effort"
+    r"|(Minimal|Low|Medium|High|Xhigh|Max))"
     r"(?:,\s*[^)]*Fallback)?\)"
 )
 _BARE_REASON_RE = re.compile(r"\s*\((?:Adaptive\s+)?[Rr]easoning\)")
@@ -25,7 +26,7 @@ _NON_REASON_RE = re.compile(r"\s*\(Non-[Rr]easoning\)")
 
 def shorten(name: str, slug: str = "", limit: int = 34) -> str:
     """Keep variant identity while fitting compact point callouts."""
-    text = _EFFORT_RE.sub(lambda match: f" ({match.group(1).lower()})", name)
+    text = _EFFORT_RE.sub(lambda match: f" ({(match.group(1) or match.group(2)).lower()})", name)
     text = _NON_REASON_RE.sub(" (non-reasoning)", text)
     text = _BARE_REASON_RE.sub("", text)
     if "non-reasoning" in slug and "(non-reasoning)" not in text.lower():

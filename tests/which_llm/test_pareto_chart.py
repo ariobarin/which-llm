@@ -160,6 +160,15 @@ def test_shorten_preserves_reasoning_effort():
     )
 
 
+def test_shorten_handles_bare_effort_names():
+    assert pareto_chart.shorten("GPT-6.1 Sol (High)") == "GPT-6.1 Sol (high)"
+    assert (
+        pareto_chart.shorten("Claude Opus 5.5 (Xhigh, Default Fallback)")
+        == "Claude Opus 5.5 (xhigh)"
+    )
+    assert pareto_chart.shorten("Gemma 4 (Preview)") == "Gemma 4 (Preview)"
+
+
 def test_shorten_preserves_non_reasoning_variant():
     assert (
         pareto_chart.shorten("Qwen3.5 0.8B (Non-reasoning)")
