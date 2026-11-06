@@ -1,6 +1,7 @@
-# Unmatched non-deprecated AA models (141 total)
+# Unmatched non-deprecated AA models (153 total)
 # Run: python enrich.py  (regenerates this file)
 a-x-k2                                         A.X-K2
+agnes-2-5-pro-beta                             Agnes 2.5 Pro Beta
 apertus-70b-instruct                           Apertus 70B Instruct
 apertus-8b-instruct                            Apertus 8B Instruct
 apodex-1-1                                     Apodex 1.1
@@ -24,7 +25,9 @@ falcon-h1r-7b                                  Falcon-H1R-7B
 g9v3-39a5b                                     G9v3-39A5B
 g9v3-3b                                        G9v3-3B
 gemini-3-deep-think                            Gemini 3 Deep Think
-gemini-4-argon                                 Gemini 4 Argon (High)
+gemini-4-carbon                                Gemini 4 Carbon (High)
+gemini-4-carbon-low                            Gemini 4 Carbon (Low)
+gemini-4-carbon-medium                         Gemini 4 Carbon (Medium)
 gemma-3-270m                                   Gemma 3 270M
 gemma-4-12b                                    Gemma 4 12B (Reasoning)
 gemma-4-12b-non-reasoning                      Gemma 4 12B (Non-reasoning)
@@ -38,6 +41,7 @@ granite-4-0-350m                               Granite 4.0 350M
 granite-4-0-h-350m                             Granite 4.0 H 350M
 granite-4-0-h-nano-1b                          Granite 4.0 H 1B
 granite-4-0-h-small                            Granite 4.0 H Small
+granite-4-0-micro                              Granite 4.0 Micro
 granite-4-2-30b                                Granite 4.2 30B
 granite-4-2-3b                                 Granite 4.2 3B
 hermes-4-llama-3-1-405b                        Hermes 4 - Llama-3.1 405B (Non-reasoning)
@@ -46,6 +50,7 @@ hermes-4-llama-3-1-70b                         Hermes 4 - Llama-3.1 70B (Non-rea
 hermes-4-llama-3-1-70b-reasoning               Hermes 4 - Llama-3.1 70B (Reasoning)
 hyperclova-x-seed-think-32b                    HyperCLOVA X SEED Think (32B)
 hypernova-60b                                  HyperNova 60B 2605 (High, Based on gpt-oss-120b)
+inkling-2-small                                Inkling 2 Small
 intellect-3                                    INTELLECT-3 (Based on GLM-4.5-Air)
 jamba-1-7-large                                Jamba 1.7 Large
 jamba-1-7-mini                                 Jamba 1.7 Mini
@@ -54,7 +59,7 @@ jt-35b-flash                                   JT-35B-Flash
 jt-4-1-flash-236b-a21b                         JT-4.1 Flash 236B A21B (Reasoning)
 jt-4-1-flash-236b-a21b-non-reasoning           JT-4.1 Flash 236B A21B (Non-reasoning)
 jt-mini                                        JT-MINI
-k-exaone-2-0-0803                              K-EXAONE 2.0 0803
+k-exaone-2-0-0803                              K-EXAONE 2.0
 k2-horizon-0-9b                                K2 Horizon 0.9B
 k2-horizon-3-7b                                K2 Horizon 3.7B
 k2-horizon-375b-a23b                           K2 Horizon 375B A23B
@@ -71,7 +76,8 @@ lfm2-5-1-2b-instruct                           LFM2.5-1.2B-Instruct
 lfm2-5-1-2b-thinking                           LFM2.5-1.2B-Thinking
 lfm2-5-8b-a1b                                  LFM2.5-8B-A1B
 lfm2-5-vl-1-6b                                 LFM2.5-VL-1.6B
-ling-3-0-tiny                                  Ling 3.0 Tiny
+ling-3-0-flash-fin                             Ling-3.0-flash-Fin
+ling-3-1-flash-1019                            Ling 3.1 Flash 1019
 llama-3-1-instruct-405b                        Llama 3.1 Instruct 405B
 llama-3-1-nemotron-ultra-253b-v1-reasoning     Llama 3.1 Nemotron Ultra 253B v1 (Reasoning)
 llama-3-2-instruct-11b-vision                  Llama 3.2 Instruct 11B (Vision)
@@ -92,7 +98,11 @@ molmo2-8b                                      Molmo2-8B
 motif-2-12-7b                                  Motif-2-12.7B-Reasoning
 motif-3                                        Motif 3
 muse-glimmer                                   Muse Glimmer (High)
+muse-wonder-full                               Muse Wonder Full (Max)
 nanbeige4-1-3b                                 Nanbeige4.1-3B
+nanbeige4-3-33b                                Nanbeige4.3-33B
+nemotron-3-5-bolt-74b-a9b                      Nemotron 3.5 Bolt 74B-A9B
+nemotron-3-5-bolt-e4b-4gb                      Nemotron 3.5 Bolt E4B 4GB (Reasoning)
 nemotron-cascade-2-30b-a3b                     Nemotron Cascade 2 30B A3B
 nex-n2-pro                                     Nex-N2-Pro (Based on Qwen3.5-397B-A17B)
 nova-2-0-lite                                  Nova 2.0 Lite (Non-reasoning)
@@ -132,6 +142,7 @@ qwen3-next-80b-a3b-reasoning                   Qwen3 Next 80B A3B (Reasoning)
 qwen3-omni-30b-a3b-instruct                    Qwen3 Omni 30B A3B Instruct
 qwen3-omni-30b-a3b-reasoning                   Qwen3 Omni 30B A3B (Reasoning)
 r1-1776                                        R1 1776
+reflection-beam                                Beam 1.0
 ring-2-6-1t                                    Ring-2.6-1T
 ring-flash-2-0                                 Ring-flash-2.0
 sarvam-105b                                    Sarvam 105B (High)
@@ -141,3 +152,4 @@ solar-open2-250b                               Solar Open2 250B
 step-3-vl-10b                                  Step3 VL 10B
 tiny-aya-global                                Tiny Aya Global
 tri-21b-think-v0-5                             Tri-21B-Think
+trinity-large-thinking                         Trinity Large Thinking
