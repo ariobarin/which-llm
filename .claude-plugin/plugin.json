@@ -1,9 +1,10 @@
 {
   "name": "which-llm",
   "description": "Compare current LLM quality, price, speed, context, and OpenRouter slugs using Artificial Analysis data.",
-  "version": "0.5.0",
   "author": {
     "name": "Ario Barin",
     "url": "https://github.com/ariobarin"
-  }
+  },
+  "homepage": "https://github.com/ariobarin/which-llm",
+  "license": "MIT"
 }

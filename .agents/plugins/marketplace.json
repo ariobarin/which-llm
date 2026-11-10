@@ -8,7 +8,7 @@
       "name": "which-llm",
       "source": {
         "source": "local",
-        "path": "./plugins/which-llm"
+        "path": "./"
       },
       "policy": {
         "installation": "AVAILABLE",

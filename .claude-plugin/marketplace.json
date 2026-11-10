@@ -7,23 +7,8 @@
   "plugins": [
     {
       "name": "which-llm",
-      "source": "./plugins/which-llm",
-      "version": "0.5.0",
-      "description": "Compare current LLM quality, price, speed, context, and OpenRouter slugs using Artificial Analysis data.",
-      "homepage": "https://github.com/ariobarin/which-llm",
-      "keywords": [
-        "llm",
-        "model-selection",
-        "openrouter",
-        "artificial-analysis",
-        "pricing"
-      ],
-      "author": {
-        "name": "Ario Barin"
-      }
+      "source": "./",
+      "description": "Compare current LLM quality, price, speed, context, and OpenRouter slugs using Artificial Analysis data."
     }
-  ],
-  "metadata": {
-    "description": "Current LLM selection data from Artificial Analysis and OpenRouter."
-  }
+  ]
 }
