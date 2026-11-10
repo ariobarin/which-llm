@@ -1,244 +1,92 @@
 ---
 name: which-llm
-description: Inspect current LLM tradeoffs across quality, price, speed, context, modality, and OpenRouter availability. Use for model recommendations, comparisons, pricing checks, and code changes that add or swap an LLM.
+description: Look up current LLM quality, price, speed, context, modality, benchmark scores, and OpenRouter slugs (including free tier). Use for model recommendations, comparisons, pricing checks, and code changes that add or swap an LLM.
 ---
 
 # which-llm
 
-This skill provides a current Artificial Analysis plus OpenRouter snapshot and
-Python commands for model selection data. Fresh cached data works offline.
-Missing, stale, or undated data is replaced automatically from the published
-daily snapshot, with main as a fallback. Normal use needs only Python 3.10+.
-If neither published snapshot is current, the command explains the failure and
-preserves the cache without recommending from stale data.
+A daily Artificial Analysis (AA) plus OpenRouter snapshot with Python commands
+to query it. Run the scripts from this skill directory with Python 3.10+; they
+need only the standard library. Every command takes `--help`, which lists all
+filters and options.
 
-Run commands from this skill directory with `python`, or call scripts by path
-with `${CLAUDE_SKILL_DIR}` in Claude Code.
+Data older than two days is replaced automatically from the published daily
+snapshot. If that fetch fails, the command stops with an error instead of
+answering from stale data.
 
-## Capabilities
+## Commands
 
-| Capability | Command | Produces |
-|---|---|---|
-| Inspect ranked models under constraints | `python pick.py [preset] [filters]` | Ranked evidence table |
-| Compare named models | `python compare.py <model>...` | Side-by-side table |
-| Inspect one model | `python profile.py <model>` | Model profile |
-| Resolve natural names | `python resolve.py <model>...` | Selected slugs plus alternates |
-| Resolve endpoint names | `python slug.py <model>` | Provider endpoint record |
-| Generate Pareto frontier | `python frontier.py [preset] [filters]` | PNG chart plus CSV data |
-| Inspect detailed AA datasets | `python data.py [dataset] [filters]` | Source-dated JSON |
-| Export filtered rows | `python export.py [preset] [filters]` | CSV or JSON file |
-
-## Evidence, Not Conclusions
-
-The commands organize current evidence. They do not choose a model for the
-agent or user. A default sort order is not a recommendation.
-
-- Start with the user's stated constraints and objective.
-- Present relevant tradeoffs, scope, and uncertainty before a conclusion.
-- Recommend a model only when the user asks for a recommendation. State the
-  objective that produced it.
-- If the user requests a different metric or weighting, show that view without
-  treating the earlier view as universally correct.
-
-## Cost Context
-
-Token prices are rates. They do not establish workload or task cost without the
-input and output token volumes. Caching, tool calls, reasoning tokens, retries,
-and model behavior can materially change total spend.
-
-- Do not use a blended token price as workload-cost evidence. A blend assumes a
-  token mix that may have no relationship to the user's workload.
-- `intel-task$` is benchmark-specific task-cost evidence.
-  They are not estimates of the user's application spend.
-- `idx-run$` is the cost of a full benchmark run. It is not a per-call price.
-- When useful, show benchmark task cost and input and output token rates side by
-  side, with each scope labeled.
-- If a user asks why token price was not used, explain the rate versus workload
-  distinction and offer a direct rate-only comparison.
-- Calculate a workload estimate only when token volume, cache behavior, tool
-  use, and retry assumptions are available. Label every assumption.
-
-## Pick Presets
-
-| Preset | Meaning |
+| Need | Command |
 |---|---|
-| `best` | Highest intelligence. |
-| `vision` | Text and image capable models. |
-| `long-context` | Context window at least 256K tokens. |
-| `open-weights` | Open-weight models. |
-| `free` | Models with OpenRouter free prototype endpoints. |
+| Ranked models under constraints | `python pick.py [preset] [filters] --sort KEY --top N` |
+| Side-by-side comparison | `python compare.py <model>...` |
+| Everything about one model | `python profile.py <model>` |
+| Natural name to slug, with alternates | `python resolve.py <name>...` |
+| OpenRouter paid and free slugs | `python slug.py <model>` |
+| Pareto chart (PNG) plus CSV | `python frontier.py [preset] [filters]` |
+| Filtered rows as CSV or JSON | `python export.py [preset] [filters] --fields GROUPS` |
+| Raw AA datasets as JSON | `python data.py [dataset] [options]` |
 
-## Frontier Presets
-
-| Preset | X metric | Y metric |
-|---|---|---|
-| `cost-intel` | Intelligence Index cost per task, minimized | Intelligence, maximized |
-| `speed-intel` | End to end latency, minimized | Intelligence, maximized |
-| `tokens-intel` | Benchmark-run tokens, minimized | Intelligence, maximized |
-| `context-intel` | Context window, maximized | Intelligence, maximized |
-| `input-price-intel` | Input price per 1M, minimized | Intelligence, maximized |
-| `output-price-intel` | Output price per 1M, minimized | Intelligence, maximized |
-
-## Shared Filters
-
-`pick.py`, `frontier.py`, and `export.py` share these filters:
+- `pick.py` and `export.py` presets: `best`, `vision`, `long-context` (at
+  least 256K), `open-weights`, `free`. Sort keys: `intel`, `cost`, `ctx`,
+  `tokens`, `speed`, `input-price`, `output-price`.
+- `frontier.py` presets: `cost-intel`, `speed-intel`, `tokens-intel`,
+  `context-intel`, `input-price-intel`, `output-price-intel`. It needs
+  matplotlib.
+- Model arguments accept names, AA slugs, or OpenRouter slugs. `compare.py`
+  fails on ambiguous names; run `resolve.py` first or pass `--resolve auto`.
+- When no rows match, `pick.py` shows labeled one-filter relaxations. Pass
+  `--if-empty error` to fail instead.
 
 ```text
---pattern TEXT
---creator NAME
---reasoning / --no-reasoning
---open-weights / --no-open-weights
---free
---text / --no-text
---image
---video
---audio
---modality text,image
---min-intel N
---max-run-cost N
---max-input-price N
---max-output-price N
---min-context N
---max-latency N
---max-index-tokens N
---min-index-tokens N
-```
-
-`--max-cost` remains an alias for `--max-run-cost`, the benchmark-run cost.
-Use `--max-input-price` or `--max-output-price` for API price per 1M tokens.
-A benchmark frontier must pair each score with that same benchmark's cost per
-task. The commands reject known cross-benchmark cost and score pairs.
-
-`pick.py` and `export.py` also accept `--sort` with `intel`, `cost`, `ctx`,
-`tokens`, `speed`, `input-price`, or `output-price`.
-They also accept `--top N`.
-`pick.py` shows clearly labeled one-filter relaxations when no rows match.
-Use `--if-empty error` for strict empty-result failure. `export.py` accepts
-`--if-empty nearest` for the same labeled recovery without writing a relaxed
-data file.
-
-`compare.py` resolves strictly by default. It accepts `--resolve auto` when
-selecting the strongest ambiguous match and listing alternates is acceptable.
-
-`export.py` accepts `--fields core`, `pricing`, `context`, `benchmarks`,
-`coding`, `speed`, `slugs`, or `full`. Field groups can be combined with commas, such
-as `--fields pricing,context`. Exact columns can be selected with
-`--columns name,openrouter_slug,terminalbench_v2_1`.
-
-## Useful Argument Compositions
-
-These are ordinary command shapes built from presets, filters, and sorts.
-Replace `N` with a price ceiling in USD per million input tokens.
-
-| Behavior | Command shape |
-|---|---|
-| Intelligence-task cost efficiency | `python pick.py best --min-intel 50 --sort cost --top 5` |
-| Fast quality shortlist | `python pick.py best --min-intel 30 --sort speed --top 5` |
-| Low input-price shortlist | `python pick.py best --min-intel 40 --sort input-price --top 5` |
-| Low-price image-capable shortlist | `python pick.py vision --min-intel 40 --sort input-price --top 5` |
-| Coding-agent evidence | `python data.py coding-agents --sort indexScore --top 5` |
-| Long-context ranked by input price | `python pick.py long-context --min-intel 40 --sort input-price --top 5` |
-| Long-context under input-price budget | `python pick.py long-context --min-intel 40 --max-input-price N --sort input-price --top 5` |
-| Low output-price shortlist | `python pick.py best --max-output-price 5 --sort output-price --top 5` |
-| Strict no-match behavior | `python pick.py vision --free --min-intel 70 --if-empty error` |
-| Nearest no-match evidence | `python pick.py vision --free --min-intel 70 --top 5` |
-
-## Export Field Groups
-
-| Field group | Contains |
-|---|---|
-| `core` | Main quality, cost, context, speed, and OpenRouter columns. |
-| `pricing` | Benchmark-run cost, token use, API prices, cache price, and slugs. |
-| `context` | Context window, modalities, reasoning, open weights, and slug. |
-| `coding` | API prices, context, OpenRouter slugs, and coding benchmarks. |
-| `benchmarks` | Current and legacy benchmark scores, including Briefcase, GDP.pdf, Terminal-Bench v2.1, and hallucination metrics. |
-| `speed` | Output tokens per second, latency, speed percentiles, and measurement provider. |
-| `slugs` | Internal slug, OpenRouter production slug, and free slug. |
-| `full` | All tracked columns. |
-
-## Output Notes
-
-- Every command emits a compact cost-scope reminder for the calling agent.
-- Default profiles omit legacy blended-rate fields. Explicit full exports retain
-  the source columns for inspection.
-- `idx-run$` is the estimated cost to run the Artificial Analysis benchmark
-  suite. It is not a per-call API price.
-- `intel-task$` is the weighted Intelligence Index cost per task. `--sort cost`
-  sorts by it.
-- `intelligence_index_cost_per_task_usd` is the weighted Intelligence Index cost
-  per task.
-- `idx-tok` is total benchmark-run token use.
-- `in$/1m` and `out$/1m` are API prices per million tokens.
-- `openrouter_slug` is the production endpoint name.
-- `openrouter_free_slug` is a prototype option. Free endpoints can be
-  rate-limited or served differently from paid listings.
-- `openrouter_data_status` reports `live` for verified catalog data,
-  `cached` for last-known mappings when OpenRouter fails, or `unavailable`
-  for models without cached mappings. Do not represent cached slugs as current.
-- Optional benchmark datasets can retain dated cached rows with a
-  `refresh_error`. Their source dates remain unchanged; freshness checks still apply.
-
-## Examples
-
-```text
-python pick.py best --min-intel 50 --sort cost --image --top 8
 python pick.py vision --min-intel 40 --sort input-price --top 5
-python data.py coding-agents --sort indexScore --top 5
-python pick.py long-context --min-intel 40 --sort input-price --top 5
-python compare.py gpt-5-5-medium glm-5-2
-python resolve.py "gemini flash" "gpt nano"
-python profile.py glm-5-2
-python slug.py glm-5-2
-python frontier.py cost-intel --max-x 1200 --out-dir artifacts
-python data.py capabilities --sort capabilities.legal.headlineValue --top 5
+python pick.py long-context --max-input-price 1 --sort cost --top 5
 python export.py open-weights --fields pricing,context --format csv
-python export.py open-weights --reasoning --fields coding --format csv
+python frontier.py cost-intel --creator OpenAI --creator Anthropic
 ```
+
+## Reading the numbers
+
+- `in$/1m` and `out$/1m` are API prices per million tokens. They are rates,
+  not workload cost, which also depends on token volume, caching, and retries.
+- `intel-task$` is AA's measured cost per Intelligence Index task and is what
+  `--sort cost` uses. `idx-run$` is the cost of the whole benchmark run and
+  `idx-tok` its token use. Neither is a per-call price.
+- `--max-run-cost` filters on `idx-run$`. Use `--max-input-price` or
+  `--max-output-price` for API prices.
+- `openrouter_free_slug` endpoints are for prototyping and can be rate limited.
+- `openrouter_data_status` is `live`, `cached` (last known mapping because
+  OpenRouter was unreachable; do not present it as current), or `unavailable`.
 
 ## Detailed datasets
 
-Run `python data.py` to list available datasets, row counts, source dates, and
-freshness. `python data.py <dataset>` returns ten raw records as JSON; use
+`python data.py` lists the datasets with row counts, source dates, and
+freshness. `python data.py <dataset>` prints ten records; narrow with
 `--model TEXT`, `--fields a,b`, `--sort FIELD`, `--ascending`, and `--top N`
-(`0` means all). Nested paths preserve AA's field names and units.
+(0 means all). Field names and units are AA's, and nested paths work. Print
+one record to discover the fields before choosing a sort.
 
-- `catalog` preserves all model fields, including effort, licenses, speed
-  distributions, benchmark costs, and token breakdowns.
-- `evaluations` preserves benchmark subscores, confidence intervals, domain
-  breakdowns, and canonical evaluation token counts.
-- `capabilities` contains domain indices with their matching task costs, times,
-  tokens, and subscores. List a record to discover current capability names.
-- `coding-agents` contains agent and model configurations, scores, costs,
-  timing, token use, evaluation components, and version information.
-- `media/*` and `speech/*` contain AA's available image, video, and speech
-  leaderboard records (`ciDelta` is the Elo 95% interval half-width).
-  `providers` has one row per AA-tracked API endpoint with `pricing`,
-  `performance`, and `features`; endpoints AA has not benchmarked lack
-  `performance`.
-
-For coding agents, use `data.py coding-agents`; for individual model
-benchmarks, use `export.py --fields coding`. Do not equate an agent configuration's score with
-a model-only score. Keep scores, costs, and times from the same evaluation and
-configuration. Elo, proportions, percentages, and WER retain source units;
-lower WER is better. Inspect fields before choosing a numeric sort.
+- `catalog`: every model field, including effort levels, licenses, speed
+  distributions, and token breakdowns.
+- `evaluations`: benchmark subscores, confidence intervals, and domain
+  breakdowns.
+- `capabilities`: domain indices with their matching task cost, time, and
+  tokens.
+- `coding-agents`: agent plus model configurations with scores, cost, and
+  wall time. An agent configuration's score is not a model-only score.
+- `providers`: one row per AA-tracked API endpoint with pricing, performance,
+  and features.
+- `media/*` and `speech/*`: image, video, and speech leaderboards. `ciDelta`
+  is the Elo 95% interval half-width, and lower WER is better.
 
 ```text
-python data.py coding-agents --sort indexScore --fields displayLabel,indexScore,mean.costUsd,mean.agentWallTimeSec --top 5
-python data.py capabilities --sort capabilities.legal.headlineValue --fields name,capabilities.legal --top 5
-python data.py evaluations --model gpt-6-astra --fields name,gdpPdfAllPass,gdpPdfBreakdown
-python data.py media/textToImage --sort elo --fields name,elo,ciDelta,price
+python data.py coding-agents --sort indexScore --fields displayLabel,indexScore,mean.costUsd --top 5
+python data.py providers --model <model> --sort performance.outputSpeed --fields label,host.name,pricing
 python data.py speech/sttModels --sort representativeHostModel.aaWerIndex --ascending
-python data.py providers --model gpt-oss-120b --sort performance.medianOutputTokensPerSecond --fields label,host.name,pricing,performance.medianOutputTokensPerSecond
 ```
 
-Each dataset keeps its own source date. An unavailable secondary source cannot
-block the model refresh; any retained data keeps its old date and an error.
-Commands refuse stale datasets. Complete coverage is limited to the shared
-public datasets, not every AA article, provider endpoint, or historical chart.
+## Limits
 
-## Do Not Use For
-
-- Evaluations or private benchmarks that Artificial Analysis does not publish.
-- Models so new that Artificial Analysis has not indexed them yet.
-- Authoritative non-OpenRouter provider pricing. Verify those prices with the
-  provider.
+- Models AA has not indexed yet and private evaluations are not covered.
+- Prices outside OpenRouter and the AA catalog are not authoritative. Verify
+  them with the provider.
