@@ -17,10 +17,7 @@ from pathlib import Path
 ART = Path(__file__).parent / "artifacts"
 DATA_PATH = ART / "aa_data.json"
 STALE_AFTER_DAYS = 2
-PUBLISHED_ROOTS = [
-    "https://raw.githubusercontent.com/ariobarin/which-llm/automation/daily-data-refresh/skills/which-llm/artifacts/",
-    "https://raw.githubusercontent.com/ariobarin/which-llm/main/skills/which-llm/artifacts/",
-]
+PUBLISHED_ROOT = "https://raw.githubusercontent.com/ariobarin/which-llm/automation/daily-data-refresh/skills/which-llm/artifacts/"
 
 
 def age_days(stamp: str | None) -> float:
@@ -78,18 +75,14 @@ def parse_bundle(content: str) -> dict:
 
 
 def refresh_file(path: Path, validate) -> None:
-    errors = []
-    for root in PUBLISHED_ROOTS:
-        try:
-            request = urllib.request.Request(root + path.name, headers={"User-Agent": "which-llm"})
-            with urllib.request.urlopen(request, timeout=20) as response:
-                content = response.read().decode("utf-8")
-            validate(content)
-            atomic_write(path, content)
-            return
-        except (OSError, ValueError) as exc:
-            errors.append(str(exc))
-    raise RuntimeError("Could not fetch a current published snapshot: " + "; ".join(errors))
+    try:
+        request = urllib.request.Request(PUBLISHED_ROOT + path.name, headers={"User-Agent": "which-llm"})
+        with urllib.request.urlopen(request, timeout=20) as response:
+            content = response.read().decode("utf-8")
+        validate(content)
+        atomic_write(path, content)
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"Could not fetch a current published snapshot: {exc}") from exc
 
 
 def dataset_is_fresh(bundle: dict, name: str) -> bool:

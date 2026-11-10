@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT / "skills" / "which-llm"))
 
 @pytest.fixture(autouse=True)
 def no_network(monkeypatch):
-    """Tests must never download data into the tracked snapshot."""
+    """Tests must never download data."""
     def refuse(*args, **kwargs):
         raise AssertionError("tests must not touch the network; patch urlopen")
 

@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Daily refresh](https://img.shields.io/github/actions/workflow/status/ariobarin/which-llm/refresh.yml?label=daily%20refresh)](https://github.com/ariobarin/which-llm/actions/workflows/refresh.yml)
 
-An agent skill that answers "which LLM should I use?" with current data instead of training-data guesses. It bundles a daily snapshot of [Artificial Analysis](https://artificialanalysis.ai) benchmarks and [OpenRouter](https://openrouter.ai) model IDs, plus small Python commands your agent runs to filter, compare, and chart models by quality, price, speed, context, and modality.
+An agent skill that answers "which LLM should I use?" with current data instead of training-data guesses. It fetches a daily snapshot of [Artificial Analysis](https://artificialanalysis.ai) benchmarks and [OpenRouter](https://openrouter.ai) model IDs on first use, and ships small Python commands your agent runs to filter, compare, and chart models by quality, price, speed, context, and modality.
 
 No API keys. Python 3.10+ standard library only (charts also need matplotlib).
 
@@ -69,7 +69,7 @@ $ python pick.py vision --min-intel 40 --sort input-price --top 3
 
 ## How the data stays fresh
 
-A GitHub Action scrapes AA and OpenRouter daily and publishes to the `automation/daily-data-refresh` branch. Installed skills fetch from there when their local copy is more than two days old, so new models show up without reinstalling. If the fetch fails, commands say so instead of answering from stale data.
+A GitHub Action scrapes AA and OpenRouter daily and publishes to the `automation/daily-data-refresh` branch. The repo itself ships code only. Installed skills fetch from that branch on first use and again when their local copy is more than two days old, so new models show up without reinstalling. If the fetch fails, commands say so instead of answering from stale data.
 
 The skill does not cover models AA has not benchmarked yet, private evals, or non-OpenRouter provider pricing.
 

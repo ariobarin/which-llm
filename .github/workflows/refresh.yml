@@ -1,8 +1,9 @@
 name: Daily data refresh
 
-# Re-scrape Artificial Analysis + OpenRouter daily so the snapshot shipped
-# in the repo stays current. Also triggerable manually. Actions pinned to
-# commit SHAs to close the floating-tag supply-chain vector.
+# Re-scrape Artificial Analysis + OpenRouter daily and publish the snapshot to
+# the data branch installed skills fetch from; main ships code only. Also
+# triggerable manually. Actions pinned to commit SHAs to close the
+# floating-tag supply-chain vector.
 
 on:
   schedule:
@@ -20,7 +21,9 @@ defaults:
 permissions:
   contents: write
   issues: write  # for the failure-issue-opener step
-  pull-requests: write
+
+env:
+  DATA_BRANCH: automation/daily-data-refresh
 
 jobs:
   refresh:
@@ -46,10 +49,11 @@ jobs:
       - name: Restore last published data as refresh baseline
         working-directory: ${{ github.workspace }}
         run: |
-          if git fetch origin refs/heads/automation/daily-data-refresh; then
+          # No data branch yet means a first run: scrape without a baseline.
+          if git fetch origin "+refs/heads/$DATA_BRANCH:refs/remotes/origin/$DATA_BRANCH"; then
             for FILE in skills/which-llm/artifacts/models_enriched.csv skills/which-llm/artifacts/aa_data.json; do
-              if git cat-file -e "FETCH_HEAD:$FILE"; then
-                git restore --source FETCH_HEAD --worktree -- "$FILE"
+              if git cat-file -e "origin/$DATA_BRANCH:$FILE"; then
+                git restore --source "origin/$DATA_BRANCH" --worktree -- "$FILE"
               fi
             done
           fi
@@ -66,41 +70,23 @@ jobs:
           python pick.py best --top 3
           python data.py
 
-      - name: Open refresh PR if data changed
+      - name: Publish data commit if data changed
         working-directory: ${{ github.workspace }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [[ -n "$(git status --porcelain skills/which-llm/artifacts/)" ]]; then
-            REFRESH_BRANCH="automation/daily-data-refresh"
-            git fetch origin "$REFRESH_BRANCH:refs/remotes/origin/$REFRESH_BRANCH" || true
-            git switch -C "$REFRESH_BRANCH" "$GITHUB_SHA"
-            git add skills/which-llm/artifacts/models_enriched.csv \
-                    skills/which-llm/artifacts/aa_data.json \
-                    skills/which-llm/artifacts/unmatched.txt
-            if git diff --cached --quiet; then
-              echo "No artifact changes; nothing to commit."
-              exit 0
-            fi
-            git commit -m "refresh model data"
-            git push --force-with-lease=refs/heads/$REFRESH_BRANCH origin "HEAD:$REFRESH_BRANCH"
-            EXISTING_PR=$(gh pr list --head "$REFRESH_BRANCH" --state open --json number --jq '.[0].number')
-            if [[ -n "$EXISTING_PR" ]]; then
-              gh pr edit "$EXISTING_PR" \
-                --title "Refresh model data" \
-                --body "Daily refresh found model catalog changes."
-            else
-              gh pr create \
-                --base main \
-                --head "$REFRESH_BRANCH" \
-                --title "Refresh model data" \
-                --body "Daily refresh found model catalog changes."
-            fi
-          else
-            echo "No artifact changes; nothing to commit."
+          # The artifacts folder is gitignored on main, so force the add.
+          git add -f skills/which-llm/artifacts/models_enriched.csv \
+                     skills/which-llm/artifacts/aa_data.json \
+                     skills/which-llm/artifacts/unmatched.txt
+          PUBLISHED="refs/remotes/origin/$DATA_BRANCH"
+          if git rev-parse -q --verify "$PUBLISHED" >/dev/null &&
+             git diff --cached --quiet "$PUBLISHED" -- skills/which-llm/artifacts; then
+            echo "No data changes; nothing to publish."
+            exit 0
           fi
+          git commit -m "refresh model data"
+          git push --force-with-lease="refs/heads/$DATA_BRANCH" origin "HEAD:refs/heads/$DATA_BRANCH"
 
       - name: Open issue if any earlier step failed
         if: failure()

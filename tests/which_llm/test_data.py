@@ -55,12 +55,13 @@ def test_remote_rejects_stale_undated_or_future_data(stamp):
         data.validate_csv(content)
 
 
-def test_download_falls_back_from_stale_daily_branch(tmp_path, monkeypatch):
-    current = snapshot(datetime.now(timezone.utc).isoformat())
-    contents = iter([snapshot("2020-01-01T00:00:00Z"), current])
-    monkeypatch.setattr(data.urllib.request, "urlopen", lambda *a, **kw: io.BytesIO(next(contents).encode()))
-    path = tmp_path / "models_enriched.csv"
-    data.refresh_file(path, data.validate_csv)
+def test_first_run_without_local_data_fetches_snapshot(tmp_path, monkeypatch):
+    current = snapshot()
+    path = tmp_path / "artifacts" / "models_enriched.csv"
+    monkeypatch.setattr(query, "ENRICHED_CSV", path)
+    monkeypatch.setattr(query, "BASE_CSV", tmp_path / "missing.csv")
+    monkeypatch.setattr(data.urllib.request, "urlopen", lambda *a, **kw: io.BytesIO(current.encode()))
+    query.ensure_data()
     assert path.read_text() == current
 
 

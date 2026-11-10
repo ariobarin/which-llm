@@ -10,15 +10,7 @@ wheels/
 .venv
 .env
 
-# Regenerable artifacts. The enriched runtime CSV stays tracked so the skill
-# works instantly; refresh intermediates and plot output rebuild locally.
-**/artifacts/models.html
-**/artifacts/models.csv
-**/artifacts/models.json
-**/artifacts/openrouter.json
-**/artifacts/pareto.png
-**/artifacts/pareto_free.png
-**/artifacts/exports/
-**/artifacts/which-llm-frontier-*.csv
-**/artifacts/which-llm-frontier-*.png
+# Model data is published on the automation/daily-data-refresh branch and
+# fetched on first use; nothing under artifacts is tracked on main.
+skills/which-llm/artifacts/
 .claude/
