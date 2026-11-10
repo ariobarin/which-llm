@@ -10,9 +10,9 @@ to query it. Run the scripts from this skill directory with Python 3.10+; they
 need only the standard library. Every command takes `--help`, which lists all
 filters and options.
 
-Data older than two days is replaced automatically from the published daily
-snapshot. If that fetch fails, the command stops with an error instead of
-answering from stale data.
+No data ships with the skill. The published daily snapshot is fetched on first
+use and again when the local copy is older than two days. If that fetch fails,
+the command stops with an error instead of answering from stale data.
 
 ## Commands
 
