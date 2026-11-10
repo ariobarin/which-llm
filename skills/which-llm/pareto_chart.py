@@ -190,7 +190,7 @@ def _load_plot_deps():
         from matplotlib.ticker import FuncFormatter
     except ImportError as exc:
         raise SystemExit(
-            "Chart generation needs matplotlib. Install the plot extra and rerun."
+            "Chart generation needs matplotlib. Install matplotlib and rerun."
         ) from exc
     return plt, FuncFormatter
 

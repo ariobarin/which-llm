@@ -81,7 +81,7 @@ def refresh_file(path: Path, validate) -> None:
     errors = []
     for root in PUBLISHED_ROOTS:
         try:
-            request = urllib.request.Request(root + path.name, headers={"User-Agent": "which-llm/0.5"})
+            request = urllib.request.Request(root + path.name, headers={"User-Agent": "which-llm"})
             with urllib.request.urlopen(request, timeout=20) as response:
                 content = response.read().decode("utf-8")
             validate(content)

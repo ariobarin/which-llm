@@ -5,7 +5,7 @@
 
 An agent skill that answers "which LLM should I use?" with current data instead of training-data guesses. It bundles a daily snapshot of [Artificial Analysis](https://artificialanalysis.ai) benchmarks and [OpenRouter](https://openrouter.ai) model IDs, plus small Python commands your agent runs to filter, compare, and chart models by quality, price, speed, context, and modality.
 
-No API keys. Python 3.10+ standard library only.
+No API keys. Python 3.10+ standard library only (charts also need matplotlib).
 
 ## Install
 
@@ -27,10 +27,12 @@ Claude Code plugin:
 /plugin install which-llm@which-llm
 ```
 
+The plugin has no version number, so it tracks commits. To pull the latest, run `claude plugin marketplace update which-llm` and then `claude plugin update which-llm@which-llm`.
+
 Codex plugin:
 
 ```bash
-codex plugin marketplace add ariobarin/which-llm --sparse .agents/plugins --sparse plugins/which-llm
+codex plugin marketplace add ariobarin/which-llm
 codex plugin add which-llm@which-llm
 ```
 
@@ -44,8 +46,8 @@ Start a new agent session and ask normally:
 
 ```text
 Which cheap vision model should I use?
-Compare GPT-5.5, Claude Opus, and Gemini for coding.
-What's the OpenRouter slug for GLM-5.2? Is there a free one?
+Compare the top OpenAI, Anthropic, and Google models for coding.
+What's the OpenRouter slug for this model? Is there a free one?
 Plot cost vs intelligence for open-weight models.
 ```
 
@@ -56,32 +58,14 @@ $ python pick.py vision --min-intel 40 --sort input-price --top 3
 
 | rank | model | creator | intel | intel-task$ | in$/1m | out$/1m | ctx | openrouter |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Claude Haiku 5.5 (Xhigh) | Anthropic | 41.2 | $0.12 | $0.10 | $0.50 | 1.0M | anthropic/claude-haiku-5.5 |
-| 2 | Claude Haiku 5.5 (Max) | Anthropic | 43.4 | $0.21 | $0.10 | $0.50 | 1.0M | anthropic/claude-haiku-5.5 |
-| 3 | GLM-5.3-Flash | Z AI | 41.8 | $0.28 | $0.15 | $0.50 | 1.0M | z-ai/glm-5.3-flash |
+| 1 | GPT-6.1 Terra (Max) | OpenAI | 51.3 | $0.96 | $1.00 | $5.00 | 1.0M | openai/gpt-6.1-terra |
+| 2 | GPT-6.1 Terra (Xhigh) | OpenAI | 45.3 | $0.40 | $1.00 | $5.00 | 1.0M | openai/gpt-6.1-terra |
+| 3 | GPT-6.1 Terra (High) | OpenAI | 42.4 | $0.26 | $1.00 | $5.00 | 1.0M | openai/gpt-6.1-terra |
 ```
 
-(Some columns trimmed.)
+(Some columns trimmed. Output from November 2026.)
 
-| Command | What it does |
-|---|---|
-| `pick.py [preset] [filters]` | Ranked shortlist. Presets: `best`, `vision`, `long-context`, `open-weights`, `free` |
-| `compare.py <model>...` | Side-by-side table |
-| `profile.py <model>` | Everything about one model |
-| `resolve.py <name>...` | Natural name to exact slug, with alternates |
-| `slug.py <model>` | OpenRouter paid and `:free` IDs |
-| `frontier.py [preset]` | Pareto chart (PNG) plus CSV. Needs `pip install matplotlib` |
-| `export.py [preset] [filters]` | CSV or JSON file |
-| `data.py [dataset]` | Raw AA datasets: evaluations, capabilities, coding agents, media, speech |
-
-Every command takes `--help`. [SKILL.md](skills/which-llm/SKILL.md) has the full filter and field reference.
-
-### Reading the numbers
-
-- `in$/1m` and `out$/1m` are API prices per million tokens. They are rates, not what your workload will cost.
-- `intel-task$` is AA's measured cost per Intelligence Index task. It folds in how many tokens a model actually spends, so it is the better "cost to get an answer" signal.
-- `idx-run$` is the cost of AA's whole benchmark run, not a per-call price.
-- OpenRouter `:free` endpoints are for prototyping. Expect rate limits.
+[SKILL.md](skills/which-llm/SKILL.md) lists every command and explains the cost columns. Every command takes `--help`.
 
 ## How the data stays fresh
 
@@ -91,14 +75,16 @@ The skill does not cover models AA has not benchmarked yet, private evals, or no
 
 ## Development
 
+The skill lives in `skills/which-llm`. The Claude Code and Codex plugin manifests at the repo root both point at that one copy.
+
 ```bash
 git clone https://github.com/ariobarin/which-llm
 cd which-llm
-python -m pip install -e "skills/which-llm[test]"
+python -m pip install cryptography pytest matplotlib
 python -m pytest tests
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for layout and the refresh pipeline.
+`scrape.py` reads the Next.js RSC stream on AA pages and decrypts the dataset manifests it finds; `enrich.py` adds OpenRouter slugs. When AA changes their site the daily refresh opens an issue. Run `python skills/which-llm/scrape.py --refresh`, read the error, fix the parser, and add a test in `tests/which_llm/test_scrape.py`.
 
 ## License
 

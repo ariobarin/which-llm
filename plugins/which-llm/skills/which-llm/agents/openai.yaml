@@ -1,7 +1,0 @@
-interface:
-  display_name: "which-llm"
-  short_description: "Compare current LLM quality, cost, speed, context, and OpenRouter slugs."
-  brand_color: "#10A37F"
-  default_prompt: "Use $which-llm to inspect model options for my constraints."
-policy:
-  allow_implicit_invocation: true
