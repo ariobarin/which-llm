@@ -1,0 +1,153 @@
+# Unmatched non-deprecated AA models (151 total)
+# Run: python enrich.py  (regenerates this file)
+a-x-k2                                         A.X-K2
+agnes-2-5-pro-beta                             Agnes 2.5 Pro Beta
+agnes-2-5-pro-theta                            Agnes 2.5 Pro Theta
+apertus-70b-instruct                           Apertus 70B Instruct
+apertus-8b-instruct                            Apertus 8B Instruct
+apodex-1-1                                     Apodex 1.1
+apriel-v1-6-15b-thinker                        Apriel-v1.6-15B-Thinker
+celeris-1                                      Celeris-1
+cogito-v2-1-reasoning                          Cogito v2.1 (Reasoning)
+deephermes-3-llama-3-1-8b-preview              DeepHermes 3 - Llama-3.1 8B Preview (Non-reasoning)
+deephermes-3-mistral-24b-preview               DeepHermes 3 - Mistral 24B Preview (Non-reasoning)
+deepseek-v4-flash-vision                       DeepSeek V4 Flash Vision (Max)
+diffusiongemma-26b-a4b                         DiffusionGemma 26B A4B
+doubao-seed-code                               Doubao Seed Code
+ernie-4-5-300b-a47b                            ERNIE 4.5 300B A47B
+ernie-5-0-thinking-preview                     ERNIE 5.0 Thinking Preview
+exaone-4-0-1-2b                                Exaone 4.0 1.2B (Non-reasoning)
+exaone-4-0-1-2b-reasoning                      Exaone 4.0 1.2B (Reasoning)
+exaone-4-0-32b                                 EXAONE 4.0 32B (Non-reasoning)
+exaone-4-0-32b-reasoning                       EXAONE 4.0 32B (Reasoning)
+exaone-4-5-33b                                 EXAONE 4.5 33B (Reasoning)
+exaone-4-5-33b-non-reasoning                   EXAONE 4.5 33B (Non-reasoning)
+falcon-h1r-7b                                  Falcon-H1R-7B
+g9v3-39a5b                                     G9v3-39A5B
+g9v3-3b                                        G9v3-3B
+gemini-3-deep-think                            Gemini 3 Deep Think
+gemma-3-270m                                   Gemma 3 270M
+gemma-4-12b                                    Gemma 4 12B (Reasoning)
+gemma-4-12b-non-reasoning                      Gemma 4 12B (Non-reasoning)
+gemma-4-e2b                                    Gemma 4 E2B (Reasoning)
+gemma-4-e2b-non-reasoning                      Gemma 4 E2B (Non-reasoning)
+gemma-4-e4b                                    Gemma 4 E4B (Reasoning)
+gemma-4-e4b-non-reasoning                      Gemma 4 E4B (Non-reasoning)
+gpt-5-5-instant-06-26                          GPT-5.5 Instant (June 2026)
+gpt-6-sol-daybreak-blue                        GPT-6 Sol (Daybreak Blue, max)
+granite-4-0-350m                               Granite 4.0 350M
+granite-4-0-h-350m                             Granite 4.0 H 350M
+granite-4-0-h-nano-1b                          Granite 4.0 H 1B
+granite-4-0-h-small                            Granite 4.0 H Small
+granite-4-0-micro                              Granite 4.0 Micro
+granite-4-2-30b                                Granite 4.2 30B
+granite-4-2-3b                                 Granite 4.2 3B
+hermes-4-llama-3-1-405b                        Hermes 4 - Llama-3.1 405B (Non-reasoning)
+hermes-4-llama-3-1-405b-reasoning              Hermes 4 - Llama-3.1 405B (Reasoning)
+hermes-4-llama-3-1-70b                         Hermes 4 - Llama-3.1 70B (Non-reasoning)
+hermes-4-llama-3-1-70b-reasoning               Hermes 4 - Llama-3.1 70B (Reasoning)
+hyperclova-x-seed-think-32b                    HyperCLOVA X SEED Think (32B)
+hypernova-60b                                  HyperNova 60B 2605 (High, Based on gpt-oss-120b)
+intellect-3                                    INTELLECT-3 (Based on GLM-4.5-Air)
+jamba-1-7-large                                Jamba 1.7 Large
+jamba-1-7-mini                                 Jamba 1.7 Mini
+jamba-reasoning-3b                             Jamba Reasoning 3B
+jt-35b-flash                                   JT-35B-Flash
+jt-4-1-flash-236b-a21b                         JT-4.1 Flash 236B A21B (Reasoning)
+jt-4-1-flash-236b-a21b-non-reasoning           JT-4.1 Flash 236B A21B (Non-reasoning)
+jt-mini                                        JT-MINI
+k-exaone-2-0-0803                              K-EXAONE 2.0
+k2-horizon-0-9b                                K2 Horizon 0.9B
+k2-horizon-3-7b                                K2 Horizon 3.7B
+k2-horizon-375b-a23b                           K2 Horizon 375B A23B
+k2-horizon-7b                                  K2 Horizon 7B
+k2-horizon-mova-36b-a4b                        K2 Horizon MoVA 36B A4B
+k2-think-v2                                    K2 Think V2
+k2-v2                                          K2-V2 (High)
+k2-v2-low                                      K2-V2 (Low)
+k2-v2-medium                                   K2-V2 (Medium)
+kat-coder-pro-v2                               KAT Coder Pro V2
+kimi-linear-48b-a3b-instruct                   Kimi Linear 48B A3B Instruct
+lfm2-24b-a2b                                   LFM2 24B A2B
+lfm2-5-1-2b-instruct                           LFM2.5-1.2B-Instruct
+lfm2-5-1-2b-thinking                           LFM2.5-1.2B-Thinking
+lfm2-5-8b-a1b                                  LFM2.5-8B-A1B
+lfm2-5-vl-1-6b                                 LFM2.5-VL-1.6B
+ling-3-0-flash-fin                             Ling-3.0-flash-Fin
+ling-3-1-flash-1019                            Ling 3.1 Flash 1019
+llama-3-1-instruct-405b                        Llama 3.1 Instruct 405B
+llama-3-1-nemotron-ultra-253b-v1-reasoning     Llama 3.1 Nemotron Ultra 253B v1 (Reasoning)
+llama-3-2-instruct-11b-vision                  Llama 3.2 Instruct 11B (Vision)
+llama-3-2-instruct-90b-vision                  Llama 3.2 Instruct 90B (Vision)
+longcat-flash-lite                             LongCat Flash Lite
+magistral-medium-2509                          Magistral Medium 1.2
+magistral-small-2509                           Magistral Small 1.2
+mercury-2-5                                    Mercury 2.5
+mi-dm-k-2-5-pro-dec28                          Mi:dm K 2.5 Pro
+minicpm-v4-6-1-3b                              MiniCPM-V 4.6 1.3B
+minicpm5-1b                                    MiniCPM5-1B (Reasoning)
+minicpm5-1b-non-reasoning                      MiniCPM5-1B (Non-reasoning)
+minicpm5-2b                                    MiniCPM5-2B
+ministral-3-14b                                Ministral 3 14B
+ministral-3-3b                                 Ministral 3 3B
+ministral-3-8b                                 Ministral 3 8B
+molmo-7b-d                                     Molmo 7B-D
+molmo2-8b                                      Molmo2-8B
+motif-2-12-7b                                  Motif-2-12.7B-Reasoning
+motif-3                                        Motif 3
+muse-glimmer                                   Muse Glimmer (High)
+muse-wonder-full                               Muse Wonder Full (Max)
+nanbeige4-1-3b                                 Nanbeige4.1-3B
+nanbeige4-3-33b                                Nanbeige4.3-33B
+nemotron-3-5-bolt-74b-a9b                      Nemotron 3.5 Bolt 74B-A9B
+nemotron-3-5-bolt-e4b-4gb                      Nemotron 3.5 Bolt E4B 4GB (Reasoning)
+nemotron-cascade-2-30b-a3b                     Nemotron Cascade 2 30B A3B
+nex-n2-pro                                     Nex-N2-Pro (Based on Qwen3.5-397B-A17B)
+nova-2-0-lite                                  Nova 2.0 Lite (Non-reasoning)
+nova-2-0-lite-reasoning                        Nova 2.0 Lite (High)
+nova-2-0-lite-reasoning-low                    Nova 2.0 Lite (Low)
+nova-2-0-lite-reasoning-medium                 Nova 2.0 Lite (Medium)
+nova-2-0-omni                                  Nova 2.0 Omni (Non-reasoning)
+nova-2-0-omni-reasoning-low                    Nova 2.0 Omni (Low)
+nova-2-0-omni-reasoning-medium                 Nova 2.0 Omni (Medium)
+nova-2-0-pro                                   Nova 2.0 Pro Preview (Non-reasoning)
+nova-2-0-pro-reasoning-low                     Nova 2.0 Pro Preview (Low)
+nova-2-0-pro-reasoning-medium                  Nova 2.0 Pro Preview (Medium)
+nova-micro                                     Nova Micro
+nova-premier                                   Nova Premier
+nvidia-nemotron-3-nano-4b                      NVIDIA Nemotron 3 Nano 4B
+nvidia-nemotron-nano-12b-v2-vl                 NVIDIA Nemotron Nano 12B v2 VL (Non-reasoning)
+nvidia-nemotron-nano-12b-v2-vl-reasoning       NVIDIA Nemotron Nano 12B v2 VL (Reasoning)
+nvidia-nemotron-nano-9b-v2                     NVIDIA Nemotron Nano 9B V2 (Non-reasoning)
+nvidia-nemotron-nano-9b-v2-reasoning           NVIDIA Nemotron Nano 9B V2 (Reasoning)
+olmo-3-1-32b-instruct                          Olmo 3.1 32B Instruct
+olmo-3-1-32b-think                             Olmo 3.1 32B Think
+olmo-3-7b-instruct                             Olmo 3 7B Instruct
+olmo-3-7b-think                                Olmo 3 7B Think
+phi-4-mini                                     Phi-4 Mini Instruct
+phi-4-multimodal                               Phi-4 Multimodal Instruct
+quasar-438b                                    Quasar 438B (Max, Based on GLM-5.2)
+qwen3-5-0-8b                                   Qwen3.5 0.8B (Reasoning)
+qwen3-5-0-8b-non-reasoning                     Qwen3.5 0.8B (Non-reasoning)
+qwen3-5-2b                                     Qwen3.5 2B (Reasoning)
+qwen3-5-2b-non-reasoning                       Qwen3.5 2B (Non-reasoning)
+qwen3-5-4b                                     Qwen3.5 4B (Reasoning)
+qwen3-5-4b-non-reasoning                       Qwen3.5 4B (Non-reasoning)
+qwen3-5-omni-flash                             Qwen3.5 Omni Flash
+qwen3-5-omni-plus                              Qwen3.5 Omni Plus
+qwen3-8-flash-next                             Qwen3.8-Flash-Next
+qwen3-next-80b-a3b-reasoning                   Qwen3 Next 80B A3B (Reasoning)
+qwen3-omni-30b-a3b-instruct                    Qwen3 Omni 30B A3B Instruct
+qwen3-omni-30b-a3b-reasoning                   Qwen3 Omni 30B A3B (Reasoning)
+r1-1776                                        R1 1776
+reflection-beam                                Beam 1.0
+ring-2-6-1t                                    Ring-2.6-1T
+ring-flash-2-0                                 Ring-flash-2.0
+sarvam-105b                                    Sarvam 105B (High)
+sarvam-30b                                     Sarvam 30B (High)
+solar-open-100b-reasoning                      Solar Open 100B (Reasoning)
+solar-open2-250b                               Solar Open2 250B
+step-3-vl-10b                                  Step3 VL 10B
+tiny-aya-global                                Tiny Aya Global
+tri-21b-think-v0-5                             Tri-21B-Think
+trinity-large-thinking                         Trinity Large Thinking
